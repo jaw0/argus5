@@ -1,0 +1,215 @@
+// Copyright (c) 2017
+// Author: Jeff Weisberg <jaw @ tcp4me.com>
+// Created: 2017-Aug-31 23:44 (EDT)
+// Function: monitoring service
+
+package service
+
+import (
+	"math"
+	"sync"
+
+	"argus/argus"
+	"argus/clock"
+	"argus/configure"
+	"argus/darp"
+	"argus/monel"
+	"argus/sched"
+)
+
+type Monitor interface {
+	Config(*configure.CF) error
+}
+
+type Conf struct {
+	myid         string // local darp name
+	Frequency    int
+	Retries      int
+	Retrydelay   int `cfconv:"timespec"`
+	Timeout      int `cfconv:"timespec"`
+	Showreason   bool
+	Showresult   bool
+	DARPGravity  darp.Gravity
+	Calc         string
+	calcmask     uint32
+	Alpha        float64
+	Scale        float64
+	Pluck        string
+	Unpack       string
+	Expr         string
+	JPath        string
+	Expect       [argus.CRITICAL + 1]string
+	Nexpect      [argus.CRITICAL + 1]string
+	Minvalue     [argus.CRITICAL + 1]float64 // NaN if not set
+	Maxvalue     [argus.CRITICAL + 1]float64
+	Eqvalue      [argus.CRITICAL + 1]float64
+	Nevalue      [argus.CRITICAL + 1]float64
+	Maxdeviation [argus.CRITICAL + 1]float64
+	// calc, testing, schedule, graph,
+
+}
+
+var defaults = Conf{
+	Frequency:   60,
+	Retries:     2,
+	Retrydelay:  60,
+	Timeout:     60,
+	DARPGravity: darp.GRAV_IETF,
+	Alpha:       1,
+}
+
+func init() {
+
+	for i := argus.CLEAR; i <= argus.CRITICAL; i++ {
+		defaults.Minvalue[i] = math.NaN()
+		defaults.Maxvalue[i] = math.NaN()
+		defaults.Eqvalue[i] = math.NaN()
+		defaults.Nevalue[i] = math.NaN()
+	}
+}
+
+type Persist struct {
+	Status   argus.Status
+	Statuses map[string]argus.Status
+	Result   string
+	Results  map[string]string
+	Reason   string
+	Calc     calc
+	Hwab     *HWAB
+}
+
+type Service struct {
+	mon      *monel.M
+	run      Monitor
+	cf       Conf
+	p        Persist
+	uname    string
+	lock     sync.RWMutex
+	running  bool
+	sched    *sched.D
+	Lasttest int64
+	Tries    int
+	Started  int64
+	graph    bool
+}
+
+/*
+typical use:
+
+  Start() JoinMulti()
+  CheckValue(x) SetResult(st, v, r)
+  Done()
+
+*/
+
+func (s *Service) Start() {
+
+	if !s.tasRunning() {
+		s.reschedule()
+	}
+
+	//...
+}
+
+func (s *Service) JoinMulti() bool {
+
+	ok := s.tasRunning()
+	if !ok {
+		return false
+	}
+
+	s.reschedule()
+	return true
+}
+
+func (s *Service) Done() {
+
+	// alsoruns
+	// debug
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.reschedule()
+	s.running = false
+}
+
+func (s *Service) SetResult(status argus.Status, result string, reason string) {
+
+	// handle retries
+	if status == argus.CLEAR {
+		s.Tries = 0
+	} else {
+		s.Tries++
+		if s.Tries <= s.cf.Retries {
+			status = argus.CLEAR
+		}
+	}
+
+	if status != s.p.Statuses[s.cf.myid] {
+		// RSN - send darp update to masters (status, result, reason)
+	}
+
+	s.SetResultFor(s.cf.myid, status, result, reason)
+}
+
+func (s *Service) SetResultFor(id string, status argus.Status, result string, reason string) {
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.p.Results[id] = result
+	if id == s.cf.myid {
+		s.p.Reason = reason
+	}
+
+	if s.p.Statuses[id] == status {
+		// no change
+		return
+	}
+
+	s.p.Statuses[id] = status
+
+	astatus := darp.AggrStatus(s.cf.DARPGravity, status, s.p.Statuses)
+
+	if astatus == s.p.Status {
+		// no change
+		return
+	}
+
+	s.p.Status = astatus
+
+	// propagate change upwards
+	s.mon.Update(s.p.Status)
+}
+
+func (s *Service) reschedule() {
+
+	if s.Tries != 0 && s.cf.Retrydelay != 0 {
+		s.sched.ReSchedule(s.cf.Retrydelay)
+	} else {
+		s.sched.ReSchedule(s.cf.Frequency)
+	}
+}
+
+func (s *Service) tasRunning() bool {
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if s.running {
+		return false
+	}
+
+	// RSN - check schedule, darp, ...
+
+	s.Started = clock.Nano()
+	s.running = true
+
+	return true
+}
+
+func (s *Service) recordGraphData(val float64) {
+
+	// RSN - send to graphing channel
+	// T, id, status, value, yn, dn, nmax{s,h.d}
+}
