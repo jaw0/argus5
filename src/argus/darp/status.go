@@ -30,7 +30,8 @@ func AggrStatus(gravity Gravity, mystatus argus.Status, statuses map[string]argu
 	return CalcAggrStatus(gravity, mystatus, statuses, darps)
 }
 
-func CalcAggrStatus(gravity Gravity, mystatus argus.Status, statuses map[string]argus.Status, darps map[string]bool) argus.Status {
+func CalcAggrStatus(gravity Gravity, mystatus argus.Status,
+	statuses map[string]argus.Status, darps map[string]bool) argus.Status {
 
 	var count [argus.MAXSTATUS + 1]int
 	nstatus := 0

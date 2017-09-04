@@ -13,12 +13,17 @@ import (
 	"argus/clock"
 	"argus/configure"
 	"argus/darp"
+	"argus/diag"
 	"argus/monel"
 	"argus/sched"
 )
 
 type Monitor interface {
-	Config(*configure.CF) error
+	Config(*configure.CF, *Service) error
+	Init() error
+	Recycle()
+	Start(*Service)
+	Abort()
 }
 
 type Conf struct {
@@ -80,10 +85,11 @@ type Persist struct {
 
 type Service struct {
 	mon      *monel.M
-	run      Monitor
+	check    Monitor
 	cf       Conf
 	p        Persist
-	uname    string
+	SName    string
+	Friendly string
 	lock     sync.RWMutex
 	running  bool
 	sched    *sched.D
@@ -105,8 +111,16 @@ typical use:
 func (s *Service) Start() {
 
 	if !s.tasRunning() {
+		if int(clock.Nano()-s.Started) > 5*s.cf.Timeout {
+			diag.Problem("%s - running too long. trying to abort", s.mon.Unique())
+			s.check.Abort()
+
+		}
+
 		s.reschedule()
 	}
+
+	s.check.Start(s)
 
 	//...
 }
@@ -212,4 +226,15 @@ func (s *Service) recordGraphData(val float64) {
 
 	// RSN - send to graphing channel
 	// T, id, status, value, yn, dn, nmax{s,h.d}
+}
+
+func (s *Service) Name() string {
+	return s.SName
+}
+func (s *Service) FriendlyName() string {
+
+	if s.Friendly != "" {
+		return s.Friendly
+	}
+	return s.SName
 }

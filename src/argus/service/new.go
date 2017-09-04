@@ -6,20 +6,30 @@
 package service
 
 import (
+	"fmt"
+	"math"
+	"strings"
+
 	"argus/argus"
 	"argus/configure"
 	"argus/monel"
+	"argus/sched"
 )
 
+// construction starts here:
 func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 
-	// probe
-	// run := ...
+	check := probe(conf.Name)
+
+	if check == nil {
+		return nil, fmt.Errorf("unknown service '%s'", "XXX")
+	}
 
 	s := &Service{}
 	s.cf = defaults
 	s.p.Statuses = make(map[string]argus.Status)
 	s.p.Results = make(map[string]string)
+	s.check = check()
 
 	s.mon = monel.New(s, parent)
 
@@ -28,16 +38,35 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 		return nil, err
 	}
 
+	// override monel.defaults
+	// sendnotify = 1
+
 	return s.mon, nil
 }
 
 func (s *Service) Config(conf *configure.CF) error {
 
-	// conf.InitFromConfig(&s.cf, "service", prefix)
-	// hwab
-	err := s.run.Config(conf)
+	conf.InitFromConfig(&s.cf, "service", "")
+
+	hwab := false
+	for i := argus.CLEAR; i <= argus.CRITICAL; i++ {
+		if !math.IsNaN(s.cf.Maxdeviation[i]) {
+			hwab = true
+		}
+	}
+	if hwab {
+		s.HwabConfig(conf)
+	}
+
+	err := s.check.Config(conf, s)
 	if err != nil {
 		return err
+	}
+
+	// uname
+
+	if s.cf.Frequency == 0 {
+		s.cf.Frequency = 60
 	}
 
 	return nil
@@ -45,6 +74,60 @@ func (s *Service) Config(conf *configure.CF) error {
 
 func (s *Service) Init() error {
 
-	// schedule
+	if s.p.Hwab != nil {
+		s.p.Hwab.Init()
+	}
+
+	err := s.check.Init()
+	if err != nil {
+		return err
+	}
+
+	s.sched = sched.New(&sched.Conf{
+		Freq: s.cf.Frequency,
+		Auto: true,
+		Text: s.mon.Unique(),
+	}, s)
+
 	return nil
+}
+
+// destruction
+func (s *Service) Recycle() {
+
+	if s.sched != nil {
+		s.sched.Remove()
+	}
+	s.check.Recycle()
+}
+
+// ################################################################
+
+type probeCf struct {
+	name      string
+	construct func() Monitor
+}
+
+var monitorProbe []probeCf
+
+func Register(name string, construct func() Monitor) {
+	monitorProbe = append(monitorProbe, probeCf{strings.ToLower(name), construct})
+}
+
+func probe(name string) func() Monitor {
+
+	name = strings.ToLower(name)
+	var bestc func() Monitor
+	var bestl int
+
+	for i, _ := range monitorProbe {
+		p := &monitorProbe[i]
+
+		if strings.HasPrefix(name, p.name) && len(p.name) > bestl {
+			bestl = len(p.name)
+			bestc = p.construct
+		}
+	}
+
+	return bestc
 }

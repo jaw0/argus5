@@ -9,6 +9,7 @@ import (
 	"math"
 
 	"argus/clock"
+	"argus/configure"
 	"argus/monel"
 )
 
@@ -21,7 +22,7 @@ type HwabConf struct {
 }
 
 type HWAB struct {
-	cf      *HwabConf
+	cf      HwabConf
 	mon     *monel.M
 	buckets int
 	Created int64
@@ -38,13 +39,45 @@ type HWAB struct {
 	D       []float32
 }
 
+var hwabdefaults = HwabConf{
+	Alpha:  0.005,
+	Beta:   0.0005,
+	Gamma:  0.1,
+	Period: 7 * 24 * 3600,
+}
+
 const (
-	TWIN = 300
+	TWIN       = 300
+	PERIOD_MIN = 2
+	PERIOD_MAX = 30 * 24 * 3600
 )
 
-func (s *Service) HwabConfig() {
+func (s *Service) HwabConfig(conf *configure.CF) error {
 
-	//h.buckets = h.cf.Period / TWIN
+	h := &HWAB{
+		Created: clock.Unix(),
+		mon:     s.mon,
+	}
+	h.cf = hwabdefaults
+	s.p.Hwab = h
+
+	conf.InitFromConfig(&s.cf, "service", "hwab_")
+
+	if h.cf.Period < PERIOD_MIN {
+		h.cf.Period = PERIOD_MIN
+	}
+	if h.cf.Period > PERIOD_MAX {
+		h.cf.Period = PERIOD_MAX
+	}
+
+	h.buckets = h.cf.Period / TWIN
+
+	return nil
+}
+
+func (h *HWAB) Init() error {
+
+	return nil
 }
 
 func (h *HWAB) Add(val float64) {
@@ -52,6 +85,9 @@ func (h *HWAB) Add(val float64) {
 	// resample from service.Freq -> TWIN
 
 	now := clock.Unix()
+	if h.cstart == 0 {
+		h.cstart = now
+	}
 	h.ccount++
 	h.ctotal += val
 	h.ctota2 += val * val
