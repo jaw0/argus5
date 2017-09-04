@@ -15,13 +15,13 @@ import (
 )
 
 type CFV struct {
-	Value   string
+	Value   interface{} // string | *Schedule
 	Line    int
 	Used    bool
 	Inherit bool
 }
 type cfcv struct {
-	value string
+	value interface{}
 	ok    bool
 }
 
@@ -94,38 +94,52 @@ func (cf *CF) initDotSev(name string, v reflect.Value) {
 	}
 }
 
-func (cf *CF) setValue(v reflect.Value, cval string, conv string, name string) {
+func (cf *CF) setValue(v reflect.Value, cval interface{}, conv string, name string) {
 
 	pkind := v.Type().String()
 
 	dl.Debug("name %s conv %s type %s = %s", name, conv, pkind, cval)
 
-	switch pkind {
-	case "int", "int64", "int32":
-		if conv == "timespec" {
-			ts, err := argus.Timespec(cval)
-			if err != nil {
-				cf.Error("invalid timespec")
-				return
+	switch cval := cval.(type) {
+	case string:
+		switch pkind {
+		case "int", "int64", "int32":
+			if conv == "timespec" {
+				ts, err := argus.Timespec(cval)
+				if err != nil {
+					cf.Error("invalid timespec")
+					return
+				}
+				v.SetInt(ts)
+			} else {
+				i, _ := strconv.ParseInt(cval, 10, 0)
+				v.SetInt(i)
 			}
-			v.SetInt(ts)
-		} else {
-			i, _ := strconv.ParseInt(cval, 10, 0)
-			v.SetInt(i)
+		case "bool":
+			v.SetBool(argus.CheckBool(cval))
+		case "float64", "float32":
+			f, _ := strconv.ParseFloat(cval, 64)
+			v.SetFloat(f)
+		case "string":
+			v.SetString(cval)
+		case "argus.Status":
+			v.SetInt(int64(statusValue(cval)))
+		case "darp.Gravity":
+			v.SetInt(int64(gravityValue(cval)))
+		default:
+			diag.Problem("BUG? cannot configure field '%s', type '%s'", name, pkind)
 		}
-	case "bool":
-		v.SetBool(argus.CheckBool(cval))
-	case "float64", "float32":
-		f, _ := strconv.ParseFloat(cval, 64)
-		v.SetFloat(f)
-	case "string":
-		v.SetString(cval)
-	case "argus.Status":
-		v.SetInt(int64(statusValue(cval)))
-	case "darp.Gravity":
-		v.SetInt(int64(gravityValue(cval)))
+
 	default:
-		diag.Problem("BUG? cannot configure field '%s', type '%s'", name, pkind)
+		// same types?
+		tv := reflect.ValueOf(cval)
+		tt := tv.Type().String()
+
+		if pkind == tt {
+			v.Set(tv)
+		} else {
+			diag.Problem("BUG? cannot configure field '%s', type %s != %s", name, pkind, tv)
+		}
 	}
 }
 
@@ -134,10 +148,10 @@ func (cf *CF) Error(e string) {
 	diag.Problem(e)
 }
 
-func (cf *CF) Get(name string) (string, bool) {
+func (cf *CF) Get(name string) (interface{}, bool) {
 	return cf.iGet(name, true)
 }
-func (cf *CF) iGet(name string, ui bool) (string, bool) {
+func (cf *CF) iGet(name string, ui bool) (interface{}, bool) {
 
 	cv := cf.Param[name]
 	if cv != nil {
@@ -150,7 +164,7 @@ func (cf *CF) iGet(name string, ui bool) (string, bool) {
 
 	cc, ok := cf.cache[name]
 	if ok {
-		return cc.value, cc.ok
+		return cc.value, true
 	}
 
 	if cf.parent != nil {

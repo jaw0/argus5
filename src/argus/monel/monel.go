@@ -6,6 +6,8 @@
 package monel
 
 import (
+	"fmt"
+
 	"argus/argus"
 	"argus/configure"
 	"argus/darp"
@@ -40,6 +42,7 @@ type Conf struct {
 	Nostatus    bool
 	Gravity     darp.Gravity
 	Countstop   bool
+	Sendnotify  bool
 	Severity    argus.Status
 	// notify, web, acl, graph
 }
@@ -52,16 +55,26 @@ var defaults = Conf{
 }
 
 type Persist struct {
+	Status          argus.Status
+	OvStatus        argus.Status
+	Override        *argus.Override
+	AncInOv         bool
+	Alarm           bool
+	OvStatusSummary [argus.MAXSTATUS + 1]int
+	Interesting     bool
+	TransTime       int64
+	SirenTime       int64
 }
 
 type M struct {
 	Me       Moneler
 	Parent   []*M
+	Children []*M
 	Cf       Conf
 	p        Persist
 	config   *configure.CF
 	Filename string
-	Pathname string
+	DirName  string
 
 	// stats, logs, notif
 	// ov, anno
@@ -75,7 +88,9 @@ func New(me Moneler, parent *M) *M {
 	if parent != nil {
 		m.Parent = []*M{parent}
 	}
-	// defaults
+
+	m.Cf = defaults
+
 	return m
 }
 
@@ -94,6 +109,11 @@ func (m *M) Config(conf *configure.CF) error {
 	m.whoami()
 
 	m.Restore()
+
+	if len(m.Parent) != 0 {
+		m.Parent[0].AddChild(m)
+	}
+
 	m.Init()
 
 	return nil
@@ -107,24 +127,21 @@ func (m *M) Init() {
 	m.Me.Init()
 }
 
+func (m *M) DoneConfiguring() {
+	// recalc:
+	// ovstatus
+	// ovstatussummary
+}
+
+func (m *M) AddChild(n *M) {
+	m.Children = append(m.Children, n)
+}
+func (m *M) AddParent(n *M) {
+	m.Parent = append(m.Parent, n)
+}
+
 func (m *M) Update(status argus.Status) {
 
-}
-
-func (m *M) Debug(x ...interface{}) {
-
-}
-func (m *M) Loggit(x ...interface{}) {
-
-}
-
-func (m *M) Persist() {
-
-}
-
-func (m *M) Restore() {
-
-	// defer recover
 }
 
 func (m *M) Unique() string {
@@ -149,9 +166,14 @@ func (m *M) whoami() {
 
 	name = name + cleanName(m.Cf.Uname)
 	m.Cf.Unique = name
+	m.Filename = argus.Encode(name)
+	m.DirName = argus.HashedDirectory(name)
+}
 
-	// filename
-	// pathname
+func (m *M) Pathname(pre, suf string) string {
+
+	return m.DirName + "/" + pre + m.Filename + suf
+
 }
 
 func cleanName(n string) string {
@@ -173,4 +195,20 @@ func cleanName(n string) string {
 	}
 
 	return string(buf[:j])
+}
+
+func (m *M) Debug(text string, args ...interface{}) {
+
+	if m.Cf.Debug {
+		msg := fmt.Sprintf(text, args...)
+		diag.Verbose("%s %s", m.Cf.Unique, msg)
+	}
+}
+
+func (m *M) Loggit(text string, args ...interface{}) {
+
+	msg := fmt.Sprintf(text, args...)
+	diag.Verbose("%s %s", m.Cf.Unique, msg)
+
+	// RSN append m.log
 }

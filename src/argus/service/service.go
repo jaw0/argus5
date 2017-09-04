@@ -43,6 +43,8 @@ type Conf struct {
 	Unpack       string
 	Expr         string
 	JPath        string
+	Testing      *argus.Schedule
+	Checking     *argus.Schedule
 	Expect       [argus.CRITICAL + 1]string
 	Nexpect      [argus.CRITICAL + 1]string
 	Minvalue     [argus.CRITICAL + 1]float64 // NaN if not set
@@ -96,6 +98,7 @@ type Service struct {
 	Lasttest int64
 	Tries    int
 	Started  int64
+	AlsoRun  []*Service
 	graph    bool
 }
 
@@ -120,6 +123,7 @@ func (s *Service) Start() {
 		s.reschedule()
 	}
 
+	s.mon.Debug("starting")
 	s.check.Start(s)
 
 	//...
@@ -132,22 +136,31 @@ func (s *Service) JoinMulti() bool {
 		return false
 	}
 
+	s.mon.Debug("joining multi-start")
 	s.reschedule()
 	return true
 }
 
 func (s *Service) Done() {
 
-	// alsoruns
 	// debug
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.reschedule()
 	s.running = false
+
+	s.mon.Debug("done")
+	for _, also := range s.AlsoRun {
+		also.Start()
+	}
 }
 
 func (s *Service) SetResult(status argus.Status, result string, reason string) {
+
+	if s.cf.Checking != nil && !s.cf.Checking.PermitNow() {
+		status = argus.CLEAR
+	}
 
 	// handle retries
 	if status == argus.CLEAR {
@@ -167,6 +180,8 @@ func (s *Service) SetResult(status argus.Status, result string, reason string) {
 }
 
 func (s *Service) SetResultFor(id string, status argus.Status, result string, reason string) {
+
+	s.mon.Debug("start %s = %s (%s)", id, status, reason)
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -215,6 +230,9 @@ func (s *Service) tasRunning() bool {
 	}
 
 	// RSN - check schedule, darp, ...
+	if s.cf.Testing != nil && !s.cf.Testing.PermitNow() {
+		return false
+	}
 
 	s.Started = clock.Nano()
 	s.running = true

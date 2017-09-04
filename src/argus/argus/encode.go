@@ -12,10 +12,14 @@ import (
 )
 
 func Encode(s string) string {
+	return encode(s, '~')
+}
+
+func UrlEncode(s string) string {
 	return encode(s, '%')
 }
 
-func Decode(s string) string {
+func UrlDecode(s string) string {
 
 	r, err := url.QueryUnescape(s)
 	if err != nil {

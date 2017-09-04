@@ -25,6 +25,7 @@ type Config struct {
 	Port_https     int
 	Port_darp      int
 	Port_test      int
+	Datadir        string
 	Nameserver     []string
 	DNS_search     []string
 	Debug          map[string]bool

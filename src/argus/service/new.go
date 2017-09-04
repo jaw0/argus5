@@ -39,7 +39,10 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 	}
 
 	// override monel.defaults
-	// sendnotify = 1
+	if parent != nil {
+		parent.Cf.Sendnotify = true
+		parent.Cf.Countstop = true
+	}
 
 	return s.mon, nil
 }
