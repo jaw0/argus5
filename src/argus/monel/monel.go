@@ -15,6 +15,7 @@ import (
 )
 
 var dl = diag.Logger("monel")
+var byname = make(map[string]*M)
 
 // Service, Group, Alias
 type Moneler interface {
@@ -121,8 +122,8 @@ func (m *M) Config(conf *configure.CF) error {
 
 func (m *M) Init() {
 
-	// RSN - init
-	// byname{} = m
+	// RSN - init...
+	byname[m.Cf.Unique] = m
 
 	m.Me.Init()
 }
@@ -131,6 +132,7 @@ func (m *M) DoneConfiguring() {
 	// recalc:
 	// ovstatus
 	// ovstatussummary
+	// sort children
 }
 
 func (m *M) AddChild(n *M) {

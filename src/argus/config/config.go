@@ -14,8 +14,6 @@ import (
 )
 
 type Config struct {
-	Error_mailto   string
-	Error_mailfrom string
 	TLS_cert       string // our cert - .crt
 	TLS_key        string // our private key - .key
 	TLS_root       string // root cert - .crt
@@ -26,6 +24,7 @@ type Config struct {
 	Port_darp      int
 	Port_test      int
 	Datadir        string
+	Monitor_config string
 	Nameserver     []string
 	DNS_search     []string
 	Debug          map[string]bool

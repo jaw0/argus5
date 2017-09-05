@@ -143,9 +143,12 @@ func (cf *CF) setValue(v reflect.Value, cval interface{}, conv string, name stri
 	}
 }
 
-func (cf *CF) Error(e string) {
+func (cf *CF) Error(e string, args ...interface{}) {
 	// RSN - error log with file,line, set errorflags, ...
 	diag.Problem(e)
+}
+func (cf *CF) Warning(e string, args ...interface{}) {
+
 }
 
 func (cf *CF) Get(name string) (interface{}, bool) {
