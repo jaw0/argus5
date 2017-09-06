@@ -14,30 +14,42 @@ import (
 	"argus/diag"
 )
 
+/*
+XXX
+cache - *CFV
+errors
+
+*/
+
 type CFV struct {
 	Value   interface{} // string | *Schedule
 	Line    int
 	Used    bool
 	Inherit bool
 }
-type cfcv struct {
-	value interface{}
-	ok    bool
-}
 
 type CF struct {
 	parent *CF
 	Type   string // service, group, alias
 	Name   string // group name, monitor name
-	File   string
+	Extra  string
+	File   string // start of the block
+	Line   int
 	Param  map[string]*CFV
-	cache  map[string]cfcv
+	cache  map[string]*CFV
 }
 
 var dl = diag.Logger("configure")
 
-func (cf *CF) SetParent(pcf *CF) {
-	cf.parent = pcf
+func NewCF(t string, n string, pcf *CF) *CF {
+
+	return &CF{
+		Type:   t,
+		Name:   n,
+		parent: pcf,
+		Param:  make(map[string]*CFV),
+		cache:  make(map[string]*CFV),
+	}
 }
 
 func (cf *CF) InitFromConfig(dst interface{}, section string, prefix string) {
@@ -64,14 +76,7 @@ func (cf *CF) InitFromConfig(dst interface{}, section string, prefix string) {
 			continue
 		}
 
-		// get configured value
-		cval, ok := cf.Get(name)
-		if !ok {
-			// nothing configured - keep default
-			continue
-		}
-
-		cf.setValue(v, cval, conv, name)
+		cf.setValue(v, conv, name)
 	}
 }
 
@@ -85,16 +90,21 @@ func (cf *CF) initDotSev(name string, v reflect.Value) {
 		}
 
 		fname := name + "." + sev.String()
-		cval, ok := cf.Get(fname)
-		if !ok {
-			continue
-		}
 
-		cf.setValue(v.Index(int(sev)), cval, "", fname)
+		cf.setValue(v.Index(int(sev)), "", fname)
 	}
 }
 
-func (cf *CF) setValue(v reflect.Value, cval interface{}, conv string, name string) {
+func (cf *CF) setValue(v reflect.Value, conv string, name string) {
+
+	// get configured value
+	c := cf.Get(name)
+	if c == nil {
+		// nothing configured - keep default
+		return
+	}
+
+	cval := c.Value
 
 	pkind := v.Type().String()
 
@@ -107,7 +117,10 @@ func (cf *CF) setValue(v reflect.Value, cval interface{}, conv string, name stri
 			if conv == "timespec" {
 				ts, err := argus.Timespec(cval)
 				if err != nil {
-					cf.Error("invalid timespec")
+					// the error will report the file/line of the service when used
+					// not where it actually is.
+					// QQQ - should we spend the memory to track?
+					cf.Error("invalid timespec '%s'", cval)
 					return
 				}
 				v.SetInt(ts)
@@ -144,37 +157,33 @@ func (cf *CF) setValue(v reflect.Value, cval interface{}, conv string, name stri
 }
 
 func (cf *CF) Error(e string, args ...interface{}) {
-	// RSN - error log with file,line, set errorflags, ...
-	diag.Problem(e)
-}
-func (cf *CF) Warning(e string, args ...interface{}) {
-
+	argus.ConfigError(cf.File, cf.Line, e, args...)
 }
 
-func (cf *CF) Get(name string) (interface{}, bool) {
+func (cf *CF) Get(name string) *CFV {
 	return cf.iGet(name, true)
 }
-func (cf *CF) iGet(name string, ui bool) (interface{}, bool) {
+func (cf *CF) iGet(name string, ui bool) *CFV {
 
 	cv := cf.Param[name]
 	if cv != nil {
 		if cv.Inherit || ui {
 			// 'param!: value' - only used where declared, will not be inherited by sub-blocks
 			cv.Used = true
-			return cv.Value, true
+			return cv
 		}
 	}
 
 	cc, ok := cf.cache[name]
 	if ok {
-		return cc.value, true
+		return cc
 	}
 
 	if cf.parent != nil {
-		v, ok := cf.parent.iGet(name, false)
-		cf.cache[name] = cfcv{v, ok}
-		return v, ok
+		v := cf.parent.iGet(name, false)
+		cf.cache[name] = v
+		return v
 	}
 
-	return "", false
+	return nil
 }

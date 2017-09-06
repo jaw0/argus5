@@ -19,15 +19,17 @@ import (
 func (m *M) Persist() {
 
 	dat := make(map[string]interface{})
+
+	m.Lock.RLock()
 	m.persist(dat)
 	m.Me.Persist(dat)
+	js, _ := json.Marshal(dat)
+	m.Lock.RUnlock()
 
 	cf := config.Cf()
 	file := cf.Datadir + "/stats/" + m.Pathname("", "")
 	temp := file + ".tmp"
 	dl.Debug("persisting to '%s'", file)
-
-	js, _ := json.Marshal(dat)
 
 	fd, err := os.Create(temp)
 	if err != nil {
@@ -66,8 +68,10 @@ func (m *M) Restore() {
 		return
 	}
 
+	m.Lock.Lock()
 	m.restore(dat)
 	m.Me.Restore(dat)
+	m.Lock.Unlock()
 }
 
 func (m *M) persist(pm map[string]interface{}) {

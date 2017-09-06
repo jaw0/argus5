@@ -8,41 +8,45 @@ package construct
 import (
 	"strings"
 
+	"argus/argus"
 	"argus/configure"
 	"argus/diag"
 	"argus/monel"
 )
 
 type readConf struct {
-	quot  int
-	onel  bool
-	level int
-	//cfunc func(f *Files, cf *configure.CF, m *monel.M) bool
-	subs string //map[string]bool
+	narg   int
+	onel   bool
+	level  int
+	isInfo bool
+	permit map[string]bool
 }
 
 var dl = diag.Logger("dozer")
 
-var confconf = map[string]readConf{
-	"group":   readConf{quot: 1, level: 2, subs: "group host service alias schedule"},
-	"host":    readConf{quot: 1, level: 2, subs: "group host service alias schedule"},
-	"alias":   readConf{quot: 2, onel: true, level: 2},
-	"service": readConf{onel: true, level: 2, subs: "schedule"},
-
-	"method":  readConf{quot: 1, onel: true, level: 1, subs: "schedule"},
-	"snmpoid": readConf{onel: true, level: 1},
+var confconf = map[string]*readConf{
+	"top":     &readConf{narg: 1, level: 2, permit: map[string]bool{"method": true, "snmpoid": true, "group": true, "host": true}},
+	"group":   &readConf{narg: 1, level: 2, permit: map[string]bool{"group": true, "host": true, "service": true, "alias": true}},
+	"host":    &readConf{narg: 1, level: 2, permit: map[string]bool{"group": true, "host": true, "service": true, "alias": true}},
+	"alias":   &readConf{narg: 2, onel: true, level: 2},
+	"service": &readConf{narg: 1, onel: true, level: 2},
+	"method":  &readConf{narg: 1, onel: true, level: 1, isInfo: true},
+	"snmpoid": &readConf{onel: true, level: 1, isInfo: true},
+	"resolv":  &readConf{},
+	"darp":    &readConf{},
 }
 
 func ReadConfig(file string) {
 
 	f := NewReader(file)
-	cf := &configure.CF{
-		Type: "top",
-		Name: "Top",
-		File: f.CurrFile(),
-	}
+	cf := configure.NewCF("group", "Top", nil)
+	cf.File = f.CurrFile()
 
-	readBlock(f, cf, nil)
+	readKVP(f, cf)
+	top := Make(cf, nil)
+	readConfigs(f, top, cf, "top")
+	dl.Debug("done %v", f)
+	// RSN - check typos
 }
 
 func readKVP(f *Files, cf *configure.CF) bool {
@@ -62,7 +66,7 @@ func readKVP(f *Files, cf *configure.CF) bool {
 		wrcf := wordConf(word)
 
 		if word == "schedule" {
-			readSchedule(f, cf)
+			readSchedule(f, cf, l)
 			continue
 		}
 
@@ -70,88 +74,150 @@ func readKVP(f *Files, cf *configure.CF) bool {
 			f.UnGetLine(l)
 			return true
 		}
-
 		if strings.IndexByte(l, ':') != -1 {
 			addParam(f, cf, l)
 			continue
 		}
 
-		cf.Error("invalid entry in config file, %s not permitted in $class: '%s'", word, cf.Type)
-		return false
+		if wrcf == nil {
+			dl.Debug("wtf %s", word)
+		}
+		f.UnGetLine(l)
+		return true
 	}
 	return true
 }
 
-func readBlock(f *Files, cf *configure.CF, parent *monel.M) bool {
+func readConfigs(f *Files, parent *monel.M, pcf *configure.CF, ptype string) bool {
 
-	var nob *monel.M
-	opt := confconf[cf.Type]
+	opt := confconf[ptype]
 	level := 0
 
 	for {
 		l, ok := f.NextLine()
 		if !ok {
+			dl.Debug("eof")
 			return false
 		}
 
 		if l == "}" {
+			dl.Debug("close} %s", ptype)
 			return true
 		}
 
 		word := firstWord(l)
 		wrcf := wordConf(word)
 
-		if word == "schedule" {
-			// read schedule
-			continue
-		}
-
-		if opt != nil && wrcf != nil { // && permitted in opt
-			cf.UnGetLine(l)
-
-			if wrcf.level < level {
-				if wrcf.level == 2 {
-					cf.Error("%s block must appear before any Groups or Services", word)
-				} else if wrcf.level == 3 {
-					cf.Error("%s block must appear after any Groups or Services", word)
-				}
-				return false
-			}
-
-			if nob == nil { // and opt.isMonEl
-				// build new object
-			}
-
+		if opt.permit[word] && wrcf != nil && wrcf.level >= level {
 			level = wrcf.level
 
-			readConfig(f, cf, nob)
+			readConfig(f, parent, pcf, l, wrcf)
 			continue
 		}
 
-		if strings.IndexByte(l, ':') != -1 {
-			addParam(f, cf, l)
-			continue
-		}
+		errorMessage(f, pcf, word, wrcf, l, level)
+		eatConf(f, l)
 
-		cf.Error("invalid entry in config file, %s not permitted in $class: '%s'", word, cf.Type)
-		return false
+	}
+}
+
+func errorMessage(f *Files, pcf *configure.CF, word string, wrcf *readConf, line string, level int) {
+
+	if wrcf == nil {
+		argus.ConfigError(f.CurrFile(), f.CurrLine(), "I do not understand '%s'", word)
+		return
 	}
 
+	if wrcf.level == 1 {
+		argus.ConfigError(f.CurrFile(), f.CurrLine(), "%s block must appear before any Groups or Services", word)
+		return
+	}
+
+	if strings.IndexByte(line, ':') != -1 {
+		argus.ConfigError(f.CurrFile(), f.CurrLine(), "additional data not permitted here")
+		return
+	}
+
+	argus.ConfigError(f.CurrFile(), f.CurrLine(), "invalid entry in config file '%s'", word)
+}
+
+func readConfig(f *Files, parent *monel.M, pcf *configure.CF, spec string, wrcf *readConf) bool {
+
+	cf := parseSpec(f, pcf, wrcf, spec)
+
+	if spec[len(spec)-1] == '{' {
+		readKVP(f, cf)
+		nob := Make(cf, parent)
+		return readConfigs(f, nob, cf, cf.Type)
+	}
+
+	Make(cf, parent)
 	return true
 }
 
-func readConfig(f *Files, cf *configure.CF, m *monel.M) bool {
+func parseSpec(f *Files, pcf *configure.CF, wrcf *readConf, spec string) *configure.CF {
 
-	l = f.Readline()
-	// parse line
-
-	cf := &configure.CF{
-		File: f.CurrFile(),
+	if spec[len(spec)-1] == '{' {
+		// remove final {
+		spec = spec[:len(spec)-1]
 	}
 
-	// readBlock
+	// remove first word
+	delim := strings.IndexAny(spec, " \t:")
+	word := strings.ToLower(spec[:delim])
+	spec = strings.Trim(spec[delim+1:], " \t")
 
-	return true
+	var arg1, arg2 string
+
+	if wrcf.narg == 1 {
+		arg1 = unquote(spec)
+	} else {
+		if spec[0] == '"' {
+			e := strings.IndexByte(spec[1:], '"') + 1
+			if e != 0 {
+				arg1 = unquote(spec[0 : e+1])
+
+				if e < len(spec)-1 {
+					arg2 = unquote(spec[e+1:])
+				}
+			}
+		} else {
+			e := strings.Index(spec, " \t")
+
+			if e != -1 {
+				arg1 = strings.Trim(spec[:e], " \t")
+				arg2 = strings.Trim(spec[e:], " \t")
+			} else {
+				arg1 = strings.Trim(spec, " \t")
+			}
+		}
+	}
+
+	cf := configure.NewCF(word, arg1, pcf)
+	cf.File = f.CurrFile()
+	cf.Line = f.CurrLine()
+	cf.Extra = arg2
+
+	return cf
+}
+
+func unquote(s string) string {
+
+	if s == "" {
+		return s
+	}
+
+	s = strings.Trim(s, " \t")
+
+	if s[0] == '"' {
+		s = s[1:]
+	}
+	l := len(s)
+	if s[l-1] == '"' {
+		s = s[:l-1]
+	}
+
+	return s
 }
 
 func addParam(f *Files, cf *configure.CF, l string) bool {
@@ -162,6 +228,13 @@ func addParam(f *Files, cf *configure.CF, l string) bool {
 	}
 	key := strings.Trim(l[:colon], " \t")
 	val := strings.Trim(l[colon+1:], " \t")
+
+	return setParam(f, cf, key, val)
+
+}
+
+func setParam(f *Files, cf *configure.CF, key string, val interface{}) bool {
+
 	inh := true
 
 	// key!: value -> non-inherited
@@ -171,7 +244,7 @@ func addParam(f *Files, cf *configure.CF, l string) bool {
 	}
 
 	if _, have := cf.Param[key]; have {
-		cf.Warning("redefinition of parameter '%s'", key)
+		argus.ConfigWarning(f.CurrFile(), f.CurrLine(), "redefinition of parameter '%s'", key)
 	}
 
 	cf.Param[key] = &configure.CFV{
@@ -183,32 +256,42 @@ func addParam(f *Files, cf *configure.CF, l string) bool {
 	return true
 }
 
-func readSchedule(f *Files, cf *configure.CF) bool {
-
-}
-
 func firstWord(l string) string {
 
 	delim := strings.IndexAny(l, " \t:")
 
 	if delim == -1 {
-		return nil
+		return ""
 	}
 
 	return strings.ToLower(l[:delim])
 }
 
-func wordConf(word string) {
+func wordConf(word string) *readConf {
 
 	wcf := confconf[word]
 	return wcf
 }
 
-/*
-readkvp(f,cf) - read kvp+sched into cf
+func eatConf(f *Files, l string) {
 
-readInfoConfigs(f) - read methods+snmpoids
-readMonConfigs(f, parent, groupsonly) - read groups/alias/service into parent
+	if l[len(l)-1] == '{' {
+		eatBlock(f)
+	}
+}
 
+func eatBlock(f *Files) {
 
-*/
+	for {
+		l, ok := f.NextLine()
+		if !ok {
+			return
+		}
+		if l == "}" {
+			return
+		}
+		if l[len(l)-1] == '{' {
+			eatBlock(f)
+		}
+	}
+}

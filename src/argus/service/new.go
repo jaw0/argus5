@@ -22,7 +22,7 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 	check := probe(conf.Name)
 
 	if check == nil {
-		return nil, fmt.Errorf("unknown service '%s'", "XXX")
+		return nil, fmt.Errorf("unknown service '%s'", conf.Name)
 	}
 
 	s := &Service{}
@@ -33,15 +33,15 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 
 	s.mon = monel.New(s, parent)
 
-	err := s.mon.Config(conf)
-	if err != nil {
-		return nil, err
-	}
-
 	// override monel.defaults
 	if parent != nil {
 		parent.Cf.Sendnotify = true
 		parent.Cf.Countstop = true
+	}
+
+	err := s.mon.Config(conf)
+	if err != nil {
+		return nil, err
 	}
 
 	return s.mon, nil

@@ -7,7 +7,6 @@ package service
 
 import (
 	"math"
-	"sync"
 
 	"argus/argus"
 	"argus/clock"
@@ -92,7 +91,6 @@ type Service struct {
 	p        Persist
 	SName    string
 	Friendly string
-	lock     sync.RWMutex
 	running  bool
 	sched    *sched.D
 	Lasttest int64
@@ -145,8 +143,8 @@ func (s *Service) Done() {
 
 	// debug
 
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.mon.Lock.Lock()
+	defer s.mon.Lock.Unlock()
 	s.reschedule()
 	s.running = false
 
@@ -183,8 +181,8 @@ func (s *Service) SetResultFor(id string, status argus.Status, result string, re
 
 	s.mon.Debug("start %s = %s (%s)", id, status, reason)
 
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.mon.Lock.Lock()
+	defer s.mon.Lock.Unlock()
 
 	s.p.Results[id] = result
 	if id == s.cf.myid {
@@ -222,8 +220,8 @@ func (s *Service) reschedule() {
 
 func (s *Service) tasRunning() bool {
 
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.mon.Lock.Lock()
+	defer s.mon.Lock.Unlock()
 
 	if s.running {
 		return false

@@ -35,12 +35,19 @@ func NewReader(file string) *Files {
 	f := &Files{}
 
 	s, err := os.Lstat(file)
-	if err != nil && s.IsDir() {
+	if err == nil && s.IsDir() {
+		f.basedir = file
 		f.files = filesInDir(file)
 	} else {
+		sl := strings.LastIndexByte(file, '/')
+		if sl != -1 {
+			f.basedir = file[:sl]
+		}
+
 		f.files = append(f.files, file)
 	}
 
+	dl.Debug("f %v", f)
 	f.nextFile()
 	return f
 }
@@ -66,7 +73,14 @@ func (f *Files) CurrLine() int {
 
 func (f *Files) openFile(file string) bool {
 
-	fd, err := os.Open(file)
+	// XXX - exec
+
+	pathname := file
+	if file[0] != '/' && f.basedir != "" {
+		pathname = f.basedir + "/" + file
+	}
+
+	fd, err := os.Open(pathname)
 	if err != nil {
 		argus.Loggit("cannot open config file '%s': %v", file, err)
 		return false
@@ -85,11 +99,13 @@ func (f *Files) openFile(file string) bool {
 func (f *Files) nextFile() bool {
 
 	if f.curr != nil {
+		dl.Debug("close curr")
 		f.curr.fd.Close()
 		f.curr = nil
 	}
 
 	if len(f.opens) != 0 {
+		dl.Debug("pop open file")
 		f.curr = f.opens[len(f.opens)-1]
 		f.opens = f.opens[:len(f.opens)-1]
 		return true
@@ -99,6 +115,7 @@ func (f *Files) nextFile() bool {
 		file := f.files[0]
 		f.files = f.files[1:]
 
+		dl.Debug("open file %s", file)
 		ok := f.openFile(file)
 		if ok {
 			return true
@@ -106,6 +123,7 @@ func (f *Files) nextFile() bool {
 		return f.nextFile()
 	}
 
+	dl.Debug("no files")
 	return false
 }
 
@@ -121,6 +139,8 @@ func (f *Files) NextLine() (string, bool) {
 		return "", false
 	}
 
+	var a []byte
+
 	for {
 		b, _, err := f.curr.bfd.ReadLine()
 		if err != nil {
@@ -131,21 +151,36 @@ func (f *Files) NextLine() (string, bool) {
 			continue
 		}
 		f.curr.line++
-		l := string(b)
 
-		// remove comments, whitespace
-		// convert \# -> #
-		l = cleanLine(l)
-
-		if l == "" {
+		if len(b) == 0 {
 			continue
 		}
+
+		a = append(a, b...)
+
+		if a[len(a)-1] == '\\' {
+			a = a[:len(a)-1]
+			continue
+		}
+
+		// remove comments, whitespace
+		// convert \# -> #, etal
+		a = cleanLine(a)
+
+		if len(a) == 0 {
+			continue
+		}
+
+		l := string(a)
 
 		// include
 		if strings.HasPrefix(l, "include ") {
 			f.include(f.includeFileName(l))
+			a = nil
 			continue
 		}
+
+		// dl.Debug("line> [%d] '%s'", len(l), l)
 
 		return l, true
 	}
@@ -162,40 +197,63 @@ func (f *Files) include(file string) {
 		return
 	}
 
-	if file[0] != '/' && f.basedir != "" {
-		file = f.basedir + "/" + file
-	}
-
 	f.opens = append(f.opens, f.curr)
 	f.openFile(file)
 }
 
 // remove whitespace, comments
-func cleanLine(l string) string {
+func cleanLine(l []byte) []byte {
 
 	buf := make([]byte, len(l))
 	j := 0
-	var p byte
 
 	// remove comments, convert \# -> #
+	// convert \r\n...
 	for i := 0; i < len(l); i++ {
-		if l[i] != '#' {
-			buf[j] = byte(l[i])
-			p = l[i]
+		c := l[i]
+
+		if (c == ' ' || c == '\t') && j == 0 {
+			// skip leading white
+			continue
+		}
+
+		if c == '\\' && i != len(l)-1 {
+			i++
+			switch l[i] {
+			case 'n':
+				buf[j] = '\n'
+			case 'r':
+				buf[j] = '\r'
+			case 't':
+				buf[j] = '\t'
+
+				// RSN - \xFF
+			default:
+				buf[j] = l[i]
+			}
 			j++
 			continue
 		}
 
-		if p == '\\' {
-			// convert \# => #
-			buf[j-1] = byte(l[i])
-		} else {
-			// skip comment to end
+		if c == '#' {
 			break
+		}
+		buf[j] = c
+		j++
+	}
+
+	// trim trailing white
+Loop:
+	for j > 0 {
+		switch buf[j-1] {
+		case ' ', '\t', '\n', '\r':
+			j--
+		default:
+			break Loop
 		}
 	}
 
-	return strings.Trim(string(buf), " \t\r\n")
+	return buf[:j]
 }
 
 func (f *Files) includeFileName(l string) string {
@@ -217,6 +275,7 @@ func filesInDir(dir string) []string {
 
 	f, err := os.Open(dir)
 	if err != nil {
+		argus.Loggit("cannot open config dir '%s': %v", dir, err)
 		return nil
 	}
 

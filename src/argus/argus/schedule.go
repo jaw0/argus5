@@ -51,6 +51,11 @@ func (s *Schedule) PermitNow() bool {
 	return CheckBool(s.ResultNow())
 }
 
+func (s *Schedule) Append(dow int, start int, end int, value string) {
+
+	s.sched = append(s.sched, scheduleItem{dow, start, end, value})
+}
+
 /*
  day start - end => value
 

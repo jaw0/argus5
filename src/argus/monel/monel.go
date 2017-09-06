@@ -7,6 +7,7 @@ package monel
 
 import (
 	"fmt"
+	"sync"
 
 	"argus/argus"
 	"argus/configure"
@@ -69,6 +70,7 @@ type Persist struct {
 
 type M struct {
 	Me       Moneler
+	Lock     sync.RWMutex
 	Parent   []*M
 	Children []*M
 	Cf       Conf
@@ -97,23 +99,20 @@ func New(me Moneler, parent *M) *M {
 
 func (m *M) Config(conf *configure.CF) error {
 
-	if len(m.Parent) != 0 {
-		conf.SetParent(m.Parent[0].config)
-	}
 	conf.InitFromConfig(&m.Cf, "monel", "")
+
+	m.whoami()
+
+	if _, exist := byname[m.Cf.Unique]; exist {
+		return fmt.Errorf("Duplicate object '%s'", m.Cf.Unique)
+	}
 
 	err := m.Me.Config(conf)
 	if err != nil {
 		return err
 	}
 
-	m.whoami()
-
 	m.Restore()
-
-	if len(m.Parent) != 0 {
-		m.Parent[0].AddChild(m)
-	}
 
 	m.Init()
 
@@ -123,6 +122,11 @@ func (m *M) Config(conf *configure.CF) error {
 func (m *M) Init() {
 
 	// RSN - init...
+
+	if len(m.Parent) != 0 {
+		m.Parent[0].AddChild(m)
+	}
+
 	byname[m.Cf.Unique] = m
 
 	m.Me.Init()
