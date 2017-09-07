@@ -46,7 +46,9 @@ func ReadConfig(file string) {
 	top := Make(cf, nil)
 	readConfigs(f, top, cf, "top")
 	dl.Debug("done %v", f)
-	// RSN - check typos
+	// RSN - check typos, resolve_alii
+
+	top.DoneConfig()
 }
 
 func readKVP(f *Files, cf *configure.CF) bool {
@@ -148,7 +150,8 @@ func readConfig(f *Files, parent *monel.M, pcf *configure.CF, spec string, wrcf 
 	if spec[len(spec)-1] == '{' {
 		readKVP(f, cf)
 		nob := Make(cf, parent)
-		return readConfigs(f, nob, cf, cf.Type)
+		ok := readConfigs(f, nob, cf, cf.Type)
+		return ok
 	}
 
 	Make(cf, parent)

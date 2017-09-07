@@ -6,11 +6,13 @@
 package group
 
 import (
+	"argus/configure"
 	"argus/monel"
 )
 
 type Group struct {
-	mon *monel.M
+	mon   *monel.M
+	GName string
 }
 
 // construction starts here:
@@ -32,6 +34,8 @@ func (g *Group) Config(conf *configure.CF) error {
 
 	//conf.InitFromConfig(&g.cf, "group", "")
 
+	g.GName = conf.Name
+
 	return nil
 }
 
@@ -40,7 +44,25 @@ func (g *Group) Init() error {
 	return nil
 }
 
+func (g *Group) DoneConfig() {
+
+}
+
 // destruction
 func (g *Group) Recycle() {
+
+}
+
+func (g *Group) Name() string {
+	return g.GName
+}
+func (g *Group) FriendlyName() string {
+	return ""
+}
+
+func (g *Group) Persist(pm map[string]interface{}) {
+
+}
+func (g *Group) Restore(pm map[string]interface{}) {
 
 }

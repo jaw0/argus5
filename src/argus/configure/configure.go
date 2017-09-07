@@ -130,14 +130,14 @@ func (cf *CF) setValue(v reflect.Value, conv string, name string) {
 			}
 		case "bool":
 			v.SetBool(argus.CheckBool(cval))
-		case "float64", "float32":
+		case "float", "float64", "float32":
 			f, _ := strconv.ParseFloat(cval, 64)
 			v.SetFloat(f)
 		case "string":
 			v.SetString(cval)
 		case "argus.Status":
 			v.SetInt(int64(statusValue(cval)))
-		case "darp.Gravity":
+		case "darp.Gravity", "argus.Gravity":
 			v.SetInt(int64(gravityValue(cval)))
 		default:
 			diag.Problem("BUG? cannot configure field '%s', type '%s'", name, pkind)
@@ -181,9 +181,16 @@ func (cf *CF) iGet(name string, ui bool) *CFV {
 
 	if cf.parent != nil {
 		v := cf.parent.iGet(name, false)
-		cf.cache[name] = v
+		if cf.cache != nil {
+			cf.cache[name] = v
+		}
 		return v
 	}
 
 	return nil
+}
+
+func (cf *CF) DrainCache() {
+	cf.cache = nil
+
 }

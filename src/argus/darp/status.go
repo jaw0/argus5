@@ -14,9 +14,9 @@ type Gravity int
 const (
 	GRAV_UP   Gravity = 0
 	GRAV_DN   Gravity = 1
-	GRAV_VOTE Gravity = 3
-	GRAV_IETF Gravity = 4
-	GRAV_SELF Gravity = 5
+	GRAV_VOTE Gravity = 2
+	GRAV_IETF Gravity = 3
+	GRAV_SELF Gravity = 4
 )
 
 func AggrStatus(gravity Gravity, mystatus argus.Status, statuses map[string]argus.Status) argus.Status {

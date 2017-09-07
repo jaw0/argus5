@@ -7,7 +7,9 @@ package construct
 
 import (
 	"bufio"
+	"io"
 	"os"
+	"os/exec"
 	"sort"
 	"strings"
 
@@ -15,10 +17,10 @@ import (
 )
 
 type openfile struct {
-	fd   *os.File
-	bfd  *bufio.Reader
-	file string
-	line int
+	closer func()
+	bfd    *bufio.Reader
+	file   string
+	line   int
 }
 
 type Files struct {
@@ -73,21 +75,19 @@ func (f *Files) CurrLine() int {
 
 func (f *Files) openFile(file string) bool {
 
-	// XXX - exec
-
 	pathname := file
 	if file[0] != '/' && f.basedir != "" {
 		pathname = f.basedir + "/" + file
 	}
 
-	fd, err := os.Open(pathname)
+	fd, closer, err := openOrPopen(pathname)
 	if err != nil {
 		argus.Loggit("cannot open config file '%s': %v", file, err)
 		return false
 	}
 	bfd := bufio.NewReader(fd)
 
-	o := &openfile{fd, bfd, file, 0}
+	o := &openfile{closer, bfd, file, 0}
 
 	if f.curr != nil {
 		f.opens = append(f.opens, f.curr)
@@ -100,7 +100,7 @@ func (f *Files) nextFile() bool {
 
 	if f.curr != nil {
 		dl.Debug("close curr")
-		f.curr.fd.Close()
+		f.curr.closer()
 		f.curr = nil
 	}
 
@@ -180,7 +180,7 @@ func (f *Files) NextLine() (string, bool) {
 			continue
 		}
 
-		// dl.Debug("line> [%d] '%s'", len(l), l)
+		//dl.Debug("line> [%d] '%s'", len(l), l)
 
 		return l, true
 	}
@@ -304,4 +304,41 @@ func filesInDir(dir string) []string {
 
 	sort.Strings(use)
 	return use
+}
+
+func openOrPopen(pathname string) (io.Reader, func(), error) {
+
+	st, err := os.Stat(pathname)
+
+	if err == nil && st.Mode()&0111 != 0 {
+		// popen
+		fd, closer, err := popen(pathname)
+		if err != nil {
+			return nil, nil, err
+		}
+		return fd, closer, nil
+	}
+
+	// open normal file
+	fd, err := os.Open(pathname)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return fd, func() { fd.Close() }, nil
+}
+
+func popen(pathname string) (io.Reader, func(), error) {
+
+	cmd := exec.Command(pathname)
+	stdout, err := cmd.StdoutPipe()
+
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := cmd.Start(); err != nil {
+		return nil, nil, err
+	}
+
+	return stdout, func() { cmd.Wait() }, nil
 }

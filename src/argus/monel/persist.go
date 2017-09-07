@@ -75,12 +75,12 @@ func (m *M) Restore() {
 }
 
 func (m *M) persist(pm map[string]interface{}) {
-	pm["monel"] = &m.p
+	pm["monel"] = &m.P
 }
 
 func (m *M) restore(pm map[string]interface{}) {
 
-	p := &m.p
+	p := &m.P
 
 	err := mapstructure.Decode(pm["monel"].(map[string]interface{}), p)
 	if err != nil {

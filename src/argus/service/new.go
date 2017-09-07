@@ -39,6 +39,9 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 		parent.Cf.Countstop = true
 	}
 
+	// RSN - who am i?
+	s.cf.myid = "local"
+
 	err := s.mon.Config(conf)
 	if err != nil {
 		return nil, err
@@ -66,8 +69,6 @@ func (s *Service) Config(conf *configure.CF) error {
 		return err
 	}
 
-	// uname
-
 	if s.cf.Frequency == 0 {
 		s.cf.Frequency = 60
 	}
@@ -93,6 +94,10 @@ func (s *Service) Init() error {
 	}, s)
 
 	return nil
+}
+
+func (s *Service) DoneConfig() {
+
 }
 
 // destruction

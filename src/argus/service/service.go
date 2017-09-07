@@ -26,31 +26,32 @@ type Monitor interface {
 }
 
 type Conf struct {
-	myid         string // local darp name
-	Frequency    int
-	Retries      int
-	Retrydelay   int `cfconv:"timespec"`
-	Timeout      int `cfconv:"timespec"`
-	Showreason   bool
-	Showresult   bool
-	DARPGravity  darp.Gravity
-	Calc         string
-	calcmask     uint32
-	Alpha        float64
-	Scale        float64
-	Pluck        string
-	Unpack       string
-	Expr         string
-	JPath        string
-	Testing      *argus.Schedule
-	Checking     *argus.Schedule
-	Expect       [argus.CRITICAL + 1]string
-	Nexpect      [argus.CRITICAL + 1]string
-	Minvalue     [argus.CRITICAL + 1]float64 // NaN if not set
-	Maxvalue     [argus.CRITICAL + 1]float64
-	Eqvalue      [argus.CRITICAL + 1]float64
-	Nevalue      [argus.CRITICAL + 1]float64
-	Maxdeviation [argus.CRITICAL + 1]float64
+	myid              string // local darp name
+	Frequency         int
+	Retries           int
+	Retrydelay        int `cfconv:"timespec"`
+	Timeout           int `cfconv:"timespec"`
+	Showreason        bool
+	Showresult        bool
+	DARPGravity       darp.Gravity
+	Severity          argus.Status
+	Calc              string
+	calcmask          uint32
+	Alpha             float64
+	Scale             float64
+	Pluck             string
+	Unpack            string
+	Expr              string
+	JPath             string
+	Schedule_Testing  *argus.Schedule
+	Schedule_Checking *argus.Schedule
+	Expect            [argus.CRITICAL + 1]string
+	Nexpect           [argus.CRITICAL + 1]string
+	Minvalue          [argus.CRITICAL + 1]float64 // NaN if not set
+	Maxvalue          [argus.CRITICAL + 1]float64
+	Eqvalue           [argus.CRITICAL + 1]float64
+	Nevalue           [argus.CRITICAL + 1]float64
+	Maxdeviation      [argus.CRITICAL + 1]float64
 	// calc, testing, schedule, graph,
 
 }
@@ -61,6 +62,7 @@ var defaults = Conf{
 	Retrydelay:  60,
 	Timeout:     60,
 	DARPGravity: darp.GRAV_IETF,
+	Severity:    argus.CRITICAL,
 	Alpha:       1,
 }
 
@@ -156,7 +158,7 @@ func (s *Service) Done() {
 
 func (s *Service) SetResult(status argus.Status, result string, reason string) {
 
-	if s.cf.Checking != nil && !s.cf.Checking.PermitNow() {
+	if s.cf.Schedule_Checking != nil && !s.cf.Schedule_Checking.PermitNow() {
 		status = argus.CLEAR
 	}
 
@@ -181,6 +183,17 @@ func (s *Service) SetResultFor(id string, status argus.Status, result string, re
 
 	s.mon.Debug("start %s = %s (%s)", id, status, reason)
 
+	changed := s.setResultForL(id, status, result, reason)
+	if !changed {
+		return
+	}
+
+	// propagate change upwards
+	s.mon.Update(s.p.Status, result, reason)
+}
+
+func (s *Service) setResultForL(id string, status argus.Status, result string, reason string) bool {
+
 	s.mon.Lock.Lock()
 	defer s.mon.Lock.Unlock()
 
@@ -191,7 +204,7 @@ func (s *Service) SetResultFor(id string, status argus.Status, result string, re
 
 	if s.p.Statuses[id] == status {
 		// no change
-		return
+		return false
 	}
 
 	s.p.Statuses[id] = status
@@ -200,13 +213,11 @@ func (s *Service) SetResultFor(id string, status argus.Status, result string, re
 
 	if astatus == s.p.Status {
 		// no change
-		return
+		return false
 	}
 
 	s.p.Status = astatus
-
-	// propagate change upwards
-	s.mon.Update(s.p.Status)
+	return true
 }
 
 func (s *Service) reschedule() {
@@ -228,7 +239,7 @@ func (s *Service) tasRunning() bool {
 	}
 
 	// RSN - check schedule, darp, ...
-	if s.cf.Testing != nil && !s.cf.Testing.PermitNow() {
+	if s.cf.Schedule_Testing != nil && !s.cf.Schedule_Testing.PermitNow() {
 		return false
 	}
 

@@ -8,6 +8,8 @@ package construct
 import (
 	"argus/configure"
 	//"argus/diag"
+	"argus/alias"
+	"argus/group"
 	"argus/monel"
 	"argus/service"
 )
@@ -20,13 +22,27 @@ func Make(cf *configure.CF, parent *monel.M) *monel.M {
 	case "service":
 		s, err := service.New(cf, parent)
 		if err != nil {
-			dl.Debug(">>%v", err)
 			cf.Error("%v", err)
 		}
 		return s
 	case "host":
+		_, exist := cf.Param["hostname"]
+		if !exist {
+			cf.Param["hostname"] = &configure.CFV{Value: cf.Name, Line: cf.Line}
+		}
+		fallthrough
 	case "group":
+		g, err := group.New(cf, parent)
+		if err != nil {
+			cf.Error("%v", err)
+		}
+		return g
 	case "alias":
+		a, err := alias.New(cf, parent)
+		if err != nil {
+			cf.Error("%v", err)
+		}
+		return a
 	case "method":
 	case "snmpoid":
 

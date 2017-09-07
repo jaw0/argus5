@@ -50,6 +50,7 @@ func New(cf *Conf, obj Starter) *D {
 	if cf.Phase <= 0 {
 		cf.Phase = rand.Intn(cf.Freq)
 	}
+	cf.Phase %= cf.Freq
 
 	d := &D{
 		freq:  cf.Freq,
@@ -93,6 +94,11 @@ func (d *D) ReSchedule(delay int) {
 		for d.when < now {
 			d.when += freq
 		}
+	}
+
+	if d.when%3600 == 0 {
+		// delay to avoid top of the hour busy time
+		d.when += int64(rand.Intn(4) + 1)
 	}
 
 	schedchan <- d

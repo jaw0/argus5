@@ -11,11 +11,12 @@ import (
 
 	"argus/argus"
 	"argus/configure"
-	"argus/darp"
 	"argus/diag"
 )
 
 var dl = diag.Logger("monel")
+
+var lock sync.RWMutex
 var byname = make(map[string]*M)
 
 // Service, Group, Alias
@@ -24,6 +25,7 @@ type Moneler interface {
 	Restore(map[string]interface{})
 	Config(*configure.CF) error
 	Init() error
+	DoneConfig()
 	Name() string
 	FriendlyName() string
 }
@@ -42,30 +44,33 @@ type Conf struct {
 	Depends     string
 	Siren       bool
 	Nostatus    bool
-	Gravity     darp.Gravity
+	Gravity     argus.Gravity
 	Countstop   bool
 	Sendnotify  bool
-	Severity    argus.Status
 	// notify, web, acl, graph
 }
 
 var defaults = Conf{
 	Overridable: true,
 	Siren:       true,
-	Gravity:     darp.GRAV_DN,
-	Severity:    argus.CRITICAL,
+	Gravity:     argus.GRAV_DN,
 }
 
 type Persist struct {
 	Status          argus.Status
 	OvStatus        argus.Status
 	Override        *argus.Override
+	Result          string // not current, only as of the most recent transition
+	Reason          string
 	AncInOv         bool
 	Alarm           bool
 	OvStatusSummary [argus.MAXSTATUS + 1]int
 	Interesting     bool
 	TransTime       int64
 	SirenTime       int64
+	Culprit         string
+	Stats           Stats
+	Log             []*Log
 }
 
 type M struct {
@@ -74,10 +79,11 @@ type M struct {
 	Parent   []*M
 	Children []*M
 	Cf       Conf
-	p        Persist
-	config   *configure.CF
+	P        Persist
+	ConfCF   *configure.CF
 	Filename string
 	DirName  string
+	Depends  []string
 
 	// stats, logs, notif
 	// ov, anno
@@ -99,17 +105,18 @@ func New(me Moneler, parent *M) *M {
 
 func (m *M) Config(conf *configure.CF) error {
 
+	m.ConfCF = conf
 	conf.InitFromConfig(&m.Cf, "monel", "")
-
-	m.whoami()
-
-	if _, exist := byname[m.Cf.Unique]; exist {
-		return fmt.Errorf("Duplicate object '%s'", m.Cf.Unique)
-	}
 
 	err := m.Me.Config(conf)
 	if err != nil {
 		return err
+	}
+
+	m.whoami()
+
+	if Find(m.Cf.Unique) != nil {
+		return fmt.Errorf("Duplicate object '%s' (%s)", m.Cf.Unique, conf.Type)
 	}
 
 	m.Restore()
@@ -127,31 +134,69 @@ func (m *M) Init() {
 		m.Parent[0].AddChild(m)
 	}
 
+	lock.Lock()
 	byname[m.Cf.Unique] = m
+	lock.Unlock()
 
 	m.Me.Init()
 }
 
-func (m *M) DoneConfiguring() {
+func (m *M) Status() (argus.Status, argus.Status) {
+	m.Lock.RLock()
+	defer m.Lock.RUnlock()
+	return m.P.Status, m.P.OvStatus
+}
+
+func (m *M) DoneConfig() {
+
+	for _, child := range m.Children {
+		child.DoneConfig()
+	}
+
+	m.Me.DoneConfig()
+	m.ConfCF.DrainCache()
+	m.sortChildren()
+
+	// resolve_depends
+	// determine interestingness
+
 	// recalc:
 	// ovstatus
 	// ovstatussummary
 	// sort children
+
+	m.determineStatus()
+
+}
+
+func (m *M) sortChildren() {
+
+	if !m.Cf.Sort {
+		return
+	}
+
+	// RSN - ...
 }
 
 func (m *M) AddChild(n *M) {
+	m.Lock.Lock()
+	defer m.Lock.Unlock()
 	m.Children = append(m.Children, n)
 }
 func (m *M) AddParent(n *M) {
+	m.Lock.Lock()
+	defer m.Lock.Unlock()
 	m.Parent = append(m.Parent, n)
-}
-
-func (m *M) Update(status argus.Status) {
-
 }
 
 func (m *M) Unique() string {
 	return m.Cf.Unique
+}
+
+func Find(name string) *M {
+	lock.RLock()
+	defer lock.RUnlock()
+	return byname[name]
 }
 
 func (m *M) whoami() {
@@ -179,7 +224,6 @@ func (m *M) whoami() {
 func (m *M) Pathname(pre, suf string) string {
 
 	return m.DirName + "/" + pre + m.Filename + suf
-
 }
 
 func cleanName(n string) string {
@@ -211,10 +255,15 @@ func (m *M) Debug(text string, args ...interface{}) {
 	}
 }
 
-func (m *M) Loggit(text string, args ...interface{}) {
+func (m *M) Loggit(tag string, msg string) {
+	m.Lock.Lock()
+	defer m.Lock.Unlock()
+	m.loggitL(tag, msg)
+}
 
-	msg := fmt.Sprintf(text, args...)
-	diag.Verbose("%s %s", m.Cf.Unique, msg)
+func (m *M) loggitL(tag string, msg string) {
 
-	// RSN append m.log
+	diag.Verbose("%s %s %s", m.Cf.Unique, tag, msg)
+	m.appendToLog(tag, msg)
+
 }

@@ -8,14 +8,14 @@ package argus
 type Status int
 
 const (
-	CLEAR    Status = 0
-	WARNING  Status = 1
-	MINOR    Status = 2
-	MAJOR    Status = 3
-	CRITICAL Status = 4
-	OVERRIDE Status = 5
-	DEPENDS  Status = 6
-	UNKNOWN  Status = 7
+	UNKNOWN  Status = 0
+	CLEAR    Status = 1
+	WARNING  Status = 2
+	MINOR    Status = 3
+	MAJOR    Status = 4
+	CRITICAL Status = 5
+	OVERRIDE Status = 6
+	DEPENDS  Status = 7
 
 	MAXSTATUS Status = 7
 )
@@ -37,7 +37,7 @@ var conf = []colors{
 	UNKNOWN:  {"BB44EE", "DD99FF", ""},       // purple
 }
 var statusname = []string{
-	"clear", "warning", "minor", "major", "critical", "override", "depends", "unknown",
+	"unknown", "clear", "warning", "minor", "major", "critical", "override", "depends",
 }
 
 func (s Status) String() string {
