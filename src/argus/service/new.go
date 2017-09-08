@@ -35,7 +35,7 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 
 	// override monel.defaults
 	if parent != nil {
-		parent.Cf.Sendnotify = true
+		parent.Cf.Sendnotify[int(argus.UNKNOWN)] = argus.ScheduleAlwaysYes
 		parent.Cf.Countstop = true
 	}
 
@@ -87,6 +87,7 @@ func (s *Service) Init() error {
 		return err
 	}
 
+	// QQQ - or wait until DoneConfig?
 	s.sched = sched.New(&sched.Conf{
 		Freq: s.cf.Frequency,
 		Auto: true,

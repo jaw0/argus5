@@ -12,20 +12,24 @@ import (
 )
 
 type D struct {
+	Value bool
+	Osc   int
+	count int
 }
 
 func init() {
 	// register with service factory
-	service.Register("Force/UP", New)
+	service.Register("Force", New)
 }
 
 func New() service.Monitor {
-	return &D{}
+	return &D{Value: true}
 }
 
 func (d *D) Config(conf *configure.CF, s *service.Service) error {
 
-	s.SName = "Force/UP"
+	s.SetNames("Force", "UP", "Forcey McForceFace")
+	conf.InitFromConfig(d, "force", "")
 	return nil
 }
 
@@ -38,7 +42,22 @@ func (d *D) Recycle() {
 
 func (d *D) Start(s *service.Service) {
 
-	s.SetResult(argus.CLEAR, "1", "OK")
+	if d.Osc > 0 {
+		d.count = (d.count + 1) % d.Osc
+
+		if d.count > d.Osc/2 {
+			s.SetResult(argus.CRITICAL, "0", "OHNOS")
+		} else {
+			s.SetResult(argus.CLEAR, "1", "OK")
+		}
+	} else if d.Value {
+		s.SetResult(argus.CLEAR, "1", "OK")
+
+	} else {
+		s.SetResult(argus.CRITICAL, "0", "OHNOS")
+
+	}
+
 	s.Done()
 }
 

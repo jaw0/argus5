@@ -33,7 +33,8 @@ func readSchedule(f *Files, cf *configure.CF, spec string) bool {
 	if end == delim {
 		end = len(spec) - 1
 	}
-	name := "schedule_" + strings.Trim(spec[delim:end], " \t")
+	// name := "schedule_" + strings.Trim(spec[delim:end], " \t")
+	name := strings.Trim(spec[delim:end], " \t")
 
 	for {
 		l, ok := f.NextLine()

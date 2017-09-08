@@ -12,6 +12,7 @@ import (
 	"argus/configure"
 	"argus/diag"
 	"argus/monel"
+	"argus/notify"
 )
 
 type readConf struct {
@@ -46,8 +47,10 @@ func ReadConfig(file string) {
 	top := Make(cf, nil)
 	readConfigs(f, top, cf, "top")
 	dl.Debug("done %v", f)
-	// RSN - check typos, resolve_alii
 
+	notify.Configure(cf)
+	// other.Configure(cf)
+	// RSN - CheckTypos
 	top.DoneConfig()
 }
 

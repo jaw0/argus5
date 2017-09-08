@@ -25,7 +25,7 @@ func AggrStatus(gravity Gravity, mystatus argus.Status, statuses map[string]argu
 		return mystatus
 	}
 
-	var darps map[string]bool // XXX
+	darps := map[string]bool{"local": true} // XXX
 
 	return CalcAggrStatus(gravity, mystatus, statuses, darps)
 }
@@ -72,7 +72,7 @@ func CalcAggrStatus(gravity Gravity, mystatus argus.Status,
 		return argus.CLEAR
 
 	case GRAV_VOTE, GRAV_IETF:
-		lim := nstatus / 2
+		lim := (nstatus + 1) / 2
 		cum := 0
 
 		for i := argus.CLEAR; i <= argus.CRITICAL; i++ {

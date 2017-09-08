@@ -18,5 +18,8 @@ var gravityname = []string{
 }
 
 func (g Gravity) String() string {
+	if g < GRAV_UP || g > GRAV_VOTE {
+		return "invalid"
+	}
 	return gravityname[int(g)]
 }

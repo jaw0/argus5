@@ -11,6 +11,7 @@ import (
 	"argus/alias"
 	"argus/group"
 	"argus/monel"
+	"argus/notify"
 	"argus/service"
 )
 
@@ -44,6 +45,11 @@ func Make(cf *configure.CF, parent *monel.M) *monel.M {
 		}
 		return a
 	case "method":
+		err := notify.NewMethod(cf)
+		if err != nil {
+			cf.Error("%v", err)
+		}
+
 	case "snmpoid":
 
 	default:

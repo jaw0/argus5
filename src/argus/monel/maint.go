@@ -14,10 +14,7 @@ var monelCron = sched.NewFunc(&sched.Conf{
 	Phase: 3600,
 	Auto:  true,
 	Text:  "MonEl Maint",
-}, cronjobHourly)
-
-func cronjobHourly() {
-
+}, func() {
 	lock.RLock()
 	defer lock.RUnlock()
 
@@ -25,4 +22,4 @@ func cronjobHourly() {
 		m.StatsPeriodic()
 		m.Persist()
 	}
-}
+})

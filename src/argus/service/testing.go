@@ -72,42 +72,50 @@ func (s *Service) testAndCompare(val string, fval float64, valtype string) (argu
 		fmt.Sscan(val, &fval)
 	}
 
-	for sev := argus.CRITICAL; sev > argus.CLEAR; sev-- {
+	for sev := argus.CRITICAL; sev >= argus.UNKNOWN; sev-- {
+
+		rsev := sev
+		if sev == argus.CLEAR {
+			continue
+		}
+		if sev == argus.UNKNOWN {
+			rsev = s.cf.Severity
+		}
 
 		if s.cf.Expect[sev] != "" {
 			if !testMatch(s.cf.Expect[sev], val) {
-				return sev, "TEST did not match expected regex"
+				return rsev, "TEST did not match expected regex"
 			}
 		}
 		if s.cf.Nexpect[sev] != "" {
 			if testMatch(s.cf.Nexpect[sev], val) {
-				return sev, "TEST did matched unexpected regex"
+				return rsev, "TEST did matched unexpected regex"
 			}
 		}
 		if !math.IsNaN(s.cf.Minvalue[sev]) {
 			if fval < s.cf.Minvalue[sev] {
-				return sev, "TEST less than min"
+				return rsev, "TEST less than min"
 			}
 		}
 		if !math.IsNaN(s.cf.Maxvalue[sev]) {
 			if fval > s.cf.Maxvalue[sev] {
-				return sev, "TEST more than max"
+				return rsev, "TEST more than max"
 			}
 		}
 		if !math.IsNaN(s.cf.Eqvalue[sev]) {
 			if fval != s.cf.Eqvalue[sev] {
-				return sev, "TEST not equal"
+				return rsev, "TEST not equal"
 			}
 		}
 		if !math.IsNaN(s.cf.Nevalue[sev]) {
 			if fval == s.cf.Nevalue[sev] {
-				return sev, "TEST equal"
+				return rsev, "TEST equal"
 			}
 		}
 		if s.p.Hwab != nil && !math.IsNaN(s.cf.Maxdeviation[sev]) {
 			dev, ok := s.p.Hwab.Deviation(fval)
 			if ok && dev > s.cf.Maxdeviation[sev] {
-				return sev, "TEST outside of predicted range"
+				return rsev, "TEST outside of predicted range"
 			}
 		}
 	}

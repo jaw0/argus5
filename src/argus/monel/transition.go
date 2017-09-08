@@ -8,11 +8,13 @@ package monel
 import (
 	"argus/argus"
 	"argus/clock"
+	"argus/notify"
 )
 
 // m is a service updating status
 func (m *M) Update(status argus.Status, result string, reason string) {
 
+	m.Debug("mon/update %s -> %s", m.P.Status, status)
 	m.Lock.Lock()
 	defer m.Lock.Unlock()
 	prev := m.P.OvStatus
@@ -55,18 +57,23 @@ func (m *M) UpUpdate(by *M) {
 
 func (m *M) commonUpdate(prevOv argus.Status) {
 
-	// ov status summary
 	m.setAlarm()
 	m.loggitL("TRANSITION", m.P.Reason)
+	dl.Verbose("TRANSITION [%s -> %s] %s (%s)", prevOv, m.P.OvStatus, m.Cf.Unique, m.P.Reason)
 	m.statsTransition(prevOv)
+	m.determineSummary()
+	m.updateNotifies()
 	m.maybeNotify(prevOv)
+
+	// RSN - audit hook
+	// if up + ov + auto -> remove
+	// if up + notify + autoack -> ack
 
 	m.andUpwards()
 }
 
 func (m *M) andUpwards() {
 
-	// or push to a channel?
 	// propagate upwards!
 	for _, parent := range m.Parent {
 		go parent.UpUpdate(m)
@@ -79,7 +86,75 @@ func (m *M) andUpwards() {
 
 func (m *M) maybeNotify(prevOv argus.Status) {
 
-	// anc_in_ov
+	st := m.P.OvStatus
+	if prevOv == argus.UNKNOWN && st == argus.CLEAR {
+		return
+	}
+	if st == argus.OVERRIDE || st == argus.DEPENDS || st == argus.UNKNOWN {
+		return
+	}
+	if st == argus.CLEAR && (prevOv == argus.OVERRIDE || prevOv == argus.DEPENDS) {
+		// do not notify if we went from override/depends -> up
+		return
+	}
+	if m.P.AncInOv {
+		// do not notify if an ancestor is in override
+		return
+	}
+
+	if m.permitNotify(st) {
+		return
+	}
+
+	// ...
+
+	notif := notify.New(&notify.NewConf{
+		Unique:       m.Cf.Unique,
+		FriendlyName: m.Cf.Friendlyname,
+		ShortName:    m.Cf.Label,
+		Conf:         m.NotifyCf,
+		Reason:       m.P.Reason,
+		Result:       m.P.Result,
+		OvStatus:     st,
+		PrevOv:       prevOv,
+	})
+
+	if notif != nil {
+		m.Notifies = append(m.Notifies, notif)
+	}
+
+	m.Debug("send notify")
+}
+
+// tell existing notifications that the status changed
+func (m *M) updateNotifies() {
+
+	for _, n := range m.Notifies {
+		n.Update(m.P.OvStatus)
+	}
+}
+
+func (m *M) permitNotify(status argus.Status) bool {
+
+	if m.Cf.Sendnotify[int(status)] != nil {
+		return m.Cf.Sendnotify[int(status)].PermitNow()
+	}
+	if m.Cf.Sendnotify[int(argus.UNKNOWN)] != nil {
+		return m.Cf.Sendnotify[int(argus.UNKNOWN)].PermitNow()
+	}
+	return false
+}
+
+func (m *M) notifyWhom(status argus.Status) string {
+
+	if m.NotifyCf.Notify[int(status)] != nil {
+		return m.NotifyCf.Notify[int(status)].ResultNow()
+	}
+	if m.NotifyCf.Notify[int(argus.UNKNOWN)] != nil {
+		return m.NotifyCf.Notify[int(argus.UNKNOWN)].ResultNow()
+	}
+
+	return ""
 }
 
 func (m *M) setAlarm() {
@@ -109,13 +184,12 @@ func (m *M) determineStatus() bool {
 	m.checkDepends()
 	m.checkOverride()
 
-	return m.P.OvStatus == prevo
+	return m.P.OvStatus != prevo
 }
 
 func (m *M) checkOverride() {
 
 	if m.P.Status == argus.CLEAR || m.P.Status == argus.UNKNOWN {
-		// do we need to remove?
 		return
 	}
 	if m.P.OvStatus == argus.DEPENDS {
@@ -132,6 +206,7 @@ func (m *M) checkOverride() {
 func (m *M) determineAggrStatus() {
 
 	if len(m.Children) == 0 {
+		m.P.OvStatus = m.P.Status
 		return
 	}
 
@@ -174,7 +249,7 @@ func calcAggrStatus(grav argus.Gravity, tot int, max argus.Status, statuses []in
 		}
 		return argus.CLEAR
 	default:
-		lim := tot / 2
+		lim := (tot + 1) / 2
 		cum := 0
 		for sev := argus.CLEAR; sev <= max; sev++ {
 			cum += statuses[int(sev)]
@@ -185,4 +260,31 @@ func calcAggrStatus(grav argus.Gravity, tot int, max argus.Status, statuses []in
 	}
 
 	return argus.UNKNOWN
+}
+
+func (m *M) determineSummary() {
+
+	for i := 0; i <= int(argus.MAXSTATUS); i++ {
+		// reset to 0
+		m.P.OvStatusSummary[i] = 0
+	}
+
+	if len(m.Children) == 0 || m.Cf.Countstop {
+		m.P.OvStatusSummary[int(m.P.OvStatus)] = 1
+		return
+	}
+
+	// do this on the web side, instead
+	//if m.P.Override != nil {
+	//	m.P.OvStatusSummary[int(argus.OVERRIDE)] = len(m.Children)
+	//	return
+	//}
+
+	for _, child := range m.Children {
+		child.Lock.RLock()
+		for i := 0; i <= int(argus.MAXSTATUS); i++ {
+			m.P.OvStatusSummary[i] += child.P.OvStatusSummary[i]
+		}
+		child.Lock.RUnlock()
+	}
 }

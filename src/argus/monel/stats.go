@@ -14,17 +14,17 @@ import (
 
 // in unix time, seconds
 type statDat struct {
-	start   int64
-	elapsed int
-	ndown   int
-	statt   [argus.MAXSTATUS + 1]int
+	Start   int64
+	Elapsed int
+	Ndown   int
+	Statt   [argus.MAXSTATUS + 1]int
 }
 type Stats struct {
-	lastt   int64
-	status  argus.Status
-	daily   []statDat
-	monthly []statDat
-	yearly  []statDat
+	Lastt   int64
+	Status  argus.Status
+	Daily   []statDat
+	Monthly []statDat
+	Yearly  []statDat
 }
 
 type Log struct {
@@ -53,6 +53,19 @@ func (m *M) appendToLog(tag, msg string) {
 
 func (m *M) statsInit() {
 
+	s := &m.P.Stats
+	now := clock.Unix()
+
+	if len(s.Daily) == 0 {
+		s.Daily = []statDat{{Start: now}}
+	}
+	if len(s.Monthly) == 0 {
+		s.Monthly = []statDat{{Start: now}}
+	}
+	if len(s.Yearly) == 0 {
+		s.Yearly = []statDat{{Start: now}}
+	}
+
 }
 
 func (m *M) statsTransition(prev argus.Status) {
@@ -63,39 +76,39 @@ func (m *M) statsTransition(prev argus.Status) {
 		return
 	}
 
-	s := m.P.Stats
+	s := &m.P.Stats
 	if prev == argus.CLEAR {
-		s.daily[0].ndown++
-		s.monthly[0].ndown++
-		s.yearly[0].ndown++
+		s.Daily[0].Ndown++
+		s.Monthly[0].Ndown++
+		s.Yearly[0].Ndown++
 	}
 
-	s.status = m.P.OvStatus
+	s.Status = m.P.OvStatus
 }
 
 func (m *M) statsUpdate(t int64) {
 
-	s := m.P.Stats
-	dt := int(t - s.lastt)
+	s := &m.P.Stats
+	dt := int(t - s.Lastt)
 	if dt == 0 {
 		return
 	}
 
-	s.daily[0].elapsed += dt
-	s.daily[0].statt[s.status] += dt
-	s.monthly[0].elapsed += dt
-	s.monthly[0].statt[s.status] += dt
-	s.yearly[0].elapsed += dt
-	s.yearly[0].statt[s.status] += dt
+	s.Daily[0].Elapsed += dt
+	s.Daily[0].Statt[s.Status] += dt
+	s.Monthly[0].Elapsed += dt
+	s.Monthly[0].Statt[s.Status] += dt
+	s.Yearly[0].Elapsed += dt
+	s.Yearly[0].Statt[s.Status] += dt
 
-	s.lastt = t
+	s.Lastt = t
 }
 
 func (m *M) statsUpdateMaybeRoll() {
 
 	now := clock.Unix()
-	s := m.P.Stats
-	lt := time.Unix(s.lastt, 0).Local()
+	s := &m.P.Stats
+	lt := time.Unix(s.Lastt, 0).Local()
 	ct := time.Unix(now, 0).Local()
 
 	if lt.Day() != ct.Day() {
@@ -115,16 +128,16 @@ func (m *M) statsUpdateMaybeRoll() {
 
 func (m *M) statsRollOver(ct time.Time, lt time.Time, midnite int64) {
 
-	m.P.Stats.daily = statsRollOverStat(m.P.Stats.daily, midnite)
+	m.P.Stats.Daily = statsRollOverStat(m.P.Stats.Daily, midnite)
 
 	cy, cm, _ := ct.Date()
 	ly, lm, _ := lt.Date()
 
 	if cm != lm {
-		m.P.Stats.monthly = statsRollOverStat(m.P.Stats.monthly, midnite)
+		m.P.Stats.Monthly = statsRollOverStat(m.P.Stats.Monthly, midnite)
 	}
 	if cy != ly {
-		m.P.Stats.yearly = statsRollOverStat(m.P.Stats.yearly, midnite)
+		m.P.Stats.Yearly = statsRollOverStat(m.P.Stats.Yearly, midnite)
 	}
 }
 
@@ -132,7 +145,7 @@ func statsRollOverStat(s []statDat, t int64) []statDat {
 
 	s = append(s, statDat{})
 	copy(s[1:], s) // slide right
-	s[0] = statDat{start: t}
+	s[0] = statDat{Start: t}
 
 	if len(s) > MAXSTAT {
 		s = s[:MAXSTAT]

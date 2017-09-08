@@ -20,6 +20,12 @@ type Schedule struct {
 	sched []scheduleItem
 }
 
+var ScheduleAlwaysYes = &Schedule{[]scheduleItem{{-1, 0, 0, "yes"}}}
+
+func ScheduleAlways(val string) *Schedule {
+	return &Schedule{[]scheduleItem{{-1, 0, 0, val}}}
+}
+
 func (s *Schedule) ResultNow() string {
 
 	now := time.Now()

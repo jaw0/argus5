@@ -121,16 +121,38 @@ func (d *Diag) Fatal(format string, args ...interface{}) {
 // ################################################################
 
 func Verbose(format string, args ...interface{}) {
-	defaultDiag.Verbose(format, args...)
+	diag(logconf{
+		logprio:   syslog.LOG_INFO,
+		to_stderr: true,
+	}, defaultDiag, format, args)
 }
 func Problem(format string, args ...interface{}) {
-	defaultDiag.Problem(format, args...)
+	diag(logconf{
+		logprio:   syslog.LOG_WARNING,
+		to_stderr: true,
+		to_email:  true,
+		with_info: true,
+	}, defaultDiag, format, args)
 }
 func Bug(format string, args ...interface{}) {
-	defaultDiag.Bug(format, args...)
+	diag(logconf{
+		logprio:    syslog.LOG_ERR,
+		to_stderr:  true,
+		to_email:   true,
+		with_info:  true,
+		with_trace: true,
+	}, defaultDiag, format, args)
 }
 func Fatal(format string, args ...interface{}) {
-	defaultDiag.Fatal(format, args...)
+	diag(logconf{
+		logprio:    syslog.LOG_ERR,
+		to_stderr:  true,
+		to_email:   true,
+		with_info:  true,
+		with_trace: true,
+	}, defaultDiag, format, args)
+
+	os.Exit(-1)
 }
 
 // ################################################################

@@ -43,6 +43,8 @@ func (a *Alias) Config(conf *configure.CF) error {
 		return errors.New("invalid alias - target not specified")
 	}
 
+	a.mon.SetNames(a.AName, a.AName, a.AName)
+
 	return nil
 }
 
@@ -58,13 +60,6 @@ func (a *Alias) DoneConfig() {
 // destruction
 func (a *Alias) Recycle() {
 
-}
-
-func (a *Alias) Name() string {
-	return a.AName
-}
-func (a *Alias) FriendlyName() string {
-	return ""
 }
 
 func (a *Alias) Persist(pm map[string]interface{}) {

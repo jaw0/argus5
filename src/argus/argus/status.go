@@ -41,7 +41,11 @@ var statusname = []string{
 }
 
 func (s Status) String() string {
-	return statusname[s]
+
+	if s < UNKNOWN || s > MAXSTATUS {
+		return "invalid"
+	}
+	return statusname[int(s)]
 }
 
 func (s Status) ColorFG() string {

@@ -35,6 +35,7 @@ func (g *Group) Config(conf *configure.CF) error {
 	//conf.InitFromConfig(&g.cf, "group", "")
 
 	g.GName = conf.Name
+	g.mon.SetNames(g.GName, g.GName, g.GName)
 
 	return nil
 }
@@ -51,13 +52,6 @@ func (g *Group) DoneConfig() {
 // destruction
 func (g *Group) Recycle() {
 
-}
-
-func (g *Group) Name() string {
-	return g.GName
-}
-func (g *Group) FriendlyName() string {
-	return ""
 }
 
 func (g *Group) Persist(pm map[string]interface{}) {

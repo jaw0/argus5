@@ -20,15 +20,21 @@ func (m *M) Persist() {
 
 	dat := make(map[string]interface{})
 
+	cf := config.Cf()
+	if cf.Datadir == "" {
+		return
+	}
+	file := cf.Datadir + "/stats/" + m.Pathname("", "")
+	temp := file + ".tmp"
+
+	m.StatsPeriodic()
+
 	m.Lock.RLock()
 	m.persist(dat)
 	m.Me.Persist(dat)
 	js, _ := json.Marshal(dat)
 	m.Lock.RUnlock()
 
-	cf := config.Cf()
-	file := cf.Datadir + "/stats/" + m.Pathname("", "")
-	temp := file + ".tmp"
 	dl.Debug("persisting to '%s'", file)
 
 	fd, err := os.Create(temp)
@@ -45,6 +51,9 @@ func (m *M) Persist() {
 func (m *M) Restore() {
 
 	cf := config.Cf()
+	if cf.Datadir == "" {
+		return
+	}
 	file := cf.Datadir + "/stats/" + m.Pathname("", "")
 	dl.Debug("restoring from '%s'", file)
 

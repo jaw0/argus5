@@ -83,6 +83,7 @@ func (cf *CF) InitFromConfig(dst interface{}, section string, prefix string) {
 // configure thing.severity -> thing[sev]
 func (cf *CF) initDotSev(name string, v reflect.Value) {
 
+	dl.Debug("dot sev %s", name)
 	for sev := argus.CLEAR; sev <= argus.CRITICAL; sev++ {
 
 		if int(sev) >= v.Len() {
@@ -93,6 +94,8 @@ func (cf *CF) initDotSev(name string, v reflect.Value) {
 
 		cf.setValue(v.Index(int(sev)), "", fname)
 	}
+
+	cf.setValue(v.Index(int(argus.UNKNOWN)), "", name)
 }
 
 func (cf *CF) setValue(v reflect.Value, conv string, name string) {
@@ -108,7 +111,7 @@ func (cf *CF) setValue(v reflect.Value, conv string, name string) {
 
 	pkind := v.Type().String()
 
-	dl.Debug("name %s conv %s type %s = %s", name, conv, pkind, cval)
+	dl.Debug("name '%s' conv '%s' type '%s' = %s", name, conv, pkind, cval)
 
 	switch cval := cval.(type) {
 	case string:
@@ -139,6 +142,10 @@ func (cf *CF) setValue(v reflect.Value, conv string, name string) {
 			v.SetInt(int64(statusValue(cval)))
 		case "darp.Gravity", "argus.Gravity":
 			v.SetInt(int64(gravityValue(cval)))
+		case "*argus.Schedule":
+			// convert string to always schedule
+			v.Set(reflect.ValueOf(argus.ScheduleAlways(cval)))
+
 		default:
 			diag.Problem("BUG? cannot configure field '%s', type '%s'", name, pkind)
 		}
@@ -158,6 +165,9 @@ func (cf *CF) setValue(v reflect.Value, conv string, name string) {
 
 func (cf *CF) Error(e string, args ...interface{}) {
 	argus.ConfigError(cf.File, cf.Line, e, args...)
+}
+func (cf *CF) Warning(e string, args ...interface{}) {
+	argus.ConfigWarning(cf.File, cf.Line, e, args...)
 }
 
 func (cf *CF) Get(name string) *CFV {
@@ -193,4 +203,14 @@ func (cf *CF) iGet(name string, ui bool) *CFV {
 func (cf *CF) DrainCache() {
 	cf.cache = nil
 
+}
+
+func (cf *CF) CheckTypos() {
+
+	for key, cfv := range cf.Param {
+		if cfv.Used {
+			continue
+		}
+		argus.ConfigWarning(cf.File, cfv.Line, "unused parameter '%s' - typo?", key)
+	}
 }

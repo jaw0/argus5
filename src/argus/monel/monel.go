@@ -12,6 +12,7 @@ import (
 	"argus/argus"
 	"argus/configure"
 	"argus/diag"
+	"argus/notify"
 )
 
 var dl = diag.Logger("monel")
@@ -26,27 +27,27 @@ type Moneler interface {
 	Config(*configure.CF) error
 	Init() error
 	DoneConfig()
-	Name() string
-	FriendlyName() string
 }
 
 type Conf struct {
-	Uname       string
-	Unique      string
-	Sort        bool
-	Overridable bool
-	Note        string
-	Info        string
-	Details     string
-	Comment     string
-	Debug       bool
-	Passive     bool
-	Depends     string
-	Siren       bool
-	Nostatus    bool
-	Gravity     argus.Gravity
-	Countstop   bool
-	Sendnotify  bool
+	Uname        string
+	Unique       string
+	Label        string
+	Friendlyname string
+	Sort         bool
+	Overridable  bool
+	Note         string
+	Info         string
+	Details      string
+	Comment      string
+	Debug        bool
+	Passive      bool
+	Depends      string
+	Siren        bool
+	Nostatus     bool
+	Gravity      argus.Gravity
+	Countstop    bool
+	Sendnotify   [argus.CRITICAL + 1]*argus.Schedule `cfconv:"dotsev"`
 	// notify, web, acl, graph
 }
 
@@ -60,6 +61,7 @@ type Persist struct {
 	Status          argus.Status
 	OvStatus        argus.Status
 	Override        *argus.Override
+	Annotation      string
 	Result          string // not current, only as of the most recent transition
 	Reason          string
 	AncInOv         bool
@@ -71,22 +73,25 @@ type Persist struct {
 	Culprit         string
 	Stats           Stats
 	Log             []*Log
+	// notif
 }
 
 type M struct {
-	Me       Moneler
-	Lock     sync.RWMutex
-	Parent   []*M
-	Children []*M
-	Cf       Conf
-	P        Persist
-	ConfCF   *configure.CF
-	Filename string
-	DirName  string
-	Depends  []string
-
-	// stats, logs, notif
-	// ov, anno
+	Me           Moneler
+	Lock         sync.RWMutex
+	Parent       []*M
+	Children     []*M
+	Cf           Conf
+	NotifyCf     *notify.Conf
+	P            Persist
+	ConfCF       *configure.CF
+	Filename     string
+	DirName      string
+	Uname        string // default set by subclass, conf overrides
+	Label        string // ""
+	Friendlyname string // ""
+	Depends      []string
+	Notifies     []*notify.N
 }
 
 func New(me Moneler, parent *M) *M {
@@ -103,10 +108,17 @@ func New(me Moneler, parent *M) *M {
 	return m
 }
 
+func (m *M) SetNames(uname string, label string, friendly string) {
+	m.Uname = uname
+	m.Label = label
+	m.Friendlyname = friendly
+}
+
 func (m *M) Config(conf *configure.CF) error {
 
 	m.ConfCF = conf
 	conf.InitFromConfig(&m.Cf, "monel", "")
+	m.configureNotify(conf)
 
 	err := m.Me.Config(conf)
 	if err != nil {
@@ -128,17 +140,37 @@ func (m *M) Config(conf *configure.CF) error {
 
 func (m *M) Init() {
 
-	// RSN - init...
+	m.statsInit()
 
 	if len(m.Parent) != 0 {
 		m.Parent[0].AddChild(m)
 	}
 
+	m.Me.Init()
+
 	lock.Lock()
 	byname[m.Cf.Unique] = m
 	lock.Unlock()
 
-	m.Me.Init()
+}
+
+func (m *M) configureNotify(conf *configure.CF) {
+	// only configure if sendnotify is set
+
+	confed := false
+	for i := 0; i < len(m.Cf.Sendnotify); i++ {
+		if m.Cf.Sendnotify[i] != nil {
+			confed = true
+		}
+	}
+
+	if !confed {
+		return
+	}
+
+	m.NotifyCf = &notify.Conf{}
+	// RSN - defaults
+	conf.InitFromConfig(&m.NotifyCf, "notify", "")
 }
 
 func (m *M) Status() (argus.Status, argus.Status) {
@@ -153,20 +185,15 @@ func (m *M) DoneConfig() {
 		child.DoneConfig()
 	}
 
-	m.Me.DoneConfig()
+	m.ConfCF.CheckTypos()
 	m.ConfCF.DrainCache()
 	m.sortChildren()
+	m.resolveDepends()
 
-	// resolve_depends
 	// determine interestingness
 
-	// recalc:
-	// ovstatus
-	// ovstatussummary
-	// sort children
-
+	m.Me.DoneConfig()
 	m.determineStatus()
-
 }
 
 func (m *M) sortChildren() {
@@ -206,7 +233,13 @@ func (m *M) whoami() {
 	}
 
 	if m.Cf.Uname == "" {
-		m.Cf.Uname = m.Me.Name()
+		m.Cf.Uname = m.Uname
+	}
+	if m.Cf.Label == "" {
+		m.Cf.Label = m.Label
+	}
+	if m.Cf.Friendlyname == "" {
+		m.Cf.Friendlyname = m.Friendlyname
 	}
 
 	name := ""
