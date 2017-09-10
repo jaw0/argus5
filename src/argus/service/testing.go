@@ -79,42 +79,42 @@ func (s *Service) testAndCompare(val string, fval float64, valtype string) (argu
 			continue
 		}
 		if sev == argus.UNKNOWN {
-			rsev = s.cf.Severity
+			rsev = s.Cf.Severity
 		}
 
-		if s.cf.Expect[sev] != "" {
-			if !testMatch(s.cf.Expect[sev], val) {
+		if s.Cf.Expect[sev] != "" {
+			if !testMatch(s.Cf.Expect[sev], val) {
 				return rsev, "TEST did not match expected regex"
 			}
 		}
-		if s.cf.Nexpect[sev] != "" {
-			if testMatch(s.cf.Nexpect[sev], val) {
+		if s.Cf.Nexpect[sev] != "" {
+			if testMatch(s.Cf.Nexpect[sev], val) {
 				return rsev, "TEST did matched unexpected regex"
 			}
 		}
-		if !math.IsNaN(s.cf.Minvalue[sev]) {
-			if fval < s.cf.Minvalue[sev] {
+		if !math.IsNaN(s.Cf.Minvalue[sev]) {
+			if fval < s.Cf.Minvalue[sev] {
 				return rsev, "TEST less than min"
 			}
 		}
-		if !math.IsNaN(s.cf.Maxvalue[sev]) {
-			if fval > s.cf.Maxvalue[sev] {
+		if !math.IsNaN(s.Cf.Maxvalue[sev]) {
+			if fval > s.Cf.Maxvalue[sev] {
 				return rsev, "TEST more than max"
 			}
 		}
-		if !math.IsNaN(s.cf.Eqvalue[sev]) {
-			if fval != s.cf.Eqvalue[sev] {
+		if !math.IsNaN(s.Cf.Eqvalue[sev]) {
+			if fval != s.Cf.Eqvalue[sev] {
 				return rsev, "TEST not equal"
 			}
 		}
-		if !math.IsNaN(s.cf.Nevalue[sev]) {
-			if fval == s.cf.Nevalue[sev] {
+		if !math.IsNaN(s.Cf.Nevalue[sev]) {
+			if fval == s.Cf.Nevalue[sev] {
 				return rsev, "TEST equal"
 			}
 		}
-		if s.p.Hwab != nil && !math.IsNaN(s.cf.Maxdeviation[sev]) {
+		if s.p.Hwab != nil && !math.IsNaN(s.Cf.Maxdeviation[sev]) {
 			dev, ok := s.p.Hwab.Deviation(fval)
-			if ok && dev > s.cf.Maxdeviation[sev] {
+			if ok && dev > s.Cf.Maxdeviation[sev] {
 				return rsev, "TEST outside of predicted range"
 			}
 		}
@@ -128,22 +128,22 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 	var fval float64
 	now := clock.Nano()
 
-	if s.cf.Pluck != "" {
-		val = pluck(s.cf.Pluck, val)
+	if s.Cf.Pluck != "" {
+		val = pluck(s.Cf.Pluck, val)
 		valtype = "string"
 	}
 
-	if s.cf.JPath != "" && valtype == "json" {
+	if s.Cf.JPath != "" && valtype == "json" {
 		var err error
-		val, err = jsonPath(s.cf.JPath, val)
+		val, err = jsonPath(s.Cf.JPath, val)
 		if err != nil {
-			diag.Problem("invalid json/jsonpath '%s': %v", s.cf.JPath, err)
+			diag.Problem("invalid json/jsonpath '%s': %v", s.Cf.JPath, err)
 		}
 		valtype = "string"
 	}
 
-	if s.cf.Unpack != "" {
-		ival, ok := argus.Unpack(s.cf.Unpack, []byte(val))
+	if s.Cf.Unpack != "" {
+		ival, ok := argus.Unpack(s.Cf.Unpack, []byte(val))
 		if !ok {
 			diag.Problem("invalid unpack '%s'")
 		}
@@ -151,7 +151,7 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 		valtype = ""
 	}
 
-	if s.cf.Scale != 0 || s.cf.calcmask != 0 || s.cf.Expr != "" || s.p.Hwab != nil {
+	if s.Cf.Scale != 0 || s.Cf.calcmask != 0 || s.Cf.Expr != "" || s.p.Hwab != nil {
 		if valtype != "" {
 			// convert string -> float
 			fmt.Sscan(val, &fval)
@@ -159,49 +159,49 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 		}
 	}
 
-	if s.cf.Scale != 0 {
-		fval /= s.cf.Scale
+	if s.Cf.Scale != 0 {
+		fval /= s.Cf.Scale
 	}
 
-	if s.cf.calcmask&CALC_ONE != 0 {
+	if s.Cf.calcmask&CALC_ONE != 0 {
 		fval = 1
 	}
-	if s.cf.calcmask&CALC_ELAPSED != 0 {
+	if s.Cf.calcmask&CALC_ELAPSED != 0 {
 		fval = float64(now-s.Started) / 1e9
 	}
-	if s.cf.calcmask&(CALC_RATE|CALC_DELTA) != 0 {
+	if s.Cf.calcmask&(CALC_RATE|CALC_DELTA) != 0 {
 		var ok bool
-		fval, ok = s.rateCalc(s.cf.calcmask, fval)
+		fval, ok = s.rateCalc(s.Cf.calcmask, fval)
 		if !ok {
 			return "", 0, "skip"
 		}
 	}
-	if s.cf.calcmask&(CALC_AVE|CALC_JITTER) != 0 {
+	if s.Cf.calcmask&(CALC_AVE|CALC_JITTER) != 0 {
 		dt := float64(now-s.p.Calc.Lastta) / 1e9
 
-		if s.p.Calc.Lastta == 0 || dt > float64(s.cf.Frequency)*s.cf.Alpha*3 {
+		if s.p.Calc.Lastta == 0 || dt > float64(s.Cf.Frequency)*s.Cf.Alpha*3 {
 			// initial value
 			s.p.Calc.Ave = fval
 		}
 
-		fval = (s.cf.Alpha*s.p.Calc.Ave + fval) / (s.cf.Alpha + 1)
+		fval = (s.Cf.Alpha*s.p.Calc.Ave + fval) / (s.Cf.Alpha + 1)
 		pave := s.p.Calc.Ave
 		s.p.Calc.Ave = fval
 
-		if s.cf.calcmask&CALC_JITTER != 0 {
+		if s.Cf.calcmask&CALC_JITTER != 0 {
 			fval = math.Abs(pave - fval)
 		}
 		s.p.Calc.Lastta = now
 	}
-	if s.cf.calcmask&CALC_BITS != 0 {
+	if s.Cf.calcmask&CALC_BITS != 0 {
 		fval *= 8
 	}
 
-	if s.cf.Expr != "" {
+	if s.Cf.Expr != "" {
 		var err error
-		fval, err = doExpr(s.cf.Expr, fval)
+		fval, err = doExpr(s.Cf.Expr, fval)
 		if err != nil {
-			diag.Problem("invalid expr '%s': %v", s.cf.Expr, err)
+			diag.Problem("invalid expr '%s': %v", s.Cf.Expr, err)
 		}
 	}
 

@@ -6,6 +6,7 @@
 package tcp
 
 import (
+	"argus/argus"
 	"argus/configure"
 	"argus/diag"
 	"argus/service"
@@ -15,51 +16,74 @@ type Conf struct {
 	Hostname string
 	Port     int
 	Send     string
-	Expect   string
 	ReadHow  string
 	SSL      bool
 }
 
 type TCP struct {
-	cf Conf
+	Cf          Conf
+	MaybeExpect string
 }
+
+var dl = diag.Logger("tcp")
 
 func init() {
 	// register with service factory
-	diag.Verbose("tcp new")
 	service.Register("TCP", New)
 }
 
-func New() service.Monitor {
+func New(conf *configure.CF, s *service.Service) service.Monitor {
 	t := &TCP{}
-	t.InitNew()
+	t.InitNew(conf, s)
 	return t
 }
 
-func (t *TCP) InitNew() {
-	// ...
+func (t *TCP) InitNew(conf *configure.CF, s *service.Service) {
+
+	// set defaults from table
+	name := conf.Name
+	if len(name) < 4 {
+		return
+	}
+
+	proto := name[4:]
+	pdat, ok := tcpProtoTab[proto]
+	if !ok {
+		return
+	}
+
+	t.Cf.Port = pdat.Port
+	t.Cf.Send = pdat.Send
+	t.Cf.ReadHow = pdat.ReadHow
+	t.Cf.SSL = pdat.SSL
+	s.Cf.Expect[int(argus.UNKNOWN)] = pdat.Expect
 }
 
-func (d *TCP) Config(conf *configure.CF, s *service.Service) error {
+func (t *TCP) Config(conf *configure.CF, s *service.Service) error {
 
-	conf.InitFromConfig(&d.cf, "tcp", "")
-	diag.Verbose("tcp config")
+	conf.InitFromConfig(&t.Cf, "tcp", "")
+	// s.SetNames( )
+	dl.Debug("tcp config")
+
+	// validate
+	// set names
+
 	return nil
 }
 
-func (d *TCP) Init() error {
-	diag.Verbose("tcp init")
+func (t *TCP) Init() error {
+	//dl.Debug("tcp init: %#v", t)
 	return nil
 }
 
-func (d *TCP) Recycle() {
+func (t *TCP) Recycle() {
 }
 
-func (d *TCP) Start(s *service.Service) {
+func (t *TCP) Start(s *service.Service) {
 	//d.Debug("start tcp")
 	s.Done()
 }
 
-func (d *TCP) Abort() {
+func (t *TCP) Abort() {
 
 }

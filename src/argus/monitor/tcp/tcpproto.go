@@ -17,7 +17,7 @@ type tcpProtoConf struct {
 	SSL     bool
 }
 
-var tcpProtoTab = map[string]tcpProtoConf{
+var tcpProtoTab = map[string]*tcpProtoConf{
 
 	// not RFC compliant, but quiets sendmails logs
 	"SMTP":       {Port: 25, Send: "MAIL\r\n", Expect: "^220", ReadHow: "banner"},
@@ -39,6 +39,7 @@ var tcpProtoTab = map[string]tcpProtoConf{
 	"NNTPS":      {Port: 563, Expect: "^220", ReadHow: "banner"},
 	"Argus":      {Expect: "running", ReadHow: "banner"},
 	"SlimServer": {Port: 9090, Send: "version ?\r\n", Expect: "version", ReadHow: "banner"},
+	"Asterisk":   {Port: 9038, ReadHow: "toeof"}, // see also: monitor/asterisk/
 	"NFS": {Port: 2049, ReadHow: "once",
 		Send: hexdecode("800000280000304E0000000000000002000186A3000000020000000000000000000000000000000000000000")},
 	"NFSv3": {Port: 2049, ReadHow: "once",

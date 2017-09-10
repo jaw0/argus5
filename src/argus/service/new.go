@@ -26,10 +26,10 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 	}
 
 	s := &Service{}
-	s.cf = defaults
+	s.Cf = defaults
 	s.p.Statuses = make(map[string]argus.Status)
 	s.p.Results = make(map[string]string)
-	s.check = check()
+	s.check = check(conf, s)
 
 	s.mon = monel.New(s, parent)
 
@@ -38,7 +38,7 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 	s.mon.Cf.Countstop = true
 
 	// RSN - who am i?
-	s.cf.myid = "local"
+	s.Cf.myid = "local"
 
 	err := s.mon.Config(conf)
 	if err != nil {
@@ -50,11 +50,11 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 
 func (s *Service) Config(conf *configure.CF) error {
 
-	conf.InitFromConfig(&s.cf, "service", "")
+	conf.InitFromConfig(&s.Cf, "service", "")
 
 	hwab := false
 	for i := argus.CLEAR; i <= argus.CRITICAL; i++ {
-		if !math.IsNaN(s.cf.Maxdeviation[i]) {
+		if !math.IsNaN(s.Cf.Maxdeviation[i]) {
 			hwab = true
 		}
 	}
@@ -67,8 +67,8 @@ func (s *Service) Config(conf *configure.CF) error {
 		return err
 	}
 
-	if s.cf.Frequency == 0 {
-		s.cf.Frequency = 60
+	if s.Cf.Frequency == 0 {
+		s.Cf.Frequency = 60
 	}
 
 	return nil
@@ -87,7 +87,7 @@ func (s *Service) Init() error {
 
 	// QQQ - or wait until DoneConfig?
 	s.sched = sched.New(&sched.Conf{
-		Freq: s.cf.Frequency,
+		Freq: s.Cf.Frequency,
 		Auto: true,
 		Text: s.mon.Unique(),
 	}, s)
@@ -112,19 +112,19 @@ func (s *Service) Recycle() {
 
 type probeCf struct {
 	name      string
-	construct func() Monitor
+	construct func(*configure.CF, *Service) Monitor
 }
 
 var monitorProbe []probeCf
 
-func Register(name string, construct func() Monitor) {
+func Register(name string, construct func(*configure.CF, *Service) Monitor) {
 	monitorProbe = append(monitorProbe, probeCf{strings.ToLower(name), construct})
 }
 
-func probe(name string) func() Monitor {
+func probe(name string) func(*configure.CF, *Service) Monitor {
 
 	name = strings.ToLower(name)
-	var bestc func() Monitor
+	var bestc func(*configure.CF, *Service) Monitor
 	var bestl int
 
 	for i, _ := range monitorProbe {

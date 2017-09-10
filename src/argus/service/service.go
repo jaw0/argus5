@@ -89,7 +89,7 @@ type Persist struct {
 type Service struct {
 	mon      *monel.M
 	check    Monitor
-	cf       Conf
+	Cf       Conf
 	p        Persist
 	running  bool
 	sched    *sched.D
@@ -120,7 +120,7 @@ func (s *Service) SetNames(uname string, label string, friendly string) {
 func (s *Service) Start() {
 
 	if !s.tasRunning() {
-		if int(clock.Nano()-s.Started) > 5*s.cf.Timeout {
+		if int(clock.Nano()-s.Started) > 5*s.Cf.Timeout {
 			diag.Problem("%s - running too long. trying to abort", s.mon.Unique())
 			s.check.Abort()
 
@@ -164,7 +164,7 @@ func (s *Service) Done() {
 
 func (s *Service) SetResult(status argus.Status, result string, reason string) {
 
-	if s.cf.Checking != nil && !s.cf.Checking.PermitNow() {
+	if s.Cf.Checking != nil && !s.Cf.Checking.PermitNow() {
 		s.mon.Debug("checking bypassed by schedule")
 		status = argus.CLEAR
 	}
@@ -173,20 +173,20 @@ func (s *Service) SetResult(status argus.Status, result string, reason string) {
 	if status == argus.CLEAR {
 		s.Tries = 0
 	} else {
-		if s.Tries <= s.cf.Retries {
+		if s.Tries <= s.Cf.Retries {
 			s.mon.Debug("retrying (%d)", s.Tries)
-			// status = s.p.Statuses[s.cf.myid]
+			// status = s.p.Statuses[s.Cf.myid]
 			s.Tries++
 			return
 		}
 	}
 
-	if status != s.p.Statuses[s.cf.myid] {
+	if status != s.p.Statuses[s.Cf.myid] {
 		// RSN - send darp update to masters (status, result, reason)
 	}
 
 	// RSN - archive
-	s.SetResultFor(s.cf.myid, status, result, reason)
+	s.SetResultFor(s.Cf.myid, status, result, reason)
 }
 
 func (s *Service) SetResultFor(id string, status argus.Status, result string, reason string) {
@@ -206,21 +206,21 @@ func (s *Service) setResultForL(id string, status argus.Status, result string, r
 	defer s.mon.Lock.Unlock()
 
 	s.p.Results[id] = result
-	if id == s.cf.myid {
+	if id == s.Cf.myid {
 		s.p.Reason = reason
 	}
 
 	s.p.Statuses[id] = status
 
-	return darp.AggrStatus(s.cf.DARPGravity, status, s.p.Statuses)
+	return darp.AggrStatus(s.Cf.DARPGravity, status, s.p.Statuses)
 }
 
 func (s *Service) reschedule() {
 
-	if s.Tries != 0 && s.cf.Retrydelay != 0 {
-		s.sched.ReSchedule(s.cf.Retrydelay)
+	if s.Tries != 0 && s.Cf.Retrydelay != 0 {
+		s.sched.ReSchedule(s.Cf.Retrydelay)
 	} else {
-		s.sched.ReSchedule(s.cf.Frequency)
+		s.sched.ReSchedule(s.Cf.Frequency)
 	}
 }
 
@@ -234,7 +234,7 @@ func (s *Service) tasRunning() bool {
 	}
 
 	// RSN - check schedule, darp, ...
-	if s.cf.Testing != nil && !s.cf.Testing.PermitNow() {
+	if s.Cf.Testing != nil && !s.Cf.Testing.PermitNow() {
 		return false
 	}
 

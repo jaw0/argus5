@@ -61,7 +61,7 @@ func (s *Service) HwabConfig(conf *configure.CF) error {
 	h.cf = hwabdefaults
 	s.p.Hwab = h
 
-	conf.InitFromConfig(&s.cf, "service", "hwab_")
+	conf.InitFromConfig(&s.Cf, "service", "hwab_")
 
 	if h.cf.Period < PERIOD_MIN {
 		h.cf.Period = PERIOD_MIN

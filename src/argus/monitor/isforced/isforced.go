@@ -22,14 +22,14 @@ func init() {
 	service.Register("Force", New)
 }
 
-func New() service.Monitor {
+func New(conf *configure.CF, s *service.Service) service.Monitor {
 	return &D{Value: true}
 }
 
 func (d *D) Config(conf *configure.CF, s *service.Service) error {
 
-	s.SetNames("Force", "UP", "Testy McTestface")
 	conf.InitFromConfig(d, "force", "")
+	s.SetNames("Force", "UP", "Testy McTestface")
 	return nil
 }
 
