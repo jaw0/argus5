@@ -20,10 +20,10 @@ type Schedule struct {
 	sched []scheduleItem
 }
 
-var ScheduleAlwaysYes = &Schedule{[]scheduleItem{{-1, 0, 0, "yes"}}}
+var ScheduleAlwaysYes = &Schedule{[]scheduleItem{{-1, 0, 2400, "yes"}}}
 
 func ScheduleAlways(val string) *Schedule {
-	return &Schedule{[]scheduleItem{{-1, 0, 0, val}}}
+	return &Schedule{[]scheduleItem{{-1, 0, 2400, val}}}
 }
 
 func (s *Schedule) ResultNow() string {

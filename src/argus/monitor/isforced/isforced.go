@@ -28,7 +28,7 @@ func New() service.Monitor {
 
 func (d *D) Config(conf *configure.CF, s *service.Service) error {
 
-	s.SetNames("Force", "UP", "Forcey McForceFace")
+	s.SetNames("Force", "UP", "Testy McTestface")
 	conf.InitFromConfig(d, "force", "")
 	return nil
 }

@@ -34,10 +34,8 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 	s.mon = monel.New(s, parent)
 
 	// override monel.defaults
-	if parent != nil {
-		parent.Cf.Sendnotify[int(argus.UNKNOWN)] = argus.ScheduleAlwaysYes
-		parent.Cf.Countstop = true
-	}
+	s.mon.Cf.Sendnotify[int(argus.UNKNOWN)] = argus.ScheduleAlwaysYes
+	s.mon.Cf.Countstop = true
 
 	// RSN - who am i?
 	s.cf.myid = "local"

@@ -7,6 +7,7 @@ package notify
 
 import (
 	"fmt"
+	"strings"
 
 	"argus/argus"
 	"argus/configure"
@@ -26,7 +27,7 @@ var methods = map[string]*Method{
 		builtin: true,
 		Qtime:   300,
 		Command: "sendmail -t -f {{.MAILFROM}}",
-		Send:    "To: {{.MAILTO}}\nFrom: {{.MAILFROM}}\nSubject: {{.SUBJECT}}{{.ESCALATED}}\n\n{{.CONTENT}}\n",
+		Send:    "To: {{.MAILTO}}\nFrom: {{.MAILFROM}}\nSubject: {{.SUBJECT}}\n\n{{.CONTENT}}\n",
 	},
 	"qpage": &Method{
 		builtin: true,
@@ -51,4 +52,64 @@ func NewMethod(conf *configure.CF) error {
 	conf.CheckTypos()
 	methods[conf.Name] = m
 	return nil
+}
+
+func methodForDst(dst string) (*Method, string) {
+
+	f := strings.SplitN(dst, ":", 2)
+	if len(f) == 1 {
+		return methods["mail"], dst
+	}
+	return methods[f[0]], f[1]
+}
+
+// ################################################################
+
+// called with package lock held
+func (m *Method) transmit(dst string, addr string, notes []*N) {
+
+	// build content
+
+	subj := "Argus"
+	esced := false
+	joinWith := "\n"
+	msgs := []string{}
+
+	for _, n := range notes {
+		n.lock.RLock()
+		if n.p.OvStatus != argus.CLEAR {
+			subj = "Argus - DOWN"
+		}
+		if strings.IndexByte(n.p.MessageFmted, '\n') != -1 {
+			joinWith = "\n\n"
+		}
+		if n.p.Escalated {
+			esced = true
+		}
+		msgs = append(msgs, n.p.MessageFmted)
+		n.lock.RUnlock()
+	}
+
+	if esced {
+		subj = subj + " (Escalated)"
+	}
+
+	content := strings.Join(msgs, joinWith)
+
+	dat := map[string]interface{}{
+		"MAILFROM": globalDefaults.Mail_From,
+		"MAILTO":   addr,
+		"ADDR":     addr,
+		"SUBJECT":  subj,
+	}
+
+	// expand command + send
+	notes[0].lock.RLock()
+	command := notes[0].expand(m.Command, content, dat)
+	send := notes[0].expand(m.Send, content, dat)
+	notes[0].lock.RUnlock()
+
+	dl.Debug("cmd: %s; send %s", command, send)
+
+	runCommand(command, send)
 }

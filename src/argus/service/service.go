@@ -109,6 +109,10 @@ typical use:
 
 */
 
+func (s *Service) debug(fmt string, args ...interface{}) {
+	s.mon.Debug(fmt, args...)
+}
+
 func (s *Service) SetNames(uname string, label string, friendly string) {
 	s.mon.SetNames(uname, label, friendly)
 }

@@ -86,6 +86,10 @@ func (m *M) andUpwards() {
 
 func (m *M) maybeNotify(prevOv argus.Status) {
 
+	if m.NotifyCf == nil {
+		return
+	}
+
 	st := m.P.OvStatus
 	if prevOv == argus.UNKNOWN && st == argus.CLEAR {
 		return
@@ -102,11 +106,13 @@ func (m *M) maybeNotify(prevOv argus.Status) {
 		return
 	}
 
-	if m.permitNotify(st) {
+	if !m.permitNotify(st) {
 		return
 	}
 
 	// ...
+
+	m.Debug("send notify")
 
 	notif := notify.New(&notify.NewConf{
 		Unique:       m.Cf.Unique,
@@ -123,18 +129,22 @@ func (m *M) maybeNotify(prevOv argus.Status) {
 		m.Notifies = append(m.Notifies, notif)
 	}
 
-	m.Debug("send notify")
 }
 
 // tell existing notifications that the status changed
 func (m *M) updateNotifies() {
 
 	for _, n := range m.Notifies {
+		m.Debug("update notify")
 		n.Update(m.P.OvStatus)
 	}
 }
 
 func (m *M) permitNotify(status argus.Status) bool {
+
+	if int(status) >= len(m.Cf.Sendnotify) {
+		return false
+	}
 
 	if m.Cf.Sendnotify[int(status)] != nil {
 		return m.Cf.Sendnotify[int(status)].PermitNow()
@@ -143,18 +153,6 @@ func (m *M) permitNotify(status argus.Status) bool {
 		return m.Cf.Sendnotify[int(argus.UNKNOWN)].PermitNow()
 	}
 	return false
-}
-
-func (m *M) notifyWhom(status argus.Status) string {
-
-	if m.NotifyCf.Notify[int(status)] != nil {
-		return m.NotifyCf.Notify[int(status)].ResultNow()
-	}
-	if m.NotifyCf.Notify[int(argus.UNKNOWN)] != nil {
-		return m.NotifyCf.Notify[int(argus.UNKNOWN)].ResultNow()
-	}
-
-	return ""
 }
 
 func (m *M) setAlarm() {

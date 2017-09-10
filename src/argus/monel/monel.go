@@ -170,7 +170,7 @@ func (m *M) configureNotify(conf *configure.CF) {
 
 	m.NotifyCf = &notify.Conf{}
 	// RSN - defaults
-	conf.InitFromConfig(&m.NotifyCf, "notify", "")
+	conf.InitFromConfig(m.NotifyCf, "notify", "")
 }
 
 func (m *M) Status() (argus.Status, argus.Status) {

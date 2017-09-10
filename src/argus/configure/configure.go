@@ -118,7 +118,7 @@ func (cf *CF) setValue(v reflect.Value, conv string, name string) {
 		switch pkind {
 		case "int", "int64", "int32":
 			if conv == "timespec" {
-				ts, err := argus.Timespec(cval)
+				ts, err := argus.Timespec(cval, 1)
 				if err != nil {
 					// the error will report the file/line of the service when used
 					// not where it actually is.
@@ -202,7 +202,6 @@ func (cf *CF) iGet(name string, ui bool) *CFV {
 
 func (cf *CF) DrainCache() {
 	cf.cache = nil
-
 }
 
 func (cf *CF) CheckTypos() {

@@ -42,6 +42,7 @@ func ReadConfig(file string) {
 	f := NewReader(file)
 	cf := configure.NewCF("group", "Top", nil)
 	cf.File = f.CurrFile()
+	cf.Line = 1
 
 	readKVP(f, cf)
 	top := Make(cf, nil)
@@ -50,7 +51,6 @@ func ReadConfig(file string) {
 
 	notify.Configure(cf)
 	// other.Configure(cf)
-	// RSN - CheckTypos
 	top.DoneConfig()
 }
 

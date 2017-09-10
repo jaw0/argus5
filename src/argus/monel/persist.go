@@ -14,6 +14,7 @@ import (
 
 	"argus/config"
 	"argus/diag"
+	"argus/notify"
 )
 
 func (m *M) Persist() {
@@ -84,7 +85,15 @@ func (m *M) Restore() {
 }
 
 func (m *M) persist(pm map[string]interface{}) {
+
+	notes := []int{}
+	for _, n := range m.Notifies {
+		n.Save()
+		notes = append(notes, n.IdNo())
+	}
+
 	pm["monel"] = &m.P
+	pm["notify"] = notes
 }
 
 func (m *M) restore(pm map[string]interface{}) {
@@ -95,4 +104,14 @@ func (m *M) restore(pm map[string]interface{}) {
 	if err != nil {
 		return
 	}
+
+	notes := pm["notify"].([]int)
+
+	for _, id := range notes {
+		n := notify.Load(m.NotifyCf, id)
+		if n != nil {
+			m.Notifies = append(m.Notifies, n)
+		}
+	}
+
 }

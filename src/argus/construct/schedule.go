@@ -66,7 +66,8 @@ func parseSchedLine(cf *configure.CF, sched *argus.Schedule, line string) bool {
 
 	fld := strings.Fields(line)
 	var dow, res string
-	var idow, start, end int
+	var idow, start int
+	end := 2400
 
 	if len(fld) < 3 {
 		return false

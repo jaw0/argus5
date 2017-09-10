@@ -11,7 +11,7 @@ import (
 )
 
 // convert friendly time specifiers to seconds
-func Timespec(v string) (int64, error) {
+func Timespec(v string, def int) (int64, error) {
 
 	var tot int64
 
@@ -29,7 +29,7 @@ func Timespec(v string) (int64, error) {
 		if i == len(v) {
 			t, _ := strconv.ParseInt(v, 10, 64)
 			v = v[i:]
-			tot += t
+			tot += t * int64(def)
 		} else {
 			t, _ := strconv.ParseInt(v[:i], 10, 64)
 
