@@ -27,7 +27,7 @@ var tcpProtoTab = map[string]*tcpProtoConf{
 	"Telnet":     {Port: 23},
 	"Gopher":     {Port: 70, Send: "\r\n", Expect: "\\.\r\n"},
 	"HTTP":       {Port: 80, Expect: "HTTP", ReadHow: "toeof"},
-	"HTTPS":      {Port: 443, Expect: "HTTP", ReadHow: "toeof"},
+	"HTTPS":      {Port: 443, Expect: "HTTP", ReadHow: "toeof", SSL: true},
 	"SSH":        {Port: 22, Send: "SSH-1.99-argus\r\n", Expect: "^SSH", ReadHow: "banner"},
 	"IMAP":       {Port: 143, Expect: "^\\* OK", ReadHow: "banner"},
 	"Whois":      {Port: 43, Send: "\r\n"},

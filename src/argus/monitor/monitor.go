@@ -9,4 +9,5 @@ import (
 	_ "argus/monitor/asterisk"
 	_ "argus/monitor/isforced"
 	_ "argus/monitor/tcp"
+	_ "argus/monitor/url"
 )

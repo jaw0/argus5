@@ -109,7 +109,7 @@ typical use:
 
 */
 
-func (s *Service) debug(fmt string, args ...interface{}) {
+func (s *Service) Debug(fmt string, args ...interface{}) {
 	s.mon.Debug(fmt, args...)
 }
 
@@ -129,10 +129,9 @@ func (s *Service) Start() {
 		s.reschedule()
 	}
 
-	s.mon.Debug("starting")
+	s.mon.Debug("service starting")
 	s.check.Start(s)
 
-	//...
 }
 
 func (s *Service) JoinMulti() bool {
@@ -160,6 +159,10 @@ func (s *Service) Done() {
 	for _, also := range s.AlsoRun {
 		also.Start()
 	}
+}
+
+func (s *Service) Fail(reason string) {
+	s.SetResult(s.Cf.Severity, "", reason)
 }
 
 func (s *Service) SetResult(status argus.Status, result string, reason string) {
