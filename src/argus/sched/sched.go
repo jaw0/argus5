@@ -13,6 +13,7 @@ import (
 
 	"argus/clock"
 	"argus/config"
+	"argus/diag"
 )
 
 type Conf struct {
@@ -44,6 +45,7 @@ var schedchan = make(chan *D, 1000)
 var workchan = make(chan *D, 1000)
 var stopchan = make(chan struct{})
 var done sync.WaitGroup
+var dl = diag.Logger("sched")
 
 func New(cf *Conf, obj Starter) *D {
 
@@ -179,13 +181,25 @@ func worker() {
 		case <-stopchan:
 			return
 		case d := <-workchan:
-			d.obj.Start()
+			d.run()
 
 			if d.auto {
 				d.ReSchedule(0)
 			}
 		}
 	}
+}
+
+func (d *D) run() {
+
+	// RSN - recover
+	//defer func() {
+	//	if err := recover(); err != nil {
+	//		dl.Bug("CRASH RECOVERY - '%s'", d.text)
+	//	}
+	//}()
+
+	d.obj.Start()
 }
 
 func (d *D) add() {

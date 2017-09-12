@@ -19,6 +19,7 @@ in code:
 package diag
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log/syslog"
@@ -27,6 +28,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 )
 
 // defaults
@@ -223,36 +225,40 @@ func diag(cf logconf, d *Diag, format string, args []interface{}) {
 
 func send_email(txt string, with_trace bool) {
 
-	// hangs on mac -
-	//  cmd := exec.Command("sendmail", "-f", email_from)
-
 	cf := getConfig()
 	if cf == nil || cf.Mailto == "" || cf.Mailfrom == "" {
 		return
 	}
 
-	cmd := exec.Command("cat", "-u")
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "sendmail", "-t", "-f", cf.Mailfrom)
+
 	p, _ := cmd.StdinPipe()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	cmd.Start()
 
-	fmt.Fprintf(p, "To: %s\nFrom: %s\nSubject: %s daemon error\n\n",
-		cf.Mailto, cf.Mailfrom, progname)
+	go func() {
+		fmt.Fprintf(p, "To: %s\nFrom: %s\nSubject: %s daemon error\n\n",
+			cf.Mailto, cf.Mailfrom, progname)
 
-	fmt.Fprintf(p, "an error was detected in %s\n\nhost:   %s\npid:    %d\n\n",
-		progname, hostname, os.Getpid())
+		fmt.Fprintf(p, "an error was detected in %s\n\nhost:   %s\npid:    %d\n\n",
+			progname, hostname, os.Getpid())
 
-	fmt.Fprintf(p, "error:\n%s\n", txt)
+		fmt.Fprintf(p, "error:\n%s\n", txt)
 
-	if with_trace {
-		var stack = make([]byte, stack_max)
-		stack = stack[:runtime.Stack(stack, true)]
-		fmt.Fprintf(p, "\n\n%s\n", stack)
-	}
+		if with_trace {
+			var stack = make([]byte, stack_max)
+			stack = stack[:runtime.Stack(stack, true)]
+			fmt.Fprintf(p, "\n\n%s\n", stack)
+		}
 
-	p.Close()
+		p.Close()
+	}()
+
 	cmd.Wait()
 }
 

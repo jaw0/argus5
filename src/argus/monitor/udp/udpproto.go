@@ -1,0 +1,46 @@
+// Copyright (c) 2017
+// Author: Jeff Weisberg <jaw @ tcp4me.com>
+// Created: 2017-Sep-09 22:25 (EDT)
+// Function: udp protocols
+
+package udp
+
+import (
+	"encoding/hex"
+	"strings"
+)
+
+type udpProtoConf struct {
+	Port   int
+	Send   string
+	Unpack string
+	Scale  float64
+}
+
+var udpProtoTab = map[string]*udpProtoConf{
+	"RADIUS":         {Port: 1645, Send: hxd("0C850014 00000000 00000000 00000000 00000000")},
+	"NTP":            {Port: 123, Send: hxd("23000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000")},
+	"NTP/Stratum":    {Port: 123, Unpack: "xC", Send: hxd("23000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000")},
+	"NTP/Dispersion": {Port: 123, Unpack: "x8N", Scale: 65536, Send: hxd("23000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000")},
+	"NFS":            {Port: 2049, Send: hxd("000073D1 00000000 00000002 000186A3 00000002 00000000 00000000 00000000 00000000 00000000")},
+	"NFSv3":          {Port: 2049, Send: hxd("000073D1 00000000 00000002 000186A3 00000003 00000000 00000000 00000000 00000000 00000000")},
+	"Portmap":        {Port: 111, Send: hxd("00005EFD 00000000 00000002 000186A0 00000000 00000000 00000000 00000000 00000000 00000000")},
+	"Portmap2":       {Port: 111, Send: hxd("00005EFD 00000000 00000002 000186A0 00000002 00000000 00000000 00000000 00000000 00000000")},
+	"Portmap3":       {Port: 111, Send: hxd("00005EFD 00000000 00000002 000186A0 00000003 00000000 00000000 00000000 00000000 00000000")},
+	"Portmap4":       {Port: 111, Send: hxd("00005EFD 00000000 00000002 000186A0 00000004 00000000 00000000 00000000 00000000 00000000")},
+	"IAX2":           {Port: 4569, Send: hxd("80000000 00000000 00000602")},
+}
+
+func hxd(s string) string {
+	x, _ := hex.DecodeString(strings.Replace(s, " ", "", -1))
+	return string(x)
+}
+
+/*
+
+ # NFS = RFC 1094; RPC = RFC 1057; XDR = RFC 1014
+ # NFSv2 - NFSPROC_NULL
+
+ # iax cmd, ping
+ },
+*/

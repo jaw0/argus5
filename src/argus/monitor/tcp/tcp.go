@@ -101,7 +101,7 @@ func (t *TCP) Config(conf *configure.CF, s *service.Service) error {
 
 	} else {
 		label = "TCP"
-		uname = fmt.Sprintf("TCP/%d_%s", t.Cf.Port, t.Cf.Hostname)
+		uname = fmt.Sprintf("TCP_%d_%s", t.Cf.Port, t.Cf.Hostname)
 		friendly = fmt.Sprintf("TCP/%d on %s", t.Cf.Port, t.Cf.Hostname)
 	}
 	s.SetNames(uname, label, friendly)
@@ -220,7 +220,7 @@ func (t *TCP) Read(conn net.Conn) ([]byte, bool) {
 
 func (t *TCP) Connect() (net.Conn, bool) {
 
-	addr, fail := t.IpAddr.Addr()
+	addr, fail := t.IpAddr.AddrWB()
 	if addr == "" {
 		t.S.Debug("hostname still resolving")
 		return nil, true

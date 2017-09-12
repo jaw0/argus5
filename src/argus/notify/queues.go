@@ -19,8 +19,6 @@ type queuedat struct {
 	notif []*N
 }
 
-var dstQueue = make(map[string]*queuedat)
-
 // package lock should be already held
 func (n *N) maybeQueue() {
 

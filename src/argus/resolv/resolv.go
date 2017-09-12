@@ -58,13 +58,13 @@ var stop = make(chan struct{})
 var done sync.WaitGroup
 var dl = diag.Logger("resolv")
 
-func Lookup(name string, ipv int) (string, bool) {
+func Lookup(name string, ipv int) (string, int, bool) {
 
 	e := getCache(name)
 
 	if e == nil {
 		lookup(name)
-		return "", false
+		return "", 0, false
 	}
 
 	e.lock.RLock()
@@ -79,11 +79,11 @@ func Lookup(name string, ipv int) (string, bool) {
 		r := &e.result[i]
 
 		if ipv == 0 || ipv == r.ipv {
-			return r.addr, false
+			return r.addr, r.ipv, false
 		}
 	}
 
-	return "", e.failed
+	return "", 0, e.failed
 }
 
 func WillNeedIn(name string, secs int) {

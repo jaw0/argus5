@@ -89,6 +89,8 @@ type N struct {
 var lock sync.RWMutex
 var byid = make(map[int]*N)
 var actives = make(map[int]*N)
+var dstQueue = make(map[string]*queuedat)
+
 var dl = diag.Logger("notify")
 var notechan = make(chan *N, 16)
 var idno = 1000

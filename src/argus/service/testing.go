@@ -43,7 +43,7 @@ func (s *Service) CheckValue(val string, valtype string) {
 	var fval float64
 
 	s.p.Calc.rawvalue = val
-	//s.mon.Debug("rawvalue: %s", val)
+	s.mon.Debug("rawvalue: %s", val)
 	val, fval, valtype = s.getValue(val, valtype)
 
 	if valtype == "skip" {
@@ -60,7 +60,7 @@ func (s *Service) CheckValue(val string, valtype string) {
 		}
 	}
 
-	//s.mon.Debug("value '%s' -> status %s (%s)", val, status, reason)
+	s.mon.Debug("value '%s' -> status %s (%s)", val, status, reason)
 	s.SetResult(status, val, reason)
 }
 

@@ -8,6 +8,8 @@ package monitor
 import (
 	_ "argus/monitor/asterisk"
 	_ "argus/monitor/isforced"
+	_ "argus/monitor/prog"
 	_ "argus/monitor/tcp"
+	_ "argus/monitor/udp"
 	_ "argus/monitor/url"
 )

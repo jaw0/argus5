@@ -26,7 +26,11 @@ func New(name string) *IP {
 	ip := net.ParseIP(name)
 
 	if ip != nil {
-		return &IP{name: name, asis: true}
+		ipv := 4
+		if len(ip) > 4 {
+			ipv = 6
+		}
+		return &IP{name: name, ipv: ipv, asis: true}
 	}
 
 	// parse out ipv spec: eg. hostname._ipv6
@@ -56,10 +60,10 @@ func New(name string) *IP {
 	}
 }
 
-func (a *IP) Addr() (string, bool) {
+func (a *IP) Addr() (string, int, bool) {
 
 	if a.asis {
-		return a.name, false
+		return a.name, a.ipv, false
 	}
 
 	e := a.cache
@@ -69,7 +73,7 @@ func (a *IP) Addr() (string, bool) {
 
 	if e == nil {
 		lookup(a.name)
-		return "", false
+		return "", 0, false
 	}
 
 	now := clock.Nano()
@@ -86,15 +90,30 @@ func (a *IP) Addr() (string, bool) {
 		r := &e.result[i]
 
 		if a.ipv == 0 || a.ipv == r.ipv {
-			return r.addr, false
+			return r.addr, r.ipv, false
 		}
 	}
 
 	if e.created+TOOLONG < now {
-		return "", true
+		return "", 0, true
 	}
 
-	return "", false
+	return "", 0, false
+}
+
+// return ipv6 addrs with brackets
+func (a *IP) AddrWB() (string, bool) {
+
+	addr, ipv, ok := a.Addr()
+
+	if addr == "" {
+		return addr, ok
+	}
+
+	if ipv == 6 {
+		return "[" + addr + "]", ok
+	}
+	return addr, ok
 }
 
 func (a *IP) WillNeedIn(secs int) {

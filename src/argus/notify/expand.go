@@ -60,9 +60,3 @@ func (n *N) expand(templ string, content string, param map[string]interface{}) s
 	dl.Debug("templ %s => %s", templ, bio.String())
 	return bio.String()
 }
-
-/*
-  t := template.New("main") //name of the template is main
-  t, _ = t.Parse(tmpl) // parsing of template string
-  t.Execute(w, "Hello World!")
-*/

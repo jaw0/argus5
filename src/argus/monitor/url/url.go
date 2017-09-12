@@ -137,6 +137,8 @@ func (d *Url) Start(s *service.Service) {
 	ctype := contentType(getHeader("Content-Type", heads))
 
 	// QQQ - check for 200?
+	// NB - argus3 checked the entire response, not just the content
+	// but we want to do some jsontastic things...
 
 	if len(sects) > 1 {
 		body := sects[1]

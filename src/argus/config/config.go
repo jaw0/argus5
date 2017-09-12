@@ -14,20 +14,23 @@ import (
 )
 
 type Config struct {
-	TLS_cert       string // our cert - .crt
-	TLS_key        string // our private key - .key
-	TLS_root       string // root cert - .crt
-	Mon_maxrun     int
-	Resolv_maxrun  int
-	Port_http      int
-	Port_https     int
-	Port_darp      int
-	Port_test      int
-	Datadir        string
-	Monitor_config string
-	Nameserver     []string
-	DNS_search     []string
-	Debug          map[string]bool
+	TLS_cert        string // our cert - .crt
+	TLS_key         string // our private key - .key
+	TLS_root        string // root cert - .crt
+	Errors_MailTo   string
+	Errors_MailFrom string
+	Mon_maxrun      int
+	Resolv_maxrun   int
+	Port_http       int
+	Port_https      int
+	Port_darp       int
+	Port_test       int
+	DevMode         bool
+	Datadir         string
+	Monitor_config  string
+	Nameserver      []string
+	DNS_search      []string
+	Debug           map[string]bool
 
 	// RSN - various files + directories ...
 }
@@ -61,7 +64,9 @@ func read_config(file string) error {
 	}
 
 	diag.SetConfig(&diag.Config{
-		Debug: newcf.Debug,
+		Debug:    newcf.Debug,
+		Mailto:   newcf.Errors_MailTo,
+		Mailfrom: newcf.Errors_MailFrom,
 	})
 
 	cf = newcf

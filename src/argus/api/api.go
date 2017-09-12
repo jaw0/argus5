@@ -6,23 +6,38 @@
 package api
 
 import (
-	"net/http"
+	//"net/http"
 	"net/url"
 
 	"argus/diag"
 )
 
-// QQQ?
+const (
+	PUBLIC  = 0 // publicly accessible
+	AUTHED  = 1 // must be authenticated
+	PRIVATE = 2 // only via control, not http
+)
+
+type APIWriter interface {
+	SetStatus(int)
+	SetHeader(string, string)
+	Write([]byte) (int, error)
+}
+
 type Context struct {
 	Authed bool
 	User   string
-	W      http.ResponseWriter
-	Req    *http.Request
+	Method string     // api method called
 	Args   url.Values // aka map[string][]string
+
+	W APIWriter
+	//W   http.ResponseWriter
+	//Req *http.Request
+
 }
 
 type T struct {
-	needauth bool
+	needauth int
 	f        ApiHandlerFunc
 }
 
@@ -30,8 +45,9 @@ type ApiHandlerFunc func(*Context)
 type Routes map[string]T
 
 var router = make(Routes)
+var dl = diag.Logger("api")
 
-func Add(authreq bool, path string, f ApiHandlerFunc) bool {
+func Add(authreq int, path string, f ApiHandlerFunc) bool {
 
 	if _, ok := router[path]; ok {
 		diag.Fatal("duplicate api path: %s", path)

@@ -7,6 +7,7 @@ package tcp
 
 import (
 	"encoding/hex"
+	"strings"
 )
 
 type tcpProtoConf struct {
@@ -41,14 +42,14 @@ var tcpProtoTab = map[string]*tcpProtoConf{
 	"SlimServer": {Port: 9090, Send: "version ?\r\n", Expect: "version", ReadHow: "banner"},
 	"Asterisk":   {Port: 9038, ReadHow: "toeof"}, // see also: monitor/asterisk/
 	"NFS": {Port: 2049, ReadHow: "once",
-		Send: hexdecode("800000280000304E0000000000000002000186A3000000020000000000000000000000000000000000000000")},
+		Send: hxd("800000280000304E0000000000000002000186A3000000020000000000000000000000000000000000000000")},
 	"NFSv3": {Port: 2049, ReadHow: "once",
-		Send: hexdecode("800000280000304E0000000000000003000186A3000000020000000000000000000000000000000000000000")},
+		Send: hxd("800000280000304E0000000000000003000186A3000000020000000000000000000000000000000000000000")},
 
 	// NB - http and family are handled elsewhere
 }
 
-func hexdecode(s string) string {
-	x, _ := hex.DecodeString(s)
+func hxd(s string) string {
+	x, _ := hex.DecodeString(strings.Replace(s, " ", "", -1))
 	return string(x)
 }
