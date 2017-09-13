@@ -23,6 +23,7 @@ type Monitor interface {
 	Recycle()
 	Start(*Service)
 	Abort()
+	DoneConfig()
 }
 
 type Conf struct {

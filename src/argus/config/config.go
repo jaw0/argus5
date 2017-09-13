@@ -28,6 +28,7 @@ type Config struct {
 	DevMode         bool
 	Datadir         string
 	Monitor_config  string
+	Control_Socket  string
 	Nameserver      []string
 	DNS_search      []string
 	Debug           map[string]bool

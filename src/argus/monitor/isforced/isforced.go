@@ -39,6 +39,8 @@ func (d *D) Init() error {
 
 func (d *D) Recycle() {
 }
+func (d *D) DoneConfig() {
+}
 
 func (d *D) Start(s *service.Service) {
 

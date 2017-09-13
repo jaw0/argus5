@@ -108,6 +108,16 @@ func New(me Moneler, parent *M) *M {
 	return m
 }
 
+func Stop() {
+
+	lock.RLock()
+	defer lock.RUnlock()
+
+	for _, m := range byname {
+		m.Persist()
+	}
+}
+
 func (m *M) SetNames(uname string, label string, friendly string) {
 	m.Uname = uname
 	m.Label = label

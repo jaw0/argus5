@@ -6,16 +6,10 @@
 package api
 
 import (
-	//"net/http"
-	"net/url"
+	"bufio"
+	"net"
 
 	"argus/diag"
-)
-
-const (
-	PUBLIC  = 0 // publicly accessible
-	AUTHED  = 1 // must be authenticated
-	PRIVATE = 2 // only via control, not http
 )
 
 type APIWriter interface {
@@ -27,41 +21,51 @@ type APIWriter interface {
 type Context struct {
 	Authed bool
 	User   string
-	Method string     // api method called
-	Args   url.Values // aka map[string][]string
-
-	W APIWriter
-	//W   http.ResponseWriter
-	//Req *http.Request
-
+	Nonce  string
+	Method string // api method called
+	Args   map[string]string
+	Conn   net.Conn
+	bfd    *bufio.Reader
 }
 
 type T struct {
-	needauth int
+	needauth bool
 	f        ApiHandlerFunc
 }
 
 type ApiHandlerFunc func(*Context)
-type Routes map[string]T
+type Routes map[string]*T
 
 var router = make(Routes)
 var dl = diag.Logger("api")
 
-func Add(authreq int, path string, f ApiHandlerFunc) bool {
+func Add(authreq bool, path string, f ApiHandlerFunc) bool {
 
 	if _, ok := router[path]; ok {
 		diag.Fatal("duplicate api path: %s", path)
 	}
 
-	router[path] = T{authreq, f}
+	router[path] = &T{authreq, f}
 
 	return true
 }
 
-func (c *Context) Param(n string) string {
-	return c.Args.Get(n)
-}
+// ################################################################
 
-func (c *Context) Write(p []byte) (int, error) {
-	return c.W.Write(p)
+func (ctx *Context) dispatch() bool {
+
+	t := router[ctx.Method]
+	if t == nil {
+		ctx.SendResponseFinal(404, "Not Found")
+		return true
+	}
+
+	if t.needauth && !ctx.Authed {
+		ctx.SendResponseFinal(403, "Not Authorized")
+		return true
+	}
+
+	t.f(ctx)
+
+	return true
 }

@@ -118,6 +118,8 @@ func (t *TCP) Recycle() {
 }
 func (t *TCP) Abort() {
 }
+func (t *TCP) DoneConfig() {
+}
 
 func (t *TCP) Start(s *service.Service) {
 

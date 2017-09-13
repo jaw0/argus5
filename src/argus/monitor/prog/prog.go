@@ -8,7 +8,9 @@ package prog
 import (
 	"context"
 	"errors"
+	"os"
 	"os/exec"
+	"syscall"
 	"time"
 
 	"argus/configure"
@@ -17,7 +19,8 @@ import (
 )
 
 type Conf struct {
-	Command string
+	Command    string
+	IgnoreExit bool
 }
 
 type Prog struct {
@@ -40,7 +43,7 @@ func New(conf *configure.CF, s *service.Service) service.Monitor {
 func (p *Prog) Config(conf *configure.CF, s *service.Service) error {
 
 	conf.InitFromConfig(&p.Cf, "prog", "")
-	dl.Debug("prog config; %#v", p)
+	dl.Debug("prog config")
 
 	// validate
 	if p.Cf.Command == "" {
@@ -62,6 +65,8 @@ func (p *Prog) Init() error {
 func (p *Prog) Recycle() {
 }
 func (p *Prog) Abort() {
+}
+func (p *Prog) DoneConfig() {
 }
 
 func (p *Prog) Start(s *service.Service) {
@@ -85,11 +90,23 @@ func (p *Prog) RunProg() (string, bool) {
 	p.S.Debug("running '%s'", p.Cf.Command)
 	cmd := exec.CommandContext(ctx, "sh", "-c", p.Cf.Command)
 
+	// if we are running as root, attempt to switch to a nonpriveleged uid
+	if os.Geteuid() == 0 {
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Credential: &syscall.Credential{
+				Uid: 65535,
+				Gid: 65535,
+			},
+		}
+	}
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		dl.Debug("command failed: %v", err)
-		p.S.Fail("command failed")
-		return "", true
+		if !p.Cf.IgnoreExit {
+			p.S.Fail("command failed")
+			return "", true
+		}
 	}
 	if len(out) > 0 {
 		dl.Debug("command output: %s", out)

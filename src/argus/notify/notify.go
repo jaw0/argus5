@@ -151,6 +151,12 @@ func Init() {
 }
 func Stop() {
 
+	lock.RLock()
+	defer lock.RUnlock()
+
+	for _, n := range byid {
+		n.Save()
+	}
 }
 
 func Configure(cf *configure.CF) {

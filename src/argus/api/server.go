@@ -1,0 +1,259 @@
+// Copyright (c) 2017
+// Author: Jeff Weisberg <jaw @ tcp4me.com>
+// Created: 2017-Sep-12 22:10 (EDT)
+// Function: api server
+
+package api
+
+import (
+	"bufio"
+	"crypto/rand"
+	"fmt"
+	"net"
+	"os"
+	"strings"
+
+	"argus/argus"
+	"argus/config"
+)
+
+const (
+	CONTROLSOCKET = "/var/run/argus.ctl"
+	PROTOCOL      = "ARGUS/5.0"
+	NONCELEN      = 64
+)
+
+type listenSet struct {
+	lsock net.Listener
+	dom   string
+}
+
+var apiListener []*listenSet
+
+func Init() {
+
+	cf := config.Cf()
+
+	ctl := CONTROLSOCKET
+	if cf.Control_Socket != "" {
+		ctl = cf.Control_Socket
+	}
+
+	os.Remove(ctl)
+	serverNew("unix", ctl)
+
+	if cf.Port_darp != 0 {
+		serverNew("tcp", fmt.Sprintf(":%d", cf.Port_darp))
+	}
+
+	serverRun()
+}
+
+func Stop() {
+
+	for _, l := range apiListener {
+		l.lsock.Close()
+	}
+}
+
+func serverNew(dom string, addr string) {
+
+	l, err := net.Listen(dom, addr)
+
+	if err != nil {
+		dl.Problem("cannot open socket: %v", err)
+		return
+	}
+
+	dl.Verbose("api listening on %s:%s", dom, addr)
+
+	apiListener = append(apiListener, &listenSet{l, dom})
+}
+
+func serverRun() {
+
+	for _, ls := range apiListener {
+		go serverAccept(ls.lsock, ls.dom)
+	}
+}
+
+func serverAccept(l net.Listener, dom string) {
+
+	for {
+		c, err := l.Accept()
+		if err != nil {
+			return
+		}
+		dl.Debug("connection from %s/%s", dom, c.RemoteAddr())
+
+		go apiRun(c, dom)
+	}
+
+}
+
+func apiRun(c net.Conn, dom string) {
+
+	defer c.Close()
+
+	bfd := bufio.NewReader(c)
+	ctx := Context{Conn: c, bfd: bfd}
+
+	// unix socket connections are trusted,
+	// network connections need to authenticate
+	if dom == "unix" {
+		ctx.Authed = true
+	} else {
+		nonce := make([]byte, NONCELEN)
+		_, err := rand.Read(nonce)
+
+		if err != nil {
+			dl.Verbose("cannot read random: %v", err)
+			return
+		}
+
+		ctx.Nonce = argus.Encode64Url(string(nonce))
+	}
+
+	for {
+		ok := ctx.readRequest()
+		if !ok {
+			return
+		}
+
+		ok = ctx.dispatch()
+		if !ok {
+			return
+		}
+	}
+
+}
+
+// Grammar, which knows how to control even kings.
+//        -- Les Femmes savantes. Act ii. Sc. 6.
+//           Jean Baptiste Poquelin Moliere.
+//
+// protocol is looks roughly like http
+//
+// Protocol:
+//    connect
+//    client - send request
+//    server - send response
+//    repeat...
+//
+// request:
+//    request type and version...: GET REQUEST Argus/2.0
+//    param: value\n
+//    param: value\n
+//    ...
+//    blank line\n
+//
+//    value is url_encoded
+//    currently request is only GET
+//
+//    example:
+//	GET /echo ARGUS/2.0
+//	foobar: 123
+//	<blank line>
+//
+// response:
+//    word number text\n
+//    optional data\n
+//    ...
+//    blank line\n
+//
+// status numbers:
+// 2?? - OK
+// anything else - error
+//
+//    example:
+//	ARGUS/2.0 200 OK
+//	foobar: 123
+//	<blank line>
+
+func (ctx *Context) readRequest() bool {
+
+	// read request line
+	reqline, _, err := ctx.bfd.ReadLine()
+	if err != nil {
+		dl.Debug("read error: %v", err)
+		return false
+	}
+	// parse request: "GET /func ARGUS/5.0
+	flds := strings.Fields(string(reqline))
+
+	if len(flds) != 3 {
+		return false
+	}
+
+	if flds[0] != "GET" || flds[2] != PROTOCOL {
+		return false
+	}
+
+	ctx.Method = argus.UrlDecode(flds[1])
+	dl.Debug("request: %s", ctx.Method)
+
+	// read header lines
+	ctx.Args = make(map[string]string)
+	for {
+		line, _, err := ctx.bfd.ReadLine()
+		if err != nil {
+			dl.Debug("read error: %v", err)
+			return false
+		}
+		if len(line) == 0 {
+			break
+		}
+		fvp := strings.SplitN(string(line), ": ", 2)
+
+		if len(fvp) == 2 {
+			ctx.Args[strings.TrimSpace(fvp[0])] = argus.UrlDecode(strings.TrimSpace(fvp[1]))
+		} else {
+			ctx.Args[strings.TrimSpace(fvp[0])] = ""
+		}
+
+	}
+
+	return true
+}
+
+// ################################################################
+
+func (ctx *Context) SendOK() {
+	ctx.SendResponse(200, "OK")
+}
+func (ctx *Context) SendOKFinal() {
+	ctx.SendResponseFinal(200, "OK")
+}
+func (ctx *Context) SendResponseFinal(code int, msg string) {
+	ctx.SendResponse(code, msg)
+	ctx.SendFinal()
+}
+func (ctx *Context) SendResponse(code int, msg string) {
+	fmt.Fprintf(ctx.Conn, "%s %d %s\n", PROTOCOL, code, msg)
+}
+func (ctx *Context) SendFinal() {
+	ctx.Conn.Write([]byte("\n"))
+}
+func (ctx *Context) SendKVP(key string, val string) {
+	fmt.Fprintf(ctx.Conn, "%s: %s\n", key, argus.UrlEncode(val))
+}
+
+// ################################################################
+
+func init() {
+
+	Add(false, "/exit", apiFuncExit)
+	Add(false, "/auth", apiFuncAuth)
+}
+
+func apiFuncExit(ctx *Context) {
+	ctx.SendOKFinal()
+	ctx.Conn.Close()
+}
+
+func apiFuncAuth(ctx *Context) {
+
+	ctx.SendOK()
+	ctx.SendKVP("nonce", string(ctx.Nonce))
+	ctx.SendFinal()
+}

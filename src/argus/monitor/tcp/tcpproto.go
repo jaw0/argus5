@@ -41,6 +41,7 @@ var tcpProtoTab = map[string]*tcpProtoConf{
 	"Argus":      {Expect: "running", ReadHow: "banner"},
 	"SlimServer": {Port: 9090, Send: "version ?\r\n", Expect: "version", ReadHow: "banner"},
 	"Asterisk":   {Port: 9038, ReadHow: "toeof"}, // see also: monitor/asterisk/
+	"Freeswitch": {Port: 8021, ReadHow: "toeof"}, // see also: monitor/freeswitch/
 	"NFS": {Port: 2049, ReadHow: "once",
 		Send: hxd("800000280000304E0000000000000002000186A3000000020000000000000000000000000000000000000000")},
 	"NFSv3": {Port: 2049, ReadHow: "once",

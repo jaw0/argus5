@@ -96,7 +96,7 @@ func (s *Service) Init() error {
 }
 
 func (s *Service) DoneConfig() {
-
+	s.check.DoneConfig()
 }
 
 // destruction

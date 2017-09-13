@@ -45,6 +45,10 @@ func Decode64(s string) string {
 	return string(r)
 }
 
+func Encode64Url(s string) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(s))
+}
+
 // ################################################################
 
 // modeled after net/url escape, but simpler

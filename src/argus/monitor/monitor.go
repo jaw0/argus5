@@ -7,6 +7,8 @@ package monitor
 
 import (
 	_ "argus/monitor/asterisk"
+	_ "argus/monitor/database"
+	_ "argus/monitor/freeswitch"
 	_ "argus/monitor/isforced"
 	_ "argus/monitor/prog"
 	_ "argus/monitor/tcp"

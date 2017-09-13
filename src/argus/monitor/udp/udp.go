@@ -119,6 +119,8 @@ func (t *UDP) Recycle() {
 }
 func (t *UDP) Abort() {
 }
+func (t *UDP) DoneConfig() {
+}
 
 func (t *UDP) Start(s *service.Service) {
 
