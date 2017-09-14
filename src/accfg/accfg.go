@@ -108,6 +108,9 @@ func (c *conf) check_and_store(cf interface{}, info map[string]int, k string, v 
 		}
 		cfv.SetInt(ix)
 
+	case reflect.Bool:
+		cfv.SetBool(parseBool(v))
+
 	case reflect.Slice:
 		switch cfv.Interface().(type) {
 		case []string:
@@ -302,4 +305,13 @@ func parse_duration(v string) (int64, error) {
 	}
 
 	return i, err
+}
+
+func parseBool(v string) bool {
+
+	switch v {
+	case "yes", "YES", "on", "ON", "true", "TRUE", "1":
+		return true
+	}
+	return false
 }

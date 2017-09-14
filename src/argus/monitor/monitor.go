@@ -10,6 +10,7 @@ import (
 	_ "argus/monitor/database"
 	_ "argus/monitor/freeswitch"
 	_ "argus/monitor/isforced"
+	_ "argus/monitor/ping"
 	_ "argus/monitor/prog"
 	_ "argus/monitor/tcp"
 	_ "argus/monitor/udp"

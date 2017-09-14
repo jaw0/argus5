@@ -73,7 +73,6 @@ type Persist struct {
 	Culprit         string
 	Stats           Stats
 	Log             []*Log
-	// notif
 }
 
 type M struct {

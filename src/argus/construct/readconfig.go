@@ -13,6 +13,7 @@ import (
 	"argus/diag"
 	"argus/monel"
 	"argus/notify"
+	"argus/web"
 )
 
 type readConf struct {
@@ -26,15 +27,15 @@ type readConf struct {
 var dl = diag.Logger("dozer")
 
 var confconf = map[string]*readConf{
-	"top":     &readConf{narg: 1, level: 2, permit: map[string]bool{"method": true, "snmpoid": true, "group": true, "host": true}},
+	"top":     &readConf{narg: 1, level: 2, permit: map[string]bool{"method": true, "snmpoid": true, "group": true, "host": true, "darp": true}},
 	"group":   &readConf{narg: 1, level: 2, permit: map[string]bool{"group": true, "host": true, "service": true, "alias": true}},
 	"host":    &readConf{narg: 1, level: 2, permit: map[string]bool{"group": true, "host": true, "service": true, "alias": true}},
 	"alias":   &readConf{narg: 2, onel: true, level: 2},
 	"service": &readConf{narg: 1, onel: true, level: 2},
 	"method":  &readConf{narg: 1, onel: true, level: 1, isInfo: true},
 	"snmpoid": &readConf{onel: true, level: 1, isInfo: true},
+	"darp":    &readConf{narg: 0, level: 1, isInfo: true},
 	"resolv":  &readConf{},
-	"darp":    &readConf{},
 }
 
 func ReadConfig(file string) {
@@ -50,6 +51,7 @@ func ReadConfig(file string) {
 	dl.Debug("done %v", f)
 
 	notify.Configure(cf)
+	web.Configure(cf)
 	// other.Configure(cf)
 	top.DoneConfig()
 }
@@ -171,30 +173,32 @@ func parseSpec(f *Files, pcf *configure.CF, wrcf *readConf, spec string) *config
 	// remove first word
 	delim := strings.IndexAny(spec, " \t:")
 	word := strings.ToLower(spec[:delim])
-	spec = strings.Trim(spec[delim+1:], " \t")
+	spec = strings.TrimSpace(spec[delim+1:])
 
 	var arg1, arg2 string
 
-	if wrcf.narg == 1 {
-		arg1 = unquote(spec)
-	} else {
-		if spec[0] == '"' {
-			e := strings.IndexByte(spec[1:], '"') + 1
-			if e != 0 {
-				arg1 = unquote(spec[0 : e+1])
-
-				if e < len(spec)-1 {
-					arg2 = unquote(spec[e+1:])
-				}
-			}
+	if spec != "" {
+		if wrcf.narg == 1 {
+			arg1 = unquote(spec)
 		} else {
-			e := strings.Index(spec, " \t")
+			if spec[0] == '"' {
+				e := strings.IndexByte(spec[1:], '"') + 1
+				if e != 0 {
+					arg1 = unquote(spec[0 : e+1])
 
-			if e != -1 {
-				arg1 = strings.Trim(spec[:e], " \t")
-				arg2 = strings.Trim(spec[e:], " \t")
+					if e < len(spec)-1 {
+						arg2 = unquote(spec[e+1:])
+					}
+				}
 			} else {
-				arg1 = strings.Trim(spec, " \t")
+				e := strings.Index(spec, " \t")
+
+				if e != -1 {
+					arg1 = strings.TrimSpace(spec[:e])
+					arg2 = strings.TrimSpace(spec[e:])
+				} else {
+					arg1 = strings.TrimSpace(spec)
+				}
 			}
 		}
 	}
@@ -213,7 +217,7 @@ func unquote(s string) string {
 		return s
 	}
 
-	s = strings.Trim(s, " \t")
+	s = strings.TrimSpace(s)
 
 	if s[0] == '"' {
 		s = s[1:]
@@ -232,8 +236,8 @@ func addParam(f *Files, cf *configure.CF, l string) bool {
 	if colon == -1 {
 		return false
 	}
-	key := strings.Trim(l[:colon], " \t")
-	val := strings.Trim(l[colon+1:], " \t")
+	key := strings.TrimSpace(l[:colon])
+	val := strings.TrimSpace(l[colon+1:])
 
 	return setParam(f, cf, key, val)
 

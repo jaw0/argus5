@@ -25,12 +25,13 @@ type Config struct {
 	Port_https      int
 	Port_darp       int
 	Port_test       int
-	DevMode         bool
 	Datadir         string
+	Htdir           string
 	Monitor_config  string
 	Control_Socket  string
 	Nameserver      []string
 	DNS_search      []string
+	DevMode         bool
 	Debug           map[string]bool
 
 	// RSN - various files + directories ...

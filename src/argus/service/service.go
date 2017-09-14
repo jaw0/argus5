@@ -7,6 +7,7 @@ package service
 
 import (
 	"math"
+	"time"
 
 	"argus/argus"
 	"argus/clock"
@@ -121,12 +122,13 @@ func (s *Service) SetNames(uname string, label string, friendly string) {
 func (s *Service) Start() {
 
 	if !s.tasRunning() {
-		if int(clock.Nano()-s.Started) > 5*s.Cf.Timeout {
+		if clock.Nano()-s.Started > int64(900*time.Second) {
 			diag.Problem("%s - running too long. trying to abort", s.mon.Unique())
 			s.check.Abort()
 
 		}
 
+		s.mon.Debug("still running")
 		s.reschedule()
 	}
 
