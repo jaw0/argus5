@@ -11,10 +11,12 @@ const (
 	GRAV_UP   Gravity = 0
 	GRAV_DN   Gravity = 1
 	GRAV_VOTE Gravity = 2
+	GRAV_IETF Gravity = 3
+	GRAV_SELF Gravity = 4
 )
 
 var gravityname = []string{
-	"up", "down", "vote",
+	"up", "down", "vote", "ietf", "self",
 }
 
 func (g Gravity) String() string {

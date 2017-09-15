@@ -28,14 +28,13 @@ type Monitor interface {
 }
 
 type Conf struct {
-	myid         string // local darp name
 	Frequency    int
 	Retries      int
 	Retrydelay   int `cfconv:"timespec"`
 	Timeout      int `cfconv:"timespec"`
 	Showreason   bool
 	Showresult   bool
-	DARPGravity  darp.Gravity
+	DARPGravity  argus.Gravity
 	Severity     argus.Status
 	Calc         string
 	calcmask     uint32
@@ -63,7 +62,7 @@ var defaults = Conf{
 	Retries:     2,
 	Retrydelay:  60,
 	Timeout:     60,
-	DARPGravity: darp.GRAV_IETF,
+	DARPGravity: argus.GRAV_IETF,
 	Severity:    argus.CRITICAL,
 	Alpha:       1,
 }
@@ -187,12 +186,12 @@ func (s *Service) SetResult(status argus.Status, result string, reason string) {
 		}
 	}
 
-	if status != s.p.Statuses[s.Cf.myid] {
+	if status != s.p.Statuses[darp.MyId] {
 		// RSN - send darp update to masters (status, result, reason)
 	}
 
 	// RSN - archive
-	s.SetResultFor(s.Cf.myid, status, result, reason)
+	s.SetResultFor(darp.MyId, status, result, reason)
 }
 
 func (s *Service) SetResultFor(id string, status argus.Status, result string, reason string) {
@@ -212,7 +211,7 @@ func (s *Service) setResultForL(id string, status argus.Status, result string, r
 	defer s.mon.Lock.Unlock()
 
 	s.p.Results[id] = result
-	if id == s.Cf.myid {
+	if id == darp.MyId {
 		s.p.Reason = reason
 	}
 

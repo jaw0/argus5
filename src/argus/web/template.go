@@ -41,12 +41,12 @@ func Configured() {
 
 	// in dev mode, reload the templates on every page view
 	if cf.DevMode {
-		Add(false, HTPATH, func(ctx *Context) {
+		Add(PUBLIC, HTPATH, func(ctx *Context) {
 			serveTemplate(loadTemplates(), ctx)
 		})
 	} else {
 		t := loadTemplates()
-		Add(false, HTPATH, func(ctx *Context) {
+		Add(PUBLIC, HTPATH, func(ctx *Context) {
 			serveTemplate(t, ctx)
 		})
 	}
@@ -60,7 +60,8 @@ func loadTemplates() *template.Template {
 		return nil
 	}
 
-	t := template.New("view")
+	// change the delimiters to avoid clash with js templates
+	t := template.New("view").Delims("{[", "]}")
 	t.ParseGlob(cf.Htdir + "/htdocs/*")
 	t.ParseGlob(cf.Htdir + "/dash/*")
 
@@ -82,22 +83,30 @@ func serveTemplate(t *template.Template, ctx *Context) {
 		return
 	}
 
-	// build map
-	dat := make(map[string]interface{})
-	dat["User"] = ctx.User
-	dat["Header"] = template.HTML(webConf.Header)
-	dat["Header_Branding"] = template.HTML(webConf.Header_Branding)
-	dat["Footer"] = template.HTML(webConf.Footer)
-	dat["Host"] = ctx.R.Host
-	dat["Argus"] = struct {
-		Version string
-		Url     string
-	}{argus.Version, argus.URL}
+	user := ""
+	home := ""
+	if ctx.User != nil {
+		user = ctx.User.Name
+		home = ctx.User.Home
+	}
+
+	// make data available to template
+	query := make(map[string]string)
+	dat := map[string]interface{}{
+		"User":            user,
+		"Home":            home,
+		"Header":          template.HTML(webConf.Header),
+		"Header_Branding": template.HTML(webConf.Header_Branding),
+		"Footer":          template.HTML(webConf.Footer),
+		"Host":            ctx.R.Host,
+		"Q":               query,
+		"Argus": struct {
+			Version string
+			Url     string
+		}{argus.Version, argus.URL},
+	}
 
 	// copy query params
-	ctx.R.ParseForm()
-	query := make(map[string]string)
-	dat["Q"] = query
 	for k, v := range ctx.R.Form {
 		if len(v) > 0 {
 			query[k] = v[0]

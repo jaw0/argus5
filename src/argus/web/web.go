@@ -14,12 +14,20 @@ import (
 
 	"argus/config"
 	"argus/diag"
+	"argus/users"
+)
+
+const (
+	PUBLIC  = 0
+	PRIVATE = 1
+	WRITE   = 2
 )
 
 type Context struct {
-	User string
-	W    http.ResponseWriter
-	R    *http.Request
+	User      *users.User
+	XSRFToken string
+	W         http.ResponseWriter
+	R         *http.Request
 	// user pers, home, ...
 }
 
@@ -67,7 +75,7 @@ func Start() *Server {
 	if cf.Htdir != "" {
 		// server static assets
 		dir := cf.Htdir + "/htdocs"
-		dl.Verbose("serving static on %s", dir)
+		dl.Debug("serving static on %s", dir)
 		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
 
 	}
@@ -105,24 +113,79 @@ func (s *Server) Shutdown() {
 // ################################################################
 
 // add routes
-func Add(authreq bool, path string, f WebHandlerFunc) {
+func Add(authreq int, path string, f WebHandlerFunc) {
 
 	http.HandleFunc(path, httpAdapt(authreq, f))
 }
 
-func httpAdapt(authreq bool, f WebHandlerFunc) func(http.ResponseWriter, *http.Request) {
+// ################################################################
+
+func (ctx *Context) Get(name string) string {
+	return ctx.R.Form.Get(name)
+}
+
+// ################################################################
+
+func httpAdapt(authreq int, f WebHandlerFunc) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		// RSN -
-		// determine user
-		// ...
-		// check auth
-		// ...
+		r.ParseForm()
 
-		ctx := &Context{W: w, R: r}
+		rw := &responseWriter{w: w, status: 200}
+		ctx := &Context{W: rw, R: r}
+		ctx.GetSession()
+
+		defer func() {
+			user := "[public]"
+			if ctx.User != nil {
+				user = ctx.User.Name
+			}
+			// NB: files in /static do not pass through here, and do not get logged
+			dl.Verbose("ACCESS: %s %s %d %d %s",
+				user, r.RemoteAddr, rw.status, rw.size, r.RequestURI)
+
+		}()
+
+		// check authorization
+		switch authreq {
+		case PUBLIC:
+			break
+		case PRIVATE, WRITE:
+			if ctx.User == nil {
+				http.Error(ctx.W, "Not Authorized", 403)
+				return
+			}
+		}
+		if authreq == WRITE {
+			if ctx.Get("xtok") != ctx.XSRFToken {
+				http.Error(ctx.W, "Not Authorized", 403)
+				return
+			}
+		}
+
+		// do it!
 		f(ctx)
-
-		// access_log? dl.Verbose?
-		// ...
 	}
+}
+
+// ################################################################
+
+type responseWriter struct {
+	w      http.ResponseWriter
+	size   int64
+	status int
+}
+
+func (w *responseWriter) Header() http.Header {
+	return w.w.Header()
+}
+
+func (w *responseWriter) Write(b []byte) (int, error) {
+	w.size += int64(len(b))
+	return w.w.Write(b)
+}
+
+func (w *responseWriter) WriteHeader(s int) {
+	w.status = s
+	w.w.WriteHeader(s)
 }

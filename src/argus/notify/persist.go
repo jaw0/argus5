@@ -6,12 +6,9 @@
 package notify
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
 
+	"argus/argus"
 	"argus/config"
 )
 
@@ -24,17 +21,15 @@ func loadIdNo() {
 	}
 
 	file := cf.Datadir + "/notno"
-	fd, err := os.Open(file)
+
+	err := argus.Load(file, &idno)
 
 	if err != nil {
 		dl.Debug("cannot open file: %v", err)
 		return
 	}
-
-	defer fd.Close()
-	fmt.Fscan(fd, &idno)
-
 }
+
 func saveIdNo() {
 
 	cf := config.Cf()
@@ -43,18 +38,13 @@ func saveIdNo() {
 		return
 	}
 	file := cf.Datadir + "/notno"
-	temp := file + ".tmp"
 
-	fd, err := os.Create(temp)
+	err := argus.Save(file, &idno)
+
 	if err != nil {
-		dl.Problem("cannot save notno to '%s': %v", temp, err)
+		dl.Problem("cannot save notno to '%s': %v", file, err)
 		return
 	}
-
-	io.WriteString(fd, fmt.Sprintf("%d\n", idno))
-	fd.Close()
-	os.Rename(temp, file)
-
 }
 
 // ################################################################
@@ -77,26 +67,14 @@ func Load(conf *Conf, idno int) *N {
 	}
 	file := cf.Datadir + "/notify/" + fmt.Sprintf("%d", idno)
 
-	js, err := ioutil.ReadFile(file)
+	err := argus.Load(file, n.p)
+
 	if err != nil {
-		dl.Problem("cannot read file: %v", err)
+		dl.Problem("cannot load notify: %v", err)
 		return nil
 	}
 
-	// if the save file is corrupt, the restore may panic
-	defer func() {
-		if err := recover(); err != nil {
-			dl.Problem("error restoring '%s': %v", file, err)
-		}
-	}()
-
-	err = json.Unmarshal(js, n.p)
-	if err != nil {
-		dl.Debug("js error: %v", err)
-		return nil
-	}
-
-	// RSN - discard of old?
+	// RSN - discard of old/outdated?
 
 	notechan <- n
 	return n
@@ -110,21 +88,16 @@ func (n *N) Save() {
 		return
 	}
 	file := cf.Datadir + "/notify/" + fmt.Sprintf("%d", n.p.IdNo)
-	temp := file + ".tmp"
-
-	n.lock.RLock()
-	js, _ := json.Marshal(n.p)
-	n.lock.RUnlock()
 
 	dl.Debug("persisting to '%s'", file)
 
-	fd, err := os.Create(temp)
+	n.lock.RLock()
+	err := argus.Save(file, n.p)
+	n.lock.RUnlock()
+
 	if err != nil {
-		dl.Problem("cannot save notification to '%s': %v", temp, err)
+		dl.Problem("cannot save notification to '%s': %v", file, err)
 		return
 	}
 
-	fd.Write(js)
-	fd.Close()
-	os.Rename(temp, file)
 }

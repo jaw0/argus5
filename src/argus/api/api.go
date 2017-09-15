@@ -19,6 +19,7 @@ type APIWriter interface {
 }
 
 type Context struct {
+	doer   Serverer
 	Authed bool
 	User   string
 	Nonce  string

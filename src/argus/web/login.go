@@ -7,18 +7,58 @@ package web
 
 import (
 	"net/http"
+
+	"argus/users"
 )
 
 func init() {
-	Add(false, "/", webLogin)
+	Add(PUBLIC, "/", webHome)
+	Add(PUBLIC, "/login-1", webLogin1)
 }
 
-func webLogin(ctx *Context) {
+func webHome(ctx *Context) {
 
-	if ctx.User != "" {
-		// RSN - user.home, ...
-		http.Redirect(ctx.W, ctx.R, "/view/home", 302)
+	if ctx.User != nil {
+		http.Redirect(ctx.W, ctx.R, ctx.webHome(), 302)
 	} else {
 		http.Redirect(ctx.W, ctx.R, "/view/login", 302)
 	}
+}
+
+func webLogin1(ctx *Context) {
+
+	name := ctx.Get("name")
+	pass := ctx.Get("pass")
+	next := ctx.Get("next")
+
+	u := users.CheckUserPasswd(name, pass)
+
+	if u != nil {
+		ctx.NewSession(name)
+		ctx.User = u
+
+		if next == "" {
+			next = ctx.webHome()
+		}
+
+		dl.Verbose("login success '%s' from %s'", name, ctx.R.RemoteAddr)
+		http.Redirect(ctx.W, ctx.R, next, 302)
+		return
+	}
+
+	// RSN - rate limit on failures
+	http.Redirect(ctx.W, ctx.R, "/view/login?fail=1", 302)
+
+	dl.Verbose("login failure '%s' from %s'", name, ctx.R.RemoteAddr)
+}
+
+func (ctx *Context) webHome() string {
+
+	home := ctx.User.Home
+
+	if home == "" {
+		home = "Top"
+	}
+
+	return "/view/home?obj=" + home
 }

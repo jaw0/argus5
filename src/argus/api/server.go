@@ -23,6 +23,12 @@ const (
 	NONCELEN      = 64
 )
 
+type Serverer interface {
+	Auth(string, string, string) bool
+	Connected(string)
+	Disco(string)
+}
+
 type listenSet struct {
 	lsock net.Listener
 	dom   string
@@ -40,13 +46,7 @@ func Init() {
 	}
 
 	os.Remove(ctl)
-	serverNew("unix", ctl)
-
-	if cf.Port_darp != 0 {
-		serverNew("tcp", fmt.Sprintf(":%d", cf.Port_darp))
-	}
-
-	serverRun()
+	ServerNew(nil, "api", "unix", ctl)
 }
 
 func Stop() {
@@ -56,7 +56,7 @@ func Stop() {
 	}
 }
 
-func serverNew(dom string, addr string) {
+func ServerNew(ob Serverer, who string, dom string, addr string) {
 
 	l, err := net.Listen(dom, addr)
 
@@ -65,19 +65,13 @@ func serverNew(dom string, addr string) {
 		return
 	}
 
-	dl.Verbose("api listening on %s:%s", dom, addr)
+	dl.Verbose("%s listening on %s:%s", who, dom, addr)
 
 	apiListener = append(apiListener, &listenSet{l, dom})
+	go serverAccept(ob, l, dom)
 }
 
-func serverRun() {
-
-	for _, ls := range apiListener {
-		go serverAccept(ls.lsock, ls.dom)
-	}
-}
-
-func serverAccept(l net.Listener, dom string) {
+func serverAccept(ob Serverer, l net.Listener, dom string) {
 
 	for {
 		c, err := l.Accept()
@@ -86,17 +80,21 @@ func serverAccept(l net.Listener, dom string) {
 		}
 		dl.Debug("connection from %s/%s", dom, c.RemoteAddr())
 
-		go apiRun(c, dom)
+		go apiRun(ob, c, dom)
 	}
-
 }
 
-func apiRun(c net.Conn, dom string) {
-
-	defer c.Close()
+func apiRun(ob Serverer, c net.Conn, dom string) {
 
 	bfd := bufio.NewReader(c)
-	ctx := Context{Conn: c, bfd: bfd}
+	ctx := Context{doer: ob, Conn: c, bfd: bfd}
+
+	defer func() {
+		c.Close()
+		if ob != nil {
+			ob.Disco(ctx.User)
+		}
+	}()
 
 	// unix socket connections are trusted,
 	// network connections need to authenticate
@@ -254,6 +252,22 @@ func apiFuncExit(ctx *Context) {
 func apiFuncAuth(ctx *Context) {
 
 	ctx.SendOK()
-	ctx.SendKVP("nonce", string(ctx.Nonce))
-	ctx.SendFinal()
+
+	name := ctx.Args["name"]
+	digest := ctx.Args["digest"]
+
+	if name == "" || digest == "" {
+		ctx.SendKVP("nonce", string(ctx.Nonce))
+		ctx.SendFinal()
+		return
+	}
+
+	if ctx.doer != nil {
+		ok := ctx.doer.Auth(name, ctx.Nonce, digest)
+		if ok {
+			ctx.User = name
+			ctx.Authed = true
+			ctx.doer.Connected(name)
+		}
+	}
 }

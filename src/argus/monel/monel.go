@@ -47,6 +47,7 @@ type Conf struct {
 	Nostatus     bool
 	Gravity      argus.Gravity
 	Countstop    bool
+	Hidden       bool
 	Sendnotify   [argus.CRITICAL + 1]*argus.Schedule `cfconv:"dotsev"`
 	// notify, web, acl, graph
 }

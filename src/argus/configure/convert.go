@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"argus/argus"
-	"argus/darp"
 )
 
 func statusValue(name string) argus.Status {
@@ -30,20 +29,20 @@ func statusValue(name string) argus.Status {
 	return argus.UNKNOWN
 }
 
-func gravityValue(name string) darp.Gravity {
+func gravityValue(name string) argus.Gravity {
 
 	switch strings.ToLower(name) {
 	case "up":
-		return darp.GRAV_UP
+		return argus.GRAV_UP
 	case "down":
-		return darp.GRAV_DN
+		return argus.GRAV_DN
 	case "vote":
-		return darp.GRAV_VOTE
+		return argus.GRAV_VOTE
 	case "ietf":
-		return darp.GRAV_IETF
+		return argus.GRAV_IETF
 	case "self":
-		return darp.GRAV_SELF
+		return argus.GRAV_SELF
 	}
 
-	return darp.GRAV_UP
+	return argus.GRAV_UP
 }

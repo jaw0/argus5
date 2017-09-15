@@ -37,9 +37,6 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 	s.mon.Cf.Sendnotify[int(argus.UNKNOWN)] = argus.ScheduleAlwaysYes
 	s.mon.Cf.Countstop = true
 
-	// RSN - who am i?
-	s.Cf.myid = "local"
-
 	err := s.mon.Config(conf)
 	if err != nil {
 		return nil, err

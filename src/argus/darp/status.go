@@ -9,19 +9,9 @@ import (
 	"argus/argus"
 )
 
-type Gravity int
+func AggrStatus(gravity argus.Gravity, mystatus argus.Status, statuses map[string]argus.Status) argus.Status {
 
-const (
-	GRAV_UP   Gravity = 0
-	GRAV_DN   Gravity = 1
-	GRAV_VOTE Gravity = 2
-	GRAV_IETF Gravity = 3
-	GRAV_SELF Gravity = 4
-)
-
-func AggrStatus(gravity Gravity, mystatus argus.Status, statuses map[string]argus.Status) argus.Status {
-
-	if gravity == GRAV_SELF { // XXX - || i_am_slave || i_have_no_slaves
+	if gravity == argus.GRAV_SELF { // XXX - || i_am_slave || i_have_no_slaves
 		return mystatus
 	}
 
@@ -30,7 +20,7 @@ func AggrStatus(gravity Gravity, mystatus argus.Status, statuses map[string]argu
 	return CalcAggrStatus(gravity, mystatus, statuses, darps)
 }
 
-func CalcAggrStatus(gravity Gravity, mystatus argus.Status,
+func CalcAggrStatus(gravity argus.Gravity, mystatus argus.Status,
 	statuses map[string]argus.Status, darps map[string]bool) argus.Status {
 
 	var count [argus.MAXSTATUS + 1]int
@@ -41,7 +31,7 @@ func CalcAggrStatus(gravity Gravity, mystatus argus.Status,
 		if up {
 			count[statuses[host]]++
 			nstatus++
-		} else if gravity == GRAV_IETF {
+		} else if gravity == argus.GRAV_IETF {
 			count[argus.UNKNOWN]++
 		} else {
 			// use most recent status
@@ -53,9 +43,9 @@ func CalcAggrStatus(gravity Gravity, mystatus argus.Status,
 	count[argus.UNKNOWN] += count[argus.OVERRIDE] + count[argus.DEPENDS]
 
 	switch gravity {
-	case GRAV_SELF:
+	case argus.GRAV_SELF:
 		return mystatus
-	case GRAV_UP:
+	case argus.GRAV_UP:
 		for i := argus.CLEAR; i <= argus.CRITICAL; i++ {
 			if count[i] > 0 {
 				return i
@@ -63,7 +53,7 @@ func CalcAggrStatus(gravity Gravity, mystatus argus.Status,
 		}
 		return argus.CLEAR
 
-	case GRAV_DN:
+	case argus.GRAV_DN:
 		for i := argus.CRITICAL; i >= argus.CLEAR; i-- {
 			if count[i] > 0 {
 				return i
@@ -71,7 +61,7 @@ func CalcAggrStatus(gravity Gravity, mystatus argus.Status,
 		}
 		return argus.CLEAR
 
-	case GRAV_VOTE, GRAV_IETF:
+	case argus.GRAV_VOTE, argus.GRAV_IETF:
 		lim := (nstatus + 1) / 2
 		cum := 0
 

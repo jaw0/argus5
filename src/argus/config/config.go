@@ -23,8 +23,8 @@ type Config struct {
 	Resolv_maxrun   int
 	Port_http       int
 	Port_https      int
-	Port_darp       int
 	Port_test       int
+	DARP_Name       string
 	Datadir         string
 	Htdir           string
 	Monitor_config  string

@@ -9,6 +9,7 @@ import (
 	"argus/configure"
 	//"argus/diag"
 	"argus/alias"
+	"argus/darp"
 	"argus/group"
 	"argus/monel"
 	"argus/notify"
@@ -46,6 +47,12 @@ func Make(cf *configure.CF, parent *monel.M) *monel.M {
 		return a
 	case "method":
 		err := notify.NewMethod(cf)
+		if err != nil {
+			cf.Error("%v", err)
+		}
+
+	case "darp":
+		err := darp.New(cf)
 		if err != nil {
 			cf.Error("%v", err)
 		}
