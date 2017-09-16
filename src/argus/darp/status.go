@@ -11,11 +11,11 @@ import (
 
 func AggrStatus(gravity argus.Gravity, mystatus argus.Status, statuses map[string]argus.Status) argus.Status {
 
-	if gravity == argus.GRAV_SELF { // XXX - || i_am_slave || i_have_no_slaves
+	if gravity == argus.GRAV_SELF || !iHaveSlaves || !IsEnabled {
 		return mystatus
 	}
 
-	darps := map[string]bool{"local": true} // XXX
+	darps := GetStatuses()
 
 	return CalcAggrStatus(gravity, mystatus, statuses, darps)
 }

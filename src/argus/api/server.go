@@ -78,7 +78,7 @@ func serverAccept(ob Serverer, l net.Listener, dom string) {
 		if err != nil {
 			return
 		}
-		dl.Debug("connection from %s/%s", dom, c.RemoteAddr())
+		dl.Verbose("connection from %s/%s", dom, c.RemoteAddr())
 
 		go apiRun(ob, c, dom)
 	}
@@ -116,6 +116,9 @@ func apiRun(ob Serverer, c net.Conn, dom string) {
 		ok := ctx.readRequest()
 		if !ok {
 			return
+		}
+		if ob != nil && ctx.User != "" {
+			ob.Connected(ctx.User)
 		}
 
 		ok = ctx.dispatch()
@@ -222,6 +225,9 @@ func (ctx *Context) SendOK() {
 func (ctx *Context) SendOKFinal() {
 	ctx.SendResponseFinal(200, "OK")
 }
+func (ctx *Context) Send404() {
+	ctx.SendResponseFinal(404, "Not Found")
+}
 func (ctx *Context) SendResponseFinal(code int, msg string) {
 	ctx.SendResponse(code, msg)
 	ctx.SendFinal()
@@ -235,13 +241,17 @@ func (ctx *Context) SendFinal() {
 func (ctx *Context) SendKVP(key string, val string) {
 	fmt.Fprintf(ctx.Conn, "%s: %s\n", key, argus.UrlEncode(val))
 }
+func (ctx *Context) Send(txt string) {
+	ctx.Conn.Write([]byte(txt))
+}
 
 // ################################################################
 
 func init() {
 
-	Add(false, "/exit", apiFuncExit)
-	Add(false, "/auth", apiFuncAuth)
+	Add(false, "exit", apiFuncExit)
+	Add(false, "auth", apiFuncAuth)
+	Add(true, "ping", apiFuncPing)
 }
 
 func apiFuncExit(ctx *Context) {
@@ -249,14 +259,19 @@ func apiFuncExit(ctx *Context) {
 	ctx.Conn.Close()
 }
 
-func apiFuncAuth(ctx *Context) {
+func apiFuncPing(ctx *Context) {
+	// RSN - send back interesting data...
+	// started_time, user sessions, overrides, ...
+	ctx.SendOKFinal()
+}
 
-	ctx.SendOK()
+func apiFuncAuth(ctx *Context) {
 
 	name := ctx.Args["name"]
 	digest := ctx.Args["digest"]
 
 	if name == "" || digest == "" {
+		ctx.SendResponse(403, "Authentication Required")
 		ctx.SendKVP("nonce", string(ctx.Nonce))
 		ctx.SendFinal()
 		return
@@ -265,9 +280,14 @@ func apiFuncAuth(ctx *Context) {
 	if ctx.doer != nil {
 		ok := ctx.doer.Auth(name, ctx.Nonce, digest)
 		if ok {
+			dl.Verbose("authentication ok for %s from %s", name, ctx.Conn.RemoteAddr())
 			ctx.User = name
 			ctx.Authed = true
 			ctx.doer.Connected(name)
+			ctx.SendOKFinal()
+		} else {
+			ctx.SendResponseFinal(403, "Authentication Failed")
+			dl.Verbose("authentication failed from %s", ctx.Conn.RemoteAddr())
 		}
 	}
 }

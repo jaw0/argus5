@@ -7,6 +7,7 @@ package service
 
 import (
 	"math"
+	"sync"
 	"time"
 
 	"argus/argus"
@@ -36,6 +37,7 @@ type Conf struct {
 	Showresult   bool
 	DARPGravity  argus.Gravity
 	Severity     argus.Status
+	DARP_Tags    string
 	Calc         string
 	calcmask     uint32
 	Alpha        float64
@@ -101,6 +103,10 @@ type Service struct {
 	graph    bool
 }
 
+var dl = diag.Logger("service")
+var lock sync.RWMutex
+var allService = make(map[string]*Service)
+
 /*
 typical use:
 
@@ -121,19 +127,19 @@ func (s *Service) SetNames(uname string, label string, friendly string) {
 func (s *Service) Start() {
 
 	if !s.tasRunning() {
-		if clock.Nano()-s.Started > int64(900*time.Second) {
-			diag.Problem("%s - running too long. trying to abort", s.mon.Unique())
+		if s.running && clock.Nano()-s.Started > int64(900*time.Second) {
+			diag.Problem("%s - running too long. trying to abort", s.mon.Unique(), s.Started)
 			s.check.Abort()
 
 		}
 
-		s.mon.Debug("still running")
+		s.mon.Debug("not starting")
 		s.reschedule()
+		return
 	}
 
 	s.mon.Debug("service starting")
 	s.check.Start(s)
-
 }
 
 func (s *Service) JoinMulti() bool {
@@ -167,6 +173,8 @@ func (s *Service) Fail(reason string) {
 	s.SetResult(s.Cf.Severity, "", reason)
 }
 
+// ################################################################
+
 func (s *Service) SetResult(status argus.Status, result string, reason string) {
 
 	if s.Cf.Checking != nil && !s.Cf.Checking.PermitNow() {
@@ -187,7 +195,8 @@ func (s *Service) SetResult(status argus.Status, result string, reason string) {
 	}
 
 	if status != s.p.Statuses[darp.MyId] {
-		// RSN - send darp update to masters (status, result, reason)
+		// send darp update to masters
+		darp.SendUpdate(s.mon.Unique(), status, result, reason)
 	}
 
 	// RSN - archive
@@ -220,6 +229,8 @@ func (s *Service) setResultForL(id string, status argus.Status, result string, r
 	return darp.AggrStatus(s.Cf.DARPGravity, status, s.p.Statuses)
 }
 
+// ################################################################
+
 func (s *Service) reschedule() {
 
 	if s.Tries != 0 && s.Cf.Retrydelay != 0 {
@@ -238,7 +249,7 @@ func (s *Service) tasRunning() bool {
 		return false
 	}
 
-	// RSN - check schedule, darp, ...
+	// RSN - disabled?
 	if s.Cf.Testing != nil && !s.Cf.Testing.PermitNow() {
 		return false
 	}

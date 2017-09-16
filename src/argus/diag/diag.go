@@ -45,6 +45,8 @@ var lock sync.RWMutex
 var config = &Config{}
 var defaultDiag = &Diag{"default"}
 
+var slog *syslog.Writer
+
 type Diag struct {
 	section string
 }
@@ -52,6 +54,7 @@ type Diag struct {
 type Config struct {
 	Mailto   string
 	Mailfrom string
+	Facility string
 	Debug    map[string]bool
 }
 
@@ -176,6 +179,10 @@ func SetConfig(cf *Config) {
 	lock.Lock()
 	defer lock.Unlock()
 	config = cf
+
+	if slog == nil {
+		openSyslog(cf.Facility)
+	}
 }
 
 func getConfig() *Config {
@@ -194,7 +201,7 @@ func diag(cf logconf, d *Diag, format string, args []interface{}) {
 		pc, file, line, ok := runtime.Caller(2)
 		if ok {
 			// file is full pathname - trim
-			fileshort := clean_filename(file)
+			fileshort := cleanFilename(file)
 
 			// get function name
 			fun := runtime.FuncForPC(pc)
@@ -215,15 +222,18 @@ func diag(cf logconf, d *Diag, format string, args []interface{}) {
 	}
 
 	// syslog
+	if slog != nil {
+		sendToSyslog(cf.logprio, out)
+	}
 
 	// email
 	if cf.to_email {
-		send_email(out, cf.with_trace)
+		sendEmail(out, cf.with_trace)
 	}
 
 }
 
-func send_email(txt string, with_trace bool) {
+func sendEmail(txt string, with_trace bool) {
 
 	cf := getConfig()
 	if cf == nil || cf.Mailto == "" || cf.Mailfrom == "" {
@@ -262,8 +272,82 @@ func send_email(txt string, with_trace bool) {
 	cmd.Wait()
 }
 
+func sendToSyslog(prio syslog.Priority, msg string) {
+
+	switch prio {
+	case syslog.LOG_DEBUG:
+		slog.Debug(msg)
+	case syslog.LOG_INFO:
+		slog.Info(msg)
+	case syslog.LOG_NOTICE:
+		slog.Notice(msg)
+	case syslog.LOG_WARNING:
+		slog.Warning(msg)
+	case syslog.LOG_ERR:
+		slog.Err(msg)
+	case syslog.LOG_ALERT:
+		slog.Alert(msg)
+	case syslog.LOG_EMERG:
+		slog.Emerg(msg)
+	case syslog.LOG_CRIT:
+		slog.Crit(msg)
+	}
+}
+
+func openSyslog(fac string) {
+
+	var p syslog.Priority
+
+	switch strings.ToLower(fac) {
+	case "kern":
+		p = syslog.LOG_KERN
+	case "user":
+		p = syslog.LOG_USER
+	case "mail":
+		p = syslog.LOG_MAIL
+	case "daemon":
+		p = syslog.LOG_DAEMON
+	case "auth":
+		p = syslog.LOG_AUTH
+	case "syslog":
+		p = syslog.LOG_SYSLOG
+	case "lpr":
+		p = syslog.LOG_LPR
+	case "news":
+		p = syslog.LOG_NEWS
+	case "uucp":
+		p = syslog.LOG_UUCP
+	case "cron":
+		p = syslog.LOG_CRON
+	case "authpriv":
+		p = syslog.LOG_AUTHPRIV
+	case "ftp":
+		p = syslog.LOG_FTP
+	case "local0":
+		p = syslog.LOG_LOCAL0
+	case "local1":
+		p = syslog.LOG_LOCAL1
+	case "local2":
+		p = syslog.LOG_LOCAL2
+	case "local3":
+		p = syslog.LOG_LOCAL3
+	case "local4":
+		p = syslog.LOG_LOCAL4
+	case "local5":
+		p = syslog.LOG_LOCAL5
+	case "local6":
+		p = syslog.LOG_LOCAL6
+	case "local7":
+		p = syslog.LOG_LOCAL7
+	default:
+		return
+	}
+
+	slog, _ = syslog.New(p, progname)
+}
+
 // trim full pathname to dir/file.go
-func clean_filename(file string) string {
+func cleanFilename(file string) string {
 
 	si := strings.LastIndex(file, "/")
 

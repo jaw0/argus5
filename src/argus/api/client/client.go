@@ -50,6 +50,16 @@ func (c *Conn) Close() {
 
 }
 
+func (c *Conn) GetMap(method string, args map[string]string, timeout time.Duration) (*Response, error) {
+
+	resp, err := c.Get(method, args, timeout)
+	if err != nil {
+		return resp, err
+	}
+	resp.Map()
+	return resp, err
+}
+
 func (c *Conn) Get(method string, args map[string]string, timeout time.Duration) (*Response, error) {
 
 	// send request line
@@ -81,7 +91,6 @@ func (c *Conn) Get(method string, args map[string]string, timeout time.Duration)
 	// get content lines
 	for {
 		line, _, _ := c.bfd.ReadLine()
-		fmt.Printf(">> %s\n", line)
 		if len(line) == 0 {
 			break
 		}

@@ -178,6 +178,9 @@ func (d *Url) httpSend(file string) string {
 
 func headers(resp string) []string {
 	delim := strings.Index(resp, "\r\n\r\n")
+	if delim == -1 {
+		delim = len(resp)
+	}
 	headers := resp[:delim]
 	return strings.Split(headers, "\r\n")
 }

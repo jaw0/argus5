@@ -43,7 +43,7 @@ func (s *Service) CheckValue(val string, valtype string) {
 	var fval float64
 
 	s.p.Calc.rawvalue = val
-	s.mon.Debug("rawvalue: %s", val)
+	s.mon.Debug("rawvalue: %s", limitString(val, 40))
 	val, fval, valtype = s.getValue(val, valtype)
 
 	if valtype == "skip" {
@@ -60,8 +60,17 @@ func (s *Service) CheckValue(val string, valtype string) {
 		}
 	}
 
-	s.mon.Debug("value '%s' -> status %s (%s)", val, status, reason)
+	s.mon.Debug("value '%s' -> status %s (%s)", limitString(val, 16), status, reason)
 	s.SetResult(status, val, reason)
+}
+
+func limitString(s string, limit int) string {
+
+	if len(s) <= limit {
+		return s
+	}
+
+	return s[:limit] + "..."
 }
 
 func (s *Service) testAndCompare(val string, fval float64, valtype string) (argus.Status, string) {

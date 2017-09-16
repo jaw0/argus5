@@ -16,9 +16,9 @@ import (
 type Config struct {
 	TLS_cert        string // our cert - .crt
 	TLS_key         string // our private key - .key
-	TLS_root        string // root cert - .crt
 	Errors_MailTo   string
 	Errors_MailFrom string
+	Syslog          string // syslog facility (eg. local4)
 	Mon_maxrun      int
 	Resolv_maxrun   int
 	Port_http       int
@@ -67,6 +67,7 @@ func read_config(file string) error {
 
 	diag.SetConfig(&diag.Config{
 		Debug:    newcf.Debug,
+		Facility: newcf.Syslog,
 		Mailto:   newcf.Errors_MailTo,
 		Mailfrom: newcf.Errors_MailFrom,
 	})

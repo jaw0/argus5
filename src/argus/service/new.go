@@ -49,6 +49,8 @@ func (s *Service) Config(conf *configure.CF) error {
 
 	conf.InitFromConfig(&s.Cf, "service", "")
 
+	s.Cf.DARP_Tags = strings.ToLower(s.Cf.DARP_Tags)
+
 	hwab := false
 	for i := argus.CLEAR; i <= argus.CRITICAL; i++ {
 		if !math.IsNaN(s.Cf.Maxdeviation[i]) {
@@ -68,6 +70,8 @@ func (s *Service) Config(conf *configure.CF) error {
 		s.Cf.Frequency = 60
 	}
 
+	// RSN - check darp tags - set disabled flag
+
 	return nil
 }
 
@@ -81,6 +85,10 @@ func (s *Service) Init() error {
 	if err != nil {
 		return err
 	}
+
+	lock.Lock()
+	allService[s.mon.Cf.Unique] = s
+	lock.Unlock()
 
 	// QQQ - or wait until DoneConfig?
 	s.sched = sched.New(&sched.Conf{
@@ -98,6 +106,10 @@ func (s *Service) DoneConfig() {
 
 // destruction
 func (s *Service) Recycle() {
+
+	lock.Lock()
+	delete(allService, s.mon.Cf.Unique)
+	lock.Unlock()
 
 	if s.sched != nil {
 		s.sched.Remove()

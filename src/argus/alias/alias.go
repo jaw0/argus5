@@ -6,9 +6,12 @@
 package alias
 
 import (
-	"argus/configure"
-	"argus/monel"
 	"errors"
+
+	"argus/argus"
+	"argus/configure"
+	"argus/diag"
+	"argus/monel"
 )
 
 type Alias struct {
@@ -17,6 +20,8 @@ type Alias struct {
 	Target string
 	Object *monel.M
 }
+
+var dl = diag.Logger("alias")
 
 // construction starts here:
 func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
@@ -66,6 +71,9 @@ func (a *Alias) Persist(pm map[string]interface{}) {
 }
 func (a *Alias) Restore(pm map[string]interface{}) {
 
+}
+func (a *Alias) SetResultFor(id string, status argus.Status, result string, reason string) {
+	dl.Verbose("protocol botch. '%s' sent non-service update", id)
 }
 
 // ################################################################

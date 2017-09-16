@@ -11,12 +11,21 @@ import (
 	"net/url"
 )
 
-func Encode(s string) string {
-	return encode(s, '~')
+func xEncode(s string) string {
+	return encode(s, '~', shouldEscapeFile)
+}
+
+func FileEncode(s string) string {
+	return encode(s, '~', shouldEscapeFile)
+}
+
+func PunctEncode(s string) string {
+	return encode(s, '~', shouldEscapePunct)
+
 }
 
 func UrlEncode(s string) string {
-	return encode(s, '%')
+	return encode(s, '%', shouldEscapeUrl)
 }
 
 func UrlDecode(s string) string {
@@ -51,11 +60,13 @@ func Encode64Url(s string) string {
 
 // ################################################################
 
-// modeled after net/url escape, but simpler
-func shouldEscape(c byte) bool {
+// compat with previous Argus::Encode::encode
+func shouldEscapeFile(c byte, pct byte) bool {
 
 	switch c {
-	case ' ', '"', '%':
+	case pct:
+		return true
+	case '%', '#', '+', '\\', ';', '=', '"', '\'', '`', '?', '&', '~', '<', '>', '/':
 		return true
 	}
 
@@ -66,13 +77,43 @@ func shouldEscape(c byte) bool {
 	return false
 }
 
-func encode(s string, pct byte) string {
+func shouldEscapeUrl(c byte, pct byte) bool {
+
+	switch c {
+	case pct:
+		return true
+	case ' ', '/', '\\', '+', '?', ';', '&', ':', '=', '$', '@', ',':
+		return true
+	}
+
+	if c <= ' ' || c >= 127 {
+		return true
+	}
+
+	return false
+}
+
+func shouldEscapePunct(c byte, pct byte) bool {
+
+	if c == pct {
+		return true
+	}
+
+	if c < '0' || c > '9' && c < 'A' || c > 'Z' && c < 'a' || c > 'z' {
+		return true
+	}
+
+	return false
+}
+
+// modeled after net/url escape
+func encode(s string, pct byte, should func(byte, byte) bool) string {
 
 	hexCount := 0
 	slen := len(s)
 
 	for i := 0; i < slen; i++ {
-		if shouldEscape(s[i]) {
+		if should(s[i], pct) {
 			hexCount++
 		}
 	}
@@ -86,7 +127,7 @@ func encode(s string, pct byte) string {
 
 	for i := 0; i < slen; i++ {
 		c := s[i]
-		if shouldEscape(c) {
+		if should(c, pct) {
 			t[j] = pct
 			t[j+1] = "0123456789ABCDEF"[c>>4]
 			t[j+2] = "0123456789ABCDEF"[c&15]

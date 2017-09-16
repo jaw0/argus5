@@ -13,21 +13,36 @@ import (
 
 	"argus/api"
 	"argus/argus"
+	"argus/clock"
 	"argus/config"
 	"argus/configure"
 	"argus/diag"
+	"argus/resolv"
 )
 
+type Maker interface {
+	Make(map[string]string) error
+}
+
 type DARP struct {
-	Name     string
-	Pass     string
-	Type     string
-	Hostname string
-	Port     int
+	Name         string
+	Pass         string
+	Type         string
+	Fetch_Config string // name of master
+	Hostname     string
+	Port         int
+	ip           *resolv.IP
+	ch           chan *sendMsg
+	// ...
 }
 type Status struct {
 	IsUp  bool
 	Lastt int64
+}
+
+type sendMsg struct {
+	f string
+	m map[string]string
 }
 
 type DarpServerer struct{}
@@ -39,19 +54,19 @@ var dl = diag.Logger("darp")
 // no lock, these are never modified after startup
 var MyId = "local"
 var MyDarp *DARP
-var iAmSlave bool
 var iHaveSlaves bool
-var darpEnabled bool
+var IsEnabled bool
+var objMaker Maker
 var allDarp = make(map[string]*DARP)
 var masters = make(map[string]*DARP)
-var slaves = make(map[string]*DARP)
 
 var lock sync.RWMutex
 var darpStatus = make(map[string]*Status)
+var noDarp = make(map[string]bool)
 
 func New(conf *configure.CF) error {
 
-	d := &DARP{Port: DEFAULTPORT}
+	d := &DARP{Port: DEFAULTPORT, Name: conf.Name}
 	conf.InitFromConfig(d, "darp", "")
 
 	name := conf.Name
@@ -76,7 +91,8 @@ func New(conf *configure.CF) error {
 	}
 
 	allDarp[name] = d
-	darpEnabled = true
+	darpStatus[name] = &Status{}
+	IsEnabled = true
 
 	ccf := config.Cf()
 	if ccf.DARP_Name != "" {
@@ -85,29 +101,23 @@ func New(conf *configure.CF) error {
 
 	if name == MyId {
 		MyDarp = d
-		if t == "slave" {
-			iAmSlave = true
-		} else if len(slaves) > 0 {
-			iHaveSlaves = true
-		}
-	} else if t == "slave" && MyDarp != nil && MyDarp.Type == "master" {
-		iHaveSlaves = true
+	}
+	if d.Type == "master" && d.Name != MyId {
+		masters[d.Name] = d
 	}
 
-	if t == "slave" {
-		slaves[name] = d
-	}
-	if t == "master" {
-		masters[name] = d
-	}
+	d.ip = resolv.New(d.Hostname)
 
 	conf.CheckTypos()
 	return nil
 }
 
-func Init() {
+func Init(mo Maker) {
 
-	if !darpEnabled {
+	objMaker = mo
+
+	if !IsEnabled {
+		noDarp[MyId] = true
 		return
 	}
 	if MyDarp == nil {
@@ -115,16 +125,150 @@ func Init() {
 		return
 	}
 
+	// will anyone send me status updates?
+	if MyDarp.Type == "master" {
+		if len(allDarp) > 1 {
+			iHaveSlaves = true
+		}
+	}
+
 	// start server
 	ob := &DarpServerer{}
 	api.ServerNew(ob, "darp", "tcp", fmt.Sprintf(":%d", MyDarp.Port))
 
 	// start clients
-
+	for _, d := range masters {
+		dx := d
+		dl.Debug("starting darp client to %s", d.Name)
+		dx.ch = make(chan *sendMsg, 100)
+		go dx.StartClient()
+	}
 }
 
-func (*DarpServerer) Connected(name string) {
-}
-func (*DarpServerer) Disco(name string) {
+// ################################################################
 
+func copyStatus() map[string]*Status {
+
+	new := make(map[string]*Status)
+
+	for n, s := range darpStatus {
+		ns := Status{}
+		ns = *s
+		new[n] = &ns
+	}
+
+	return new
 }
+
+func (x *DarpServerer) Connected(name string) {
+
+	now := clock.Unix()
+
+	lock.Lock()
+	defer lock.Unlock()
+
+	s := darpStatus[name]
+	if s == nil {
+		return
+	}
+	s.IsUp = true
+	s.Lastt = now
+}
+
+func (x *DarpServerer) Disco(name string) {
+
+	lock.Lock()
+	defer lock.Unlock()
+
+	s := darpStatus[name]
+	if s == nil {
+		return
+	}
+
+	s.IsUp = false
+}
+
+func GetStatuses() map[string]bool {
+
+	if !IsEnabled {
+		return noDarp
+	}
+
+	now := clock.Unix()
+	st := make(map[string]bool)
+
+	lock.RLock()
+	defer lock.RUnlock()
+
+	for n, s := range darpStatus {
+		if s.IsUp && s.Lastt > now-120 {
+			st[n] = true
+		} else {
+			st[n] = false
+		}
+	}
+
+	return st
+}
+
+// ################################################################
+
+func IncludesTag(tags string, tag string) bool {
+
+	for i := 0; i < len(tags); i++ {
+		c := tags[i]
+		// skip space
+		if c == ' ' || c == '\t' {
+			continue
+		}
+		// compare
+		//   find end of tag
+		eow := i + 1
+		for ; eow < len(tags) && tags[eow] != ' ' && tags[eow] != '\t'; eow++ {
+		}
+		tt := tags[i:eow]
+
+		if tt == tag || tt == "all" || tt == "*" {
+			return true
+		}
+
+		// skip ahead to space
+		for ; i < len(tags) && tags[i] != ' ' && tags[i] != '\t'; i++ {
+		}
+	}
+
+	return false
+}
+
+func TellMyMasters(f string, m map[string]string) {
+
+	msg := &sendMsg{f: f, m: m}
+
+	for _, m := range masters {
+		if m.ch == nil {
+			continue
+		}
+
+		select {
+		case m.ch <- msg:
+		default:
+			dl.Debug("send queue full")
+		}
+	}
+}
+
+func SendUpdate(obj string, status argus.Status, result string, reason string) {
+
+	if !IsEnabled {
+		return
+	}
+
+	TellMyMasters("update", map[string]string{
+		"obj":    obj,
+		"status": fmt.Sprintf("%d", status),
+		"result": result,
+		"reason": reason,
+	})
+}
+
+// func FloodAll

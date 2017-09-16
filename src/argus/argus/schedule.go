@@ -9,21 +9,21 @@ import (
 	"time"
 )
 
-type scheduleItem struct {
-	dow   int // -1 is all
-	start int // hhmm
-	end   int // hhmm
-	val   string
+type ScheduleItem struct {
+	Dow   int // -1 is all
+	Start int // hhmm
+	End   int // hhmm
+	Val   string
 }
 
 type Schedule struct {
-	sched []scheduleItem
+	Sched []ScheduleItem
 }
 
-var ScheduleAlwaysYes = &Schedule{[]scheduleItem{{-1, 0, 2400, "yes"}}}
+var ScheduleAlwaysYes = &Schedule{[]ScheduleItem{{-1, 0, 2400, "yes"}}}
 
 func ScheduleAlways(val string) *Schedule {
-	return &Schedule{[]scheduleItem{{-1, 0, 2400, val}}}
+	return &Schedule{[]ScheduleItem{{-1, 0, 2400, val}}}
 }
 
 func (s *Schedule) ResultNow() string {
@@ -33,23 +33,22 @@ func (s *Schedule) ResultNow() string {
 	hrs, min, _ := now.Clock()
 	tim := hrs*100 + min
 
-	for i, _ := range s.sched {
-		r := &s.sched[i]
+	for i, _ := range s.Sched {
+		r := &s.Sched[i]
 
-		if r.dow != -1 && r.dow != dow {
+		if r.Dow != -1 && r.Dow != dow {
 			continue
 		}
 
-		if tim < r.start {
+		if tim < r.Start {
 			continue
 		}
-		if tim >= r.end {
+		if tim >= r.End {
 			continue
 		}
 
-		return r.val
+		return r.Val
 	}
-
 	return ""
 }
 
@@ -59,7 +58,7 @@ func (s *Schedule) PermitNow() bool {
 
 func (s *Schedule) Append(dow int, start int, end int, value string) {
 
-	s.sched = append(s.sched, scheduleItem{dow, start, end, value})
+	s.Sched = append(s.Sched, ScheduleItem{dow, start, end, value})
 }
 
 /*

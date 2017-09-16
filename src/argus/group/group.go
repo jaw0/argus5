@@ -6,7 +6,9 @@
 package group
 
 import (
+	"argus/argus"
 	"argus/configure"
+	"argus/diag"
 	"argus/monel"
 )
 
@@ -14,6 +16,8 @@ type Group struct {
 	mon   *monel.M
 	GName string
 }
+
+var dl = diag.Logger("group")
 
 // construction starts here:
 func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
@@ -59,4 +63,7 @@ func (g *Group) Persist(pm map[string]interface{}) {
 }
 func (g *Group) Restore(pm map[string]interface{}) {
 
+}
+func (g *Group) SetResultFor(id string, status argus.Status, result string, reason string) {
+	dl.Verbose("protocol botch. '%s' sent non-service update", id)
 }

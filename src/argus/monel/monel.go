@@ -7,8 +7,10 @@ package monel
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 
+	"argus/api"
 	"argus/argus"
 	"argus/configure"
 	"argus/diag"
@@ -27,6 +29,8 @@ type Moneler interface {
 	Config(*configure.CF) error
 	Init() error
 	DoneConfig()
+	Recycle()
+	SetResultFor(string, argus.Status, string, string)
 }
 
 type Conf struct {
@@ -161,7 +165,59 @@ func (m *M) Init() {
 	lock.Lock()
 	byname[m.Cf.Unique] = m
 	lock.Unlock()
+}
 
+func (m *M) Recycle(cascade bool) {
+
+	m.Persist()
+
+	lock.Lock()
+	delete(byname, m.Cf.Unique)
+	lock.Unlock()
+
+	m.Lock.Lock()
+	defer m.Lock.Unlock()
+
+	for _, c := range m.Children {
+		c.Lock.Lock()
+		c.Parent = removeFromList(c.Parent, m)
+		c.Lock.Unlock()
+
+		if cascade {
+			c.Recycle(cascade)
+		}
+	}
+
+	for _, c := range m.Parent {
+		c.Lock.Lock()
+		c.Parent = removeFromList(c.Children, m)
+		c.Lock.Unlock()
+	}
+
+	m.Children = nil
+	m.Parent = nil
+
+	m.Me.Recycle()
+}
+
+func removeFromList(list []*M, x *M) []*M {
+
+	idx := -1
+	for i, l := range list {
+		if l == x {
+			idx = i
+		}
+	}
+	if idx == -1 {
+		// not found
+		return list
+	}
+
+	// delete
+	copy(list[idx:], list[idx+1:])
+	list[len(list)-1] = nil
+	list = list[:len(list)-1]
+	return list
 }
 
 func (m *M) configureNotify(conf *configure.CF) {
@@ -260,7 +316,7 @@ func (m *M) whoami() {
 
 	name = name + cleanName(m.Cf.Uname)
 	m.Cf.Unique = name
-	m.Filename = argus.Encode(name)
+	m.Filename = argus.FileEncode(name)
 	m.DirName = argus.HashedDirectory(name)
 }
 
@@ -309,4 +365,27 @@ func (m *M) loggitL(tag string, msg string) {
 	diag.Verbose("%s %s %s", m.Cf.Unique, tag, msg)
 	m.appendToLog(tag, msg)
 
+}
+
+// ################################################################
+
+func init() {
+	api.Add(true, "update", apiSetResultFor)
+}
+
+func apiSetResultFor(ctx *api.Context) {
+
+	uid := ctx.Args["obj"]
+	sts, _ := strconv.Atoi(ctx.Args["status"])
+	status := argus.Status(sts)
+	result := ctx.Args["result"]
+	reason := ctx.Args["reason"]
+
+	obj := Find(uid)
+	if obj == nil {
+		ctx.SendResponseFinal(404, "Not Found")
+		return
+	}
+	obj.Me.SetResultFor(ctx.User, status, result, reason)
+	ctx.SendOKFinal()
 }
