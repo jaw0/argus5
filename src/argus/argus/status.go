@@ -36,6 +36,7 @@ var conf = []colors{
 	DEPENDS:  {"DD9900", "FFCC44", ""},       // orange
 	UNKNOWN:  {"BB44EE", "DD99FF", ""},       // purple
 }
+
 var statusname = []string{
 	"unknown", "clear", "warning", "minor", "major", "critical", "override", "depends",
 }

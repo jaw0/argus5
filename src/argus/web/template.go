@@ -79,6 +79,7 @@ func serveTemplate(t *template.Template, ctx *Context) {
 	}
 	// valid? (otherwise, an ugly error)
 	if x := t.Lookup(name); x == nil {
+		dl.Debug("no such page %s", name)
 		http.NotFound(ctx.W, ctx.R)
 		return
 	}

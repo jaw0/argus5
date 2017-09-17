@@ -246,3 +246,9 @@ func processResult(uw map[string][]*service.Service, line string) {
 	}
 	delete(uw, addr)
 }
+
+func (p *Ping) DumpInfo() map[string]interface{} {
+	return map[string]interface{}{
+		"service/ping/CF/": p.Cf,
+	}
+}

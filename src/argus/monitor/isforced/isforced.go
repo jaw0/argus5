@@ -66,3 +66,7 @@ func (d *D) Start(s *service.Service) {
 func (d *D) Abort() {
 
 }
+
+func (d *D) DumpInfo() map[string]interface{} {
+	return nil
+}

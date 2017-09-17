@@ -84,7 +84,3 @@ func schedule2Json(sch *argus.Schedule) string {
 	js, _ := json.Marshal(sch)
 	return string(js)
 }
-
-// func getconfig
-// func override
-// func dump

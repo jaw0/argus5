@@ -42,6 +42,7 @@ var dl = diag.Logger("web")
 var server *Server
 
 func Init() {
+	load() // load sessions
 	server = Start()
 }
 func Stop() {
@@ -74,7 +75,7 @@ func Start() *Server {
 	// QQQ - different dir?
 	if cf.Htdir != "" {
 		// server static assets
-		dir := cf.Htdir + "/htdocs"
+		dir := cf.Htdir + "/static"
 		dl.Debug("serving static on %s", dir)
 		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
 
@@ -136,7 +137,7 @@ func httpAdapt(authreq int, f WebHandlerFunc) func(http.ResponseWriter, *http.Re
 		ctx.GetSession()
 
 		defer func() {
-			user := "[public]"
+			user := "[nouser]"
 			if ctx.User != nil {
 				user = ctx.User.Name
 			}

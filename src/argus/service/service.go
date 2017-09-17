@@ -26,6 +26,7 @@ type Monitor interface {
 	Start(*Service)
 	Abort()
 	DoneConfig()
+	DumpInfo() map[string]interface{}
 }
 
 type Conf struct {
@@ -122,6 +123,12 @@ func (s *Service) Debug(fmt string, args ...interface{}) {
 
 func (s *Service) SetNames(uname string, label string, friendly string) {
 	s.mon.SetNames(uname, label, friendly)
+}
+
+func Find(id string) *Service {
+	lock.RLock()
+	defer lock.RUnlock()
+	return allService[id]
 }
 
 func (s *Service) Start() {

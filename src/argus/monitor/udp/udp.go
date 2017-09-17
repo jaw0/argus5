@@ -260,3 +260,9 @@ func protoName(name string) string {
 
 	return ""
 }
+
+func (u *UDP) DumpInfo() map[string]interface{} {
+	return map[string]interface{}{
+		"service/udp/CF/": u.Cf,
+	}
+}

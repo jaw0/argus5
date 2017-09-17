@@ -269,3 +269,9 @@ func protoName(name string) string {
 
 	return ""
 }
+
+func (t *TCP) DumpInfo() map[string]interface{} {
+	return map[string]interface{}{
+		"service/tcp/CF/": t.Cf,
+	}
+}

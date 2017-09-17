@@ -105,3 +105,9 @@ func (d *DB) Start(s *service.Service) {
 
 	s.CheckValue(res, "data")
 }
+
+func (d *DB) DumpInfo() map[string]interface{} {
+	return map[string]interface{}{
+		"service/database/CF/": d.Cf,
+	}
+}

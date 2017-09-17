@@ -102,15 +102,21 @@ func (p *Prog) RunProg() (string, bool) {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		dl.Debug("command failed: %v", err)
+		p.S.Debug("command failed: %v", err)
 		if !p.Cf.IgnoreExit {
 			p.S.Fail("command failed")
 			return "", true
 		}
 	}
 	if len(out) > 0 {
-		dl.Debug("command output: %s", out)
+		p.S.Debug("command output: %s", out)
 	}
 
 	return string(out), false
+}
+
+func (p *Prog) DumpInfo() map[string]interface{} {
+	return map[string]interface{}{
+		"service/prog/CF/": p.Cf,
+	}
 }
