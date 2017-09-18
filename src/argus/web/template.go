@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"argus/argus"
@@ -52,7 +53,7 @@ func Configured() {
 	}
 }
 
-func loadTemplates() *template.Template {
+func xloadTemplates() *template.Template {
 
 	cf := config.Cf()
 
@@ -68,7 +69,48 @@ func loadTemplates() *template.Template {
 	return t
 }
 
-func serveTemplate(t *template.Template, ctx *Context) {
+func loadTemplates() map[string]*template.Template {
+
+	cf := config.Cf()
+
+	if cf.Htdir == "" {
+		return nil
+	}
+
+	htdocs, _ := filepath.Glob(cf.Htdir + "/htdocs/*")
+	dashes, _ := filepath.Glob(cf.Htdir + "/dash/*")
+	htdocs = append(htdocs, dashes...)
+
+	var partials []string
+	var pages []string
+
+	for _, f := range htdocs {
+		n := filepath.Base(f)
+
+		if n[0] == '.' || n[0] == '#' {
+			// skip editor temp files
+			continue
+		}
+		if n[0] == '_' {
+			partials = append(partials, f)
+		} else {
+			pages = append(pages, f)
+		}
+	}
+
+	tm := make(map[string]*template.Template)
+
+	for _, f := range pages {
+		n := filepath.Base(f)
+		t := template.New("view").Delims("{[", "]}")
+		t.ParseFiles(append(partials, f)...)
+		tm[n] = t
+	}
+
+	return tm
+}
+
+func serveTemplate(tm map[string]*template.Template, ctx *Context) {
 
 	name := strings.TrimPrefix(ctx.R.URL.Path, HTPATH)
 
@@ -78,7 +120,8 @@ func serveTemplate(t *template.Template, ctx *Context) {
 		return
 	}
 	// valid? (otherwise, an ugly error)
-	if x := t.Lookup(name); x == nil {
+	t := tm[name]
+	if t == nil {
 		dl.Debug("no such page %s", name)
 		http.NotFound(ctx.W, ctx.R)
 		return
@@ -114,7 +157,7 @@ func serveTemplate(t *template.Template, ctx *Context) {
 		}
 	}
 
-	err := t.ExecuteTemplate(ctx.W, name, dat)
+	err := t.ExecuteTemplate(ctx.W, "_base", dat)
 
 	if err != nil {
 		fmt.Fprintf(ctx.W, "ERROR: page %s: %v", name, err)

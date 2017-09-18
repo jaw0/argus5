@@ -67,3 +67,5 @@ func (g *Group) Restore(pm map[string]interface{}) {
 func (g *Group) SetResultFor(id string, status argus.Status, result string, reason string) {
 	dl.Verbose("protocol botch. '%s' sent non-service update", id)
 }
+func (g *Group) WebJson(md map[string]interface{}) {
+}

@@ -6,10 +6,10 @@
 package argus
 
 type Override struct {
-	user    string
-	auto    bool
-	quiet   bool
-	text    string
-	expires int64
-	ticket  string
+	User    string
+	Auto    bool
+	Quiet   bool
+	Text    string
+	Expires int64
+	Ticket  string
 }

@@ -214,30 +214,7 @@ func GetStatuses() map[string]bool {
 // ################################################################
 
 func IncludesTag(tags string, tag string) bool {
-
-	for i := 0; i < len(tags); i++ {
-		c := tags[i]
-		// skip space
-		if c == ' ' || c == '\t' {
-			continue
-		}
-		// compare
-		//   find end of tag
-		eow := i + 1
-		for ; eow < len(tags) && tags[eow] != ' ' && tags[eow] != '\t'; eow++ {
-		}
-		tt := tags[i:eow]
-
-		if tt == tag || tt == "all" || tt == "*" {
-			return true
-		}
-
-		// skip ahead to space
-		for ; i < len(tags) && tags[i] != ' ' && tags[i] != '\t'; i++ {
-		}
-	}
-
-	return false
+	return argus.IncludesTag(tags, tag, true)
 }
 
 func TellMyMasters(f string, m map[string]string) {

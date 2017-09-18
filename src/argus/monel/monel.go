@@ -12,6 +12,7 @@ import (
 
 	"argus/api"
 	"argus/argus"
+	"argus/clock"
 	"argus/configure"
 	"argus/diag"
 	"argus/notify"
@@ -26,6 +27,7 @@ var byname = make(map[string]*M)
 type Moneler interface {
 	Persist(map[string]interface{})
 	Restore(map[string]interface{})
+	WebJson(map[string]interface{})
 	Config(*configure.CF) error
 	Init() error
 	DoneConfig()
@@ -53,13 +55,23 @@ type Conf struct {
 	Countstop    bool
 	Hidden       bool
 	Sendnotify   [argus.CRITICAL + 1]*argus.Schedule `cfconv:"dotsev"`
-	// notify, web, acl, graph
+	ACL_Page     string
+	ACL_Override string
+	ACL_Annotate string
+	ACL_CheckNow string
+	ACL_About    string
+	//  graph
 }
 
 var defaults = Conf{
-	Overridable: true,
-	Siren:       true,
-	Gravity:     argus.GRAV_DN,
+	Overridable:  true,
+	Siren:        true,
+	Gravity:      argus.GRAV_DN,
+	ACL_Page:     "user staff root",
+	ACL_Override: "staff root",
+	ACL_Annotate: "staff root",
+	ACL_CheckNow: "root",
+	ACL_About:    "root",
 }
 
 type Persist struct {
@@ -71,7 +83,7 @@ type Persist struct {
 	Reason          string
 	AncInOv         bool
 	Alarm           bool
-	OvStatusSummary [argus.MAXSTATUS + 1]int
+	OvStatusSummary []int // NB - mapstructure cannot array, it can slice...
 	Interesting     bool
 	TransTime       int64
 	SirenTime       int64
@@ -89,6 +101,7 @@ type M struct {
 	NotifyCf     *notify.Conf
 	P            Persist
 	ConfCF       *configure.CF
+	WebTime      int64
 	Filename     string
 	DirName      string
 	Uname        string // default set by subclass, conf overrides
@@ -101,8 +114,11 @@ type M struct {
 func New(me Moneler, parent *M) *M {
 
 	m := &M{
-		Me: me,
+		WebTime: clock.Nano(),
+		Me:      me,
 	}
+
+	m.P.OvStatusSummary = make([]int, int(argus.MAXSTATUS+1))
 	if parent != nil {
 		m.Parent = []*M{parent}
 	}

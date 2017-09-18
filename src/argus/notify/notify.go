@@ -16,9 +16,12 @@ import (
 )
 
 type GlobalConf struct {
-	Mail_From     string
-	Message_Fmt   string
-	Message_Style string
+	Mail_From        string
+	Message_Fmt      string
+	Message_Style    string
+	ACL_NotifyDetail string
+	ACL_NotifyList   string
+	ACL_NotifyAck    string
 }
 
 type NewConf struct {
@@ -96,7 +99,10 @@ var notechan = make(chan *N, 16)
 var idno = 1000
 
 var globalDefaults = GlobalConf{
-	Message_Fmt: "{{.IDNO}} {{.CREATED}} {{.CONTENT}}",
+	Message_Fmt:      "{{.IDNO}} {{.CREATED}} {{.CONTENT}}",
+	ACL_NotifyDetail: "staff root",
+	ACL_NotifyList:   "staff root",
+	ACL_NotifyAck:    "staff root",
 }
 var NotifyCfDefaults = Conf{
 	Renotify:      300,

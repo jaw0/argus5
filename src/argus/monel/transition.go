@@ -285,4 +285,6 @@ func (m *M) determineSummary() {
 		}
 		child.Lock.RUnlock()
 	}
+
+	dl.Debug("summy: %v", m.P.OvStatusSummary)
 }

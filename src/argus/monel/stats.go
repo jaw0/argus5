@@ -17,7 +17,8 @@ type statDat struct {
 	Start   int64
 	Elapsed int
 	Ndown   int
-	Statt   [argus.MAXSTATUS + 1]int
+	TUp     int
+	TDn     int
 }
 type Stats struct {
 	Lastt   int64
@@ -95,11 +96,18 @@ func (m *M) statsUpdate(t int64) {
 	}
 
 	s.Daily[0].Elapsed += dt
-	s.Daily[0].Statt[s.Status] += dt
 	s.Monthly[0].Elapsed += dt
-	s.Monthly[0].Statt[s.Status] += dt
 	s.Yearly[0].Elapsed += dt
-	s.Yearly[0].Statt[s.Status] += dt
+
+	if s.Status == argus.CLEAR {
+		s.Daily[0].TUp += dt
+		s.Monthly[0].TUp += dt
+		s.Yearly[0].TUp += dt
+	} else {
+		s.Daily[0].TDn += dt
+		s.Monthly[0].TDn += dt
+		s.Yearly[0].TDn += dt
+	}
 
 	s.Lastt = t
 }

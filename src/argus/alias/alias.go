@@ -97,3 +97,6 @@ func (a *Alias) aliasLookup() *monel.M {
 	a.Object = t
 	return t
 }
+
+func (a *Alias) WebJson(md map[string]interface{}) {
+}

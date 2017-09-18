@@ -66,8 +66,10 @@ func (m *M) Restore() {
 
 	// if the save file is corrupt, the restore may panic
 	defer func() {
-		if err := recover(); err != nil {
-			diag.Problem("error restoring '%s': %v", file, err)
+		if !cf.DevMode {
+			if err := recover(); err != nil {
+				diag.Problem("error restoring '%s': %v", file, err)
+			}
 		}
 	}()
 
@@ -102,16 +104,17 @@ func (m *M) restore(pm map[string]interface{}) {
 
 	err := mapstructure.Decode(pm["monel"].(map[string]interface{}), p)
 	if err != nil {
+		dl.Debug("err: %v", err)
 		return
 	}
 
-	notes := pm["notify"].([]int)
+	notes := pm["notify"].([]interface{})
 
-	for _, id := range notes {
+	for _, idi := range notes {
+		id := idi.(int)
 		n := notify.Load(m.NotifyCf, id)
 		if n != nil {
 			m.Notifies = append(m.Notifies, n)
 		}
 	}
-
 }
