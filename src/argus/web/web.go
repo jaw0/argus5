@@ -72,7 +72,6 @@ func Start() *Server {
 		}()
 	}
 
-	// QQQ - different dir?
 	if cf.Htdir != "" {
 		// server static assets
 		dir := cf.Htdir + "/static"

@@ -12,14 +12,22 @@ import (
 	"time"
 
 	"argus/api/client"
+	"argus/argus"
 )
 
 const TIMEOUT = 15 * time.Second
 
+type KVP struct {
+	k string
+	v string
+}
+
 func main() {
 
+	var rawoutput bool
 	var controlsock string
 	flag.StringVar(&controlsock, "c", "/tmp/argus.ctl", "control socket")
+	flag.BoolVar(&rawoutput, "r", false, "raw output")
 	flag.Parse()
 
 	c, err := client.New("unix", controlsock, TIMEOUT)
@@ -48,7 +56,30 @@ func main() {
 
 	fmt.Printf("%d %s\n", resp.Code, resp.Msg)
 
+	var kvp []KVP
+	maxlen := 0
+
+	if rawoutput {
+		for _, l := range resp.Lines {
+			fmt.Printf("%s\n", l)
+		}
+		return
+	}
+
 	for _, l := range resp.Lines {
-		fmt.Printf("%s\n", l)
+		kvs := strings.SplitN(l, ": ", 2)
+		k := kvs[0]
+		v := ""
+		if len(k) > maxlen {
+			maxlen = len(k)
+		}
+		if len(kvs) > 1 {
+			v = argus.UrlDecode(strings.TrimSpace(kvs[1]))
+		}
+		kvp = append(kvp, KVP{k, v})
+	}
+
+	for _, kv := range kvp {
+		fmt.Printf("%-*s  %s\n", maxlen+1, kv.k+":", kv.v)
 	}
 }

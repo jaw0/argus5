@@ -15,6 +15,7 @@ import (
 func init() {
 	api.Add(true, "setdebug", apiDebug)
 	api.Add(true, "getconfig", apiGetConfig)
+	api.Add(true, "dump", apiDump)
 }
 
 func apiDebug(ctx *api.Context) {
@@ -83,4 +84,34 @@ func schedule2Json(sch *argus.Schedule) string {
 
 	js, _ := json.Marshal(sch)
 	return string(js)
+}
+
+// ################################################################
+
+// debugging dump
+func apiDump(ctx *api.Context) {
+
+	uid := ctx.Args["obj"]
+	m := Find(uid)
+
+	if m == nil {
+		dl.Debug("not found: %s", uid)
+		ctx.Send404()
+		return
+	}
+
+	ctx.SendOK()
+	m.Lock.RLock()
+
+	ctx.SendKVP("monel/Filename", m.Filename)
+	ctx.SendKVP("monel/DirName", m.DirName)
+	ctx.SendKVP("monel/Label", m.Label)
+	ctx.SendKVP("monel/Friendlyname", m.Friendlyname)
+	ctx.DumpStruct(&m.Cf, "monel/CF/")
+	ctx.DumpStruct(&m.P, "monel/")
+
+	m.Me.Dump(ctx)
+	m.Lock.RUnlock()
+
+	ctx.SendFinal()
 }

@@ -217,6 +217,9 @@ func (t *TCP) Read(conn net.Conn) ([]byte, bool) {
 		if t.Cf.ReadHow == "banner" && strings.IndexByte(string(res), '\n') != -1 {
 			return res, false
 		}
+		if t.Cf.ReadHow == "toblank" && strings.Index(string(res), "\r\n\r\n") != -1 {
+			return res, false
+		}
 	}
 }
 

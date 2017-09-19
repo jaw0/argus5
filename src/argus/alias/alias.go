@@ -8,7 +8,7 @@ package alias
 import (
 	"errors"
 
-	"argus/argus"
+	"argus/api"
 	"argus/configure"
 	"argus/diag"
 	"argus/monel"
@@ -72,9 +72,6 @@ func (a *Alias) Persist(pm map[string]interface{}) {
 func (a *Alias) Restore(pm map[string]interface{}) {
 
 }
-func (a *Alias) SetResultFor(id string, status argus.Status, result string, reason string) {
-	dl.Verbose("protocol botch. '%s' sent non-service update", id)
-}
 
 // ################################################################
 
@@ -98,5 +95,17 @@ func (a *Alias) aliasLookup() *monel.M {
 	return t
 }
 
+func (a *Alias) Children() []*monel.M {
+	m := a.aliasLookup()
+	if m == nil {
+		return nil
+	}
+	return m.Children
+}
+
 func (a *Alias) WebJson(md map[string]interface{}) {
+}
+
+func (a *Alias) Dump(ctx *api.Context) {
+	ctx.SendKVP("alias/target", a.Target)
 }

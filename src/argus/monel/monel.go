@@ -7,7 +7,6 @@ package monel
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 
 	"argus/api"
@@ -29,10 +28,11 @@ type Moneler interface {
 	Restore(map[string]interface{})
 	WebJson(map[string]interface{})
 	Config(*configure.CF) error
+	Dump(*api.Context)
 	Init() error
 	DoneConfig()
 	Recycle()
-	SetResultFor(string, argus.Status, string, string)
+	Children() []*M
 }
 
 type Conf struct {
@@ -384,24 +384,3 @@ func (m *M) loggitL(tag string, msg string) {
 }
 
 // ################################################################
-
-func init() {
-	api.Add(true, "update", apiSetResultFor)
-}
-
-func apiSetResultFor(ctx *api.Context) {
-
-	uid := ctx.Args["obj"]
-	sts, _ := strconv.Atoi(ctx.Args["status"])
-	status := argus.Status(sts)
-	result := ctx.Args["result"]
-	reason := ctx.Args["reason"]
-
-	obj := Find(uid)
-	if obj == nil {
-		ctx.SendResponseFinal(404, "Not Found")
-		return
-	}
-	obj.Me.SetResultFor(ctx.User, status, result, reason)
-	ctx.SendOKFinal()
-}

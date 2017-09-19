@@ -31,6 +31,7 @@ var dl = diag.Logger("users")
 
 func init() {
 	api.Add(true, "setuser", apiSetUser)
+	api.Add(true, "getuser", apiGetUser)
 }
 
 func Get(name string) *User {
@@ -121,7 +122,7 @@ func save() {
 
 func apiSetUser(ctx *api.Context) {
 
-	name := ctx.Args["name"]
+	name := ctx.Args["user"]
 	if name == "" {
 		ctx.SendResponseFinal(500, "must specify user")
 		return
@@ -149,4 +150,24 @@ func apiSetUser(ctx *api.Context) {
 
 	user.Update()
 	ctx.SendOKFinal()
+}
+
+func apiGetUser(ctx *api.Context) {
+
+	name := ctx.Args["user"]
+	if name == "" {
+		ctx.SendResponseFinal(500, "must specify user")
+		return
+	}
+
+	user := Get(name)
+
+	if user == nil {
+		ctx.Send404()
+		return
+	}
+
+	ctx.SendOK()
+	ctx.DumpStruct(user, "")
+	ctx.SendFinal()
 }

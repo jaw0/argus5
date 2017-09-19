@@ -65,6 +65,7 @@ func (m *M) Restore() {
 	}
 
 	// if the save file is corrupt, the restore may panic
+	// in devmode, let it crash
 	defer func() {
 		if !cf.DevMode {
 			if err := recover(); err != nil {

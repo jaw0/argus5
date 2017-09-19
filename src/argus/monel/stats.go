@@ -12,13 +12,14 @@ import (
 	"argus/clock"
 )
 
-// in unix time, seconds
+const SECSNANO = 1000000000
+
 type statDat struct {
-	Start   int64
-	Elapsed int
+	Start   int64 // nanos
+	Elapsed int   // secs
 	Ndown   int
-	TUp     int
-	TDn     int
+	TUp     int // secs
+	TDn     int // secs
 }
 type Stats struct {
 	Lastt   int64
@@ -55,7 +56,11 @@ func (m *M) appendToLog(tag, msg string) {
 func (m *M) statsInit() {
 
 	s := &m.P.Stats
-	now := clock.Unix()
+	now := clock.Nano()
+
+	if s.Lastt == 0 {
+		s.Lastt = now / SECSNANO
+	}
 
 	if len(s.Daily) == 0 {
 		s.Daily = []statDat{{Start: now}}
@@ -66,7 +71,6 @@ func (m *M) statsInit() {
 	if len(s.Yearly) == 0 {
 		s.Yearly = []statDat{{Start: now}}
 	}
-
 }
 
 func (m *M) statsTransition(prev argus.Status) {
@@ -153,7 +157,7 @@ func statsRollOverStat(s []statDat, t int64) []statDat {
 
 	s = append(s, statDat{})
 	copy(s[1:], s) // slide right
-	s[0] = statDat{Start: t}
+	s[0] = statDat{Start: t * SECSNANO}
 
 	if len(s) > MAXSTAT {
 		s = s[:MAXSTAT]

@@ -169,6 +169,7 @@ func (s *Service) Done() {
 	defer s.mon.Lock.Unlock()
 	s.reschedule()
 	s.running = false
+	s.Lasttest = clock.Nano()
 
 	s.mon.Debug("done")
 	for _, also := range s.AlsoRun {
@@ -178,6 +179,10 @@ func (s *Service) Done() {
 
 func (s *Service) Fail(reason string) {
 	s.SetResult(s.Cf.Severity, "", reason)
+}
+
+func (s *Service) Children() []*monel.M {
+	return nil
 }
 
 // ################################################################

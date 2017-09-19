@@ -6,7 +6,7 @@
 package group
 
 import (
-	"argus/argus"
+	"argus/api"
 	"argus/configure"
 	"argus/diag"
 	"argus/monel"
@@ -64,8 +64,11 @@ func (g *Group) Persist(pm map[string]interface{}) {
 func (g *Group) Restore(pm map[string]interface{}) {
 
 }
-func (g *Group) SetResultFor(id string, status argus.Status, result string, reason string) {
-	dl.Verbose("protocol botch. '%s' sent non-service update", id)
-}
 func (g *Group) WebJson(md map[string]interface{}) {
+}
+func (g *Group) Children() []*monel.M {
+
+	return g.mon.Children
+}
+func (g *Group) Dump(ctx *api.Context) {
 }

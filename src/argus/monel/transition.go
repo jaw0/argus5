@@ -48,6 +48,7 @@ func (m *M) UpUpdate(by *M) {
 	changed := m.determineStatus()
 
 	if !changed {
+		m.commonUpdateNoChange()
 		return
 	}
 	m.P.Reason = by.Cf.Uname
@@ -57,6 +58,7 @@ func (m *M) UpUpdate(by *M) {
 
 func (m *M) commonUpdate(prevOv argus.Status) {
 
+	m.WebTime = clock.Nano()
 	m.setAlarm()
 	m.loggitL("TRANSITION", m.P.Reason)
 	dl.Verbose("TRANSITION [%s -> %s] %s (%s)", prevOv, m.P.OvStatus, m.Cf.Unique, m.P.Reason)
@@ -70,6 +72,15 @@ func (m *M) commonUpdate(prevOv argus.Status) {
 	// if up + notify + autoack -> ack
 
 	m.andUpwards()
+}
+
+// no change in status, but we still need to update the count summaries
+func (m *M) commonUpdateNoChange() {
+
+	m.WebTime = clock.Nano()
+	m.determineSummary()
+	m.andUpwards()
+
 }
 
 func (m *M) andUpwards() {
@@ -272,16 +283,20 @@ func (m *M) determineSummary() {
 		return
 	}
 
-	// do this on the web side, instead
-	//if m.P.Override != nil {
-	//	m.P.OvStatusSummary[int(argus.OVERRIDE)] = len(m.Children)
-	//	return
-	//}
+	// QQQ - do this on the web side, instead?
+	if m.P.Override != nil {
+		m.P.OvStatusSummary[int(argus.OVERRIDE)] = len(m.Children)
+		return
+	}
 
 	for _, child := range m.Children {
 		child.Lock.RLock()
 		for i := 0; i <= int(argus.MAXSTATUS); i++ {
-			m.P.OvStatusSummary[i] += child.P.OvStatusSummary[i]
+			if m.P.Override != nil && i >= int(argus.WARNING) && i <= int(argus.CRITICAL) {
+				m.P.OvStatusSummary[int(argus.OVERRIDE)] += child.P.OvStatusSummary[i]
+			} else {
+				m.P.OvStatusSummary[i] += child.P.OvStatusSummary[i]
+			}
 		}
 		child.Lock.RUnlock()
 	}

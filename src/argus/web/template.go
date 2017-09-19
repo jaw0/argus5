@@ -43,30 +43,14 @@ func Configured() {
 	// in dev mode, reload the templates on every page view
 	if cf.DevMode {
 		Add(PUBLIC, HTPATH, func(ctx *Context) {
-			serveTemplate(loadTemplates(), ctx)
+			serveTemplate(loadTemplates(), true, ctx)
 		})
 	} else {
 		t := loadTemplates()
 		Add(PUBLIC, HTPATH, func(ctx *Context) {
-			serveTemplate(t, ctx)
+			serveTemplate(t, false, ctx)
 		})
 	}
-}
-
-func xloadTemplates() *template.Template {
-
-	cf := config.Cf()
-
-	if cf.Htdir == "" {
-		return nil
-	}
-
-	// change the delimiters to avoid clash with js templates
-	t := template.New("view").Delims("{[", "]}")
-	t.ParseGlob(cf.Htdir + "/htdocs/*")
-	t.ParseGlob(cf.Htdir + "/dash/*")
-
-	return t
 }
 
 func loadTemplates() map[string]*template.Template {
@@ -110,7 +94,7 @@ func loadTemplates() map[string]*template.Template {
 	return tm
 }
 
-func serveTemplate(tm map[string]*template.Template, ctx *Context) {
+func serveTemplate(tm map[string]*template.Template, devmode bool, ctx *Context) {
 
 	name := strings.TrimPrefix(ctx.R.URL.Path, HTPATH)
 
@@ -129,13 +113,26 @@ func serveTemplate(tm map[string]*template.Template, ctx *Context) {
 
 	user := ""
 	home := ""
+	objtitle := name
+	query := make(map[string]string)
+
+	// copy query params
+	for k, v := range ctx.R.Form {
+		if len(v) > 0 {
+			query[k] = v[0]
+		}
+	}
+
 	if ctx.User != nil {
 		user = ctx.User.Name
 		home = ctx.User.Home
 	}
 
+	if obj, ok := query["obj"]; ok {
+		objtitle = obj
+	}
+
 	// make data available to template
-	query := make(map[string]string)
 	dat := map[string]interface{}{
 		"User":            user,
 		"Home":            home,
@@ -143,18 +140,13 @@ func serveTemplate(tm map[string]*template.Template, ctx *Context) {
 		"Header_Branding": template.HTML(webConf.Header_Branding),
 		"Footer":          template.HTML(webConf.Footer),
 		"Host":            ctx.R.Host,
+		"DevMode":         devmode,
+		"ObjTitle":        objtitle, // object name (if exists), or page name
 		"Q":               query,
 		"Argus": struct {
 			Version string
 			Url     string
 		}{argus.Version, argus.URL},
-	}
-
-	// copy query params
-	for k, v := range ctx.R.Form {
-		if len(v) > 0 {
-			query[k] = v[0]
-		}
 	}
 
 	err := t.ExecuteTemplate(ctx.W, "_base", dat)
