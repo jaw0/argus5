@@ -36,6 +36,18 @@ type Log struct {
 	Msg      string
 }
 
+type statsExportDat struct {
+	Label   string
+	HiLite  bool
+	Start   int64
+	Elapsed int
+	NDown   int
+	PctUp   float32
+	PctDn   float32
+}
+type StatsExport struct {
+}
+
 const (
 	MAXLOG  = 500
 	MAXSTAT = 14

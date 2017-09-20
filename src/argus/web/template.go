@@ -153,5 +153,6 @@ func serveTemplate(tm map[string]*template.Template, devmode bool, ctx *Context)
 
 	if err != nil {
 		fmt.Fprintf(ctx.W, "ERROR: page %s: %v", name, err)
+		dl.Verbose("template error: page %s: %v", name, err)
 	}
 }

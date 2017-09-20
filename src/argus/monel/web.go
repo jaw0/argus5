@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"argus/argus"
+	"argus/notify"
 	"argus/web"
 )
 
@@ -67,7 +68,9 @@ func apiJson(ctx *web.Context) {
 	m.webMeta(d)
 
 	// only include these if something has changed
-	if m.webChangedSince(since) {
+	if !m.webChangedSince(since) {
+		d["unchanged"] = true
+	} else {
 		mond := make(map[string]interface{})
 		deco := make(map[string]interface{})
 		d["mon"] = mond
@@ -137,11 +140,19 @@ func (m *M) webJson(creds []string, md map[string]interface{}) {
 
 	md["status"] = m.P.Status
 	md["ovstatus"] = m.P.OvStatus
+	md["transtime"] = m.P.TransTime
 	md["override"] = m.P.Override
 	md["annotation"] = m.P.Annotation
 	md["reason"] = m.P.Reason
-	md["stats"] = m.P.Stats
-	md["log"] = m.P.Log
+	md["stats"] = m.P.Stats // XXX
+	md["log"] = m.P.Log     // ok. log is only ever appended to
+
+	// notifies
+	not := make([]*notify.ExportInfo, 0, len(m.Notifies))
+	for _, n := range m.Notifies {
+		not = append(not, n.WebExport())
+	}
+	md["notify"] = not
 
 	childs := m.Me.Children()
 	m.Lock.RUnlock()

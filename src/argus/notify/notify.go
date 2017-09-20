@@ -72,6 +72,11 @@ type Persist struct {
 	SendTo       []SendDat
 	Log          []LogDat
 }
+type ExportInfo struct {
+	IdNo     int
+	IsActive bool
+	OvStatus argus.Status
+}
 
 type SendDat struct {
 	When int64
@@ -131,6 +136,13 @@ func (n *N) log(who string, msg string) {
 
 func (n *N) IdNo() int {
 	return n.p.IdNo
+}
+
+func (n *N) WebExport() *ExportInfo {
+	n.lock.RLock()
+	defer n.lock.RUnlock()
+
+	return &ExportInfo{n.p.IdNo, n.p.IsActive, n.p.OvStatus}
 }
 
 // ################################################################

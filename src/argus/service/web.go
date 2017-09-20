@@ -19,7 +19,7 @@ func (s *Service) WebJson(md map[string]interface{}) {
 	s.mon.Lock.RLock()
 	defer s.mon.Lock.RUnlock()
 
-	md["last_test"] = s.Lasttest
+	md["lasttest"] = s.Lasttest
 	darp := make(map[string]darpStatusResult)
 	md["darp"] = darp
 

@@ -129,7 +129,7 @@ func (s *Service) testAndCompare(val string, fval float64, valtype string) (argu
 		}
 	}
 
-	return argus.CLEAR, "OK"
+	return argus.CLEAR, ""
 }
 
 func (s *Service) getValue(val string, valtype string) (string, float64, string) {

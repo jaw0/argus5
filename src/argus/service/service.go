@@ -197,6 +197,7 @@ func (s *Service) SetResult(status argus.Status, result string, reason string) {
 	// handle retries
 	if status == argus.CLEAR {
 		s.Tries = 0
+		reason = ""
 	} else {
 		if s.Tries <= s.Cf.Retries {
 			s.mon.Debug("retrying (%d)", s.Tries)

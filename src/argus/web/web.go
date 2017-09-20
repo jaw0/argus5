@@ -141,7 +141,7 @@ func httpAdapt(authreq int, f WebHandlerFunc) func(http.ResponseWriter, *http.Re
 				user = ctx.User.Name
 			}
 			// NB: files in /static do not pass through here, and do not get logged
-			dl.Verbose("ACCESS: %s %s %d %d %s",
+			dl.Verbose("access: %s %s %d %d %s",
 				user, r.RemoteAddr, rw.status, rw.size, r.RequestURI)
 
 		}()
@@ -188,4 +188,11 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 func (w *responseWriter) WriteHeader(s int) {
 	w.status = s
 	w.w.WriteHeader(s)
+}
+
+// ################################################################
+
+func init() {
+	http.Handle("/robots.txt", http.RedirectHandler("/static/robots.txt", 302))
+	http.Handle("/favicon.ico", http.RedirectHandler("/static/favicon.ico", 302))
 }

@@ -220,6 +220,12 @@ func (t *TCP) Read(conn net.Conn) ([]byte, bool) {
 		if t.Cf.ReadHow == "toblank" && strings.Index(string(res), "\r\n\r\n") != -1 {
 			return res, false
 		}
+		if t.Cf.ReadHow == "dns" && len(res) > 2 {
+			rlen := int(res[0])<<8 | int(res[1])
+			if len(res) >= rlen+2 {
+				return res[2:], false
+			}
+		}
 	}
 }
 
