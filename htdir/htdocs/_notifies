@@ -1,0 +1,6 @@
+
+<div id=notifies>
+<template v-for="n in mon.notify">
+  <a href="" v-bind:class="[n.OvStatus_sevf]" v-bind:title="n.Created_fmt">{{ n.IdNo }} </a>
+</template>
+</div>

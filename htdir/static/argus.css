@@ -1,0 +1,74 @@
+
+
+.clear {
+    background-color: #33DD33;
+}
+.warning {
+    background-color: #88DDFF;
+}
+.minor {
+    background-color: #FFFF00;
+}
+.major {
+    background-color: #FFBB44;
+}
+.critical {
+    background-color: #FF4444;
+}
+.override {
+    background-color: #DDDDDD;
+}
+.depends {
+    background-color: #FFCC44;
+}
+.unknown {
+    background-color: #DD99FF;
+}
+
+.clear-f {
+    color: #22AA22;
+}
+.warning-f {
+    color: #0088DD;
+}
+.minor-f {
+    color: #CCCC00;
+}
+.major-f {
+    color: #DD9900;
+}
+.critical-f {
+    color: #CC0000;
+}
+.override-f {
+    color: #888888;
+}
+.depends-f {
+    color: #DD9900;
+}
+.unknown-f {
+    color: #BB44EE;
+}
+
+/****************************************************************/
+
+.objectname {
+    font-family: monospace;
+    font-size: 125%;
+    background-color: #f9f8f8;
+}
+
+
+/****************************************************************/
+
+#statusinfo th {
+    padding-right: 25px;
+    padding-left: 25px;
+}
+
+#stats .hilite {
+    background-color: #ddf;
+}
+
+
+

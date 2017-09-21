@@ -1,0 +1,12 @@
+
+<table id=logs>
+  <tr><th>when</th><th>status</th><th colspan=2>reason</th></tr>
+  <template v-for="l in mon.log">
+      <tr>
+            <td align=right>{{ l.When_fmt }}</td>
+            <td v-bind:class="[l.OvStatus_sevf]">{{ l.OvStatus_fmt }}</td>
+            <td>{{ l.Tag }} -</td>
+            <td>{{ l.Msg }}</td>
+      </tr>
+  </template>
+</table>

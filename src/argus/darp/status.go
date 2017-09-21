@@ -11,6 +11,7 @@ import (
 
 func AggrStatus(gravity argus.Gravity, mystatus argus.Status, statuses map[string]argus.Status) argus.Status {
 
+	dl.Debug("grav %s; %s; %v", gravity, mystatus, statuses)
 	if gravity == argus.GRAV_SELF || !iHaveSlaves || !IsEnabled {
 		return mystatus
 	}
@@ -27,7 +28,6 @@ func CalcAggrStatus(gravity argus.Gravity, mystatus argus.Status,
 	nstatus := 0
 
 	for host, up := range darps {
-
 		if up {
 			count[statuses[host]]++
 			nstatus++
@@ -40,6 +40,7 @@ func CalcAggrStatus(gravity argus.Gravity, mystatus argus.Status,
 		}
 	}
 
+	dl.Debug("counts %v", count)
 	count[argus.UNKNOWN] += count[argus.OVERRIDE] + count[argus.DEPENDS]
 
 	switch gravity {

@@ -6,6 +6,7 @@
 package monel
 
 import (
+	"fmt"
 	"time"
 
 	"argus/argus"
@@ -36,16 +37,14 @@ type Log struct {
 	Msg      string
 }
 
-type statsExportDat struct {
+type StatsExport struct {
 	Label   string
 	HiLite  bool
 	Start   int64
-	Elapsed int
+	Elapsed string
 	NDown   int
-	PctUp   float32
-	PctDn   float32
-}
-type StatsExport struct {
+	PctUp   string
+	PctDn   string
 }
 
 const (
@@ -72,6 +71,7 @@ func (m *M) statsInit() {
 
 	if s.Lastt == 0 {
 		s.Lastt = now / SECSNANO
+		s.Status = m.P.Status
 	}
 
 	if len(s.Daily) == 0 {
@@ -83,24 +83,30 @@ func (m *M) statsInit() {
 	if len(s.Yearly) == 0 {
 		s.Yearly = []statDat{{Start: now}}
 	}
+
+	// discard time spent while not running
+	s.Lastt = now / SECSNANO
+	m.statsTransition()
 }
 
-func (m *M) statsTransition(prev argus.Status) {
+func (m *M) statsTransition() {
 
 	m.statsUpdateMaybeRoll()
+	s := &m.P.Stats
+	dl.Debug("%s -> %s", s.Status, m.P.Status)
 
-	if m.P.OvStatus == argus.UNKNOWN || prev == argus.UNKNOWN {
+	if m.P.Status == argus.UNKNOWN || s.Status == argus.UNKNOWN {
+		s.Status = m.P.Status
 		return
 	}
 
-	s := &m.P.Stats
-	if prev == argus.CLEAR {
+	if s.Status == argus.CLEAR && m.P.Status != argus.CLEAR {
 		s.Daily[0].Ndown++
 		s.Monthly[0].Ndown++
 		s.Yearly[0].Ndown++
 	}
 
-	s.Status = m.P.OvStatus
+	s.Status = m.P.Status
 }
 
 func (m *M) statsUpdate(t int64) {
@@ -115,7 +121,9 @@ func (m *M) statsUpdate(t int64) {
 	s.Monthly[0].Elapsed += dt
 	s.Yearly[0].Elapsed += dt
 
-	if s.Status == argus.CLEAR {
+	dl.Debug("stats update %s + %d", s.Status, dt)
+
+	if s.Status == argus.CLEAR || s.Status == argus.UNKNOWN {
 		s.Daily[0].TUp += dt
 		s.Monthly[0].TUp += dt
 		s.Yearly[0].TUp += dt
@@ -175,6 +183,65 @@ func statsRollOverStat(s []statDat, t int64) []statDat {
 		s = s[:MAXSTAT]
 	}
 	return s
+}
+
+// ################################################################
+// stats for web page
+
+func (m *M) ExportStats() []*StatsExport {
+
+	var res []*StatsExport
+	res = appendExportStats(res, "Today", m.P.Stats.Daily, 0)
+	res = appendExportStats(res, "Yesterday", m.P.Stats.Daily, 1)
+	res = appendExportStats(res, "2 Days Ago", m.P.Stats.Daily, 2)
+	res = appendExportStats(res, "This Month", m.P.Stats.Monthly, 0)
+	res = appendExportStats(res, "Last Month", m.P.Stats.Monthly, 1)
+	res = appendExportStats(res, "2 Months Ago", m.P.Stats.Monthly, 2)
+	res = appendExportStats(res, "This Year", m.P.Stats.Yearly, 0)
+	res = appendExportStats(res, "Last Year", m.P.Stats.Yearly, 1)
+	res = appendExportStats(res, "2 Years Ago", m.P.Stats.Yearly, 2)
+
+	return res
+}
+
+func appendExportStats(r []*StatsExport, label string, stats []statDat, idx int) []*StatsExport {
+
+	if idx >= len(stats) {
+		return r
+	}
+
+	s := stats[idx]
+
+	if s.Elapsed == 0 {
+		return r
+	}
+
+	// RSN - pretty strings
+	r = append(r, &StatsExport{
+		Label:   label,
+		Start:   s.Start,
+		Elapsed: argus.Elapsed(int64(s.Elapsed)),
+		HiLite:  idx == 0,
+		NDown:   s.Ndown,
+		PctUp:   percent(float32(s.TUp) / float32(s.Elapsed) * 100),
+		PctDn:   percent(float32(s.TDn) / float32(s.Elapsed) * 100),
+	})
+
+	return r
+}
+
+func percent(f float32) string {
+
+	if f <= 0 {
+		return "0.00"
+	}
+	if f >= 100 {
+		return "100.0"
+	}
+	if f > 99.99 {
+		return fmt.Sprintf("%.4f", f)
+	}
+	return fmt.Sprintf("%.2f", f)
 }
 
 func (m *M) StatsPeriodic() {

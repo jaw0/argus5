@@ -1,0 +1,21 @@
+
+<table id=statusinfo><tr><td valign=top bgcolor="#ddd">
+  <a href="" title="Annotate"><i class="fa fa-comment-o"></i></a><br>
+  <a href="" title="Override"><i class="fa fa-flag-o"></i></a><br>
+  <a href="" title="Check Now"><i class="fa fa-refresh"></a></i><br>
+  <a v-for="p in deco.parent" v-bind:href="p.PageUrl" v-bind:title="p.Unique"><i class="fa fa-level-up"></i></a><br>
+</td><td valign=top>
+  <table>
+    <tr><th>name</th><td class=objectname>{{ deco.name }}</td></tr>
+    <tr><th>status</th><td v-bind:class="[mon.ovstatus_sev]">{{ mon.ovstatus_fmt  }}</td>
+                <th>since</th><td>{{ mon.transtime_fmt }}</td></tr>
+    <tr v-if="!mon.childsum && mon.reason"><th>...because</th><td>{{ mon.reason }}</td></tr>
+    <tr v-if="mon.Hostname"><th>hostname</th><td>{{ mon.Hostname }}</td></tr>
+    <tr v-if="deco.note"><th>note</th><td>{{ deco.note }}</td></tr>
+    <tr v-if="deco.info"><th>info</th><td>{{ deco.info }}</td></tr>
+    <tr v-if="deco.details"><th>details</th><td>{{ deco.details }}</td></tr>
+    <tr v-if="deco.comment"><th>comment</th><td>{{ deco.comment }}</td></tr>
+    <tr v-if="mon.annotation"><th>annotation</th><td>{{ mon.annotation }}</td></tr>
+
+  </table>
+</td></tr></table>

@@ -1,0 +1,5 @@
+{[define "content" ]}
+
+{[ template "_top" . ]}
+
+{[end ]}

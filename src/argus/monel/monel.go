@@ -378,6 +378,10 @@ func (m *M) Loggit(tag string, msg string) {
 
 func (m *M) loggitL(tag string, msg string) {
 
+	if tag == "TRANSITION" && msg == "" {
+		msg = m.P.OvStatus.String()
+	}
+
 	diag.Verbose("%s %s %s", m.Cf.Unique, tag, msg)
 	m.appendToLog(tag, msg)
 

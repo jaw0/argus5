@@ -1,0 +1,30 @@
+
+<table class=childtop v-if="mon.childsum">
+  <tr><th>Name</th><th>Up</th><th>Down</th><th>Override</th></tr>
+  <template v-for="c in mon.childsum">
+    <tr><td><a v-bind:href="c.Desc.PageUrl">{{ c.Desc.Label }}</a></td>
+
+        <template v-if="c.HasChild">
+          <td v-bind:class="{clear: c.Up}">
+              <span v-for="cc in c.Up"><a v-bind:href="cc.PageUrl">{{ cc.Label }}</a> </span>
+          </td>
+
+          <td v-bind:class="[c.Dn ? c.Sev_sev : '']">
+              <span v-for="cc in c.Dn"><a v-bind:href="cc.PageUrl">{{ cc.Label }}</a> </span>
+          </td>
+
+          <td v-bind:class="{override: c.Ov}">
+              <span v-for="cc in c.Ov"><a v-bind:href="cc.PageUrl">{{ cc.Label }}</a> </span>
+          </td>
+        </template>
+
+        <template v-else="">
+          <!-- row is a service - no children -->
+          <td v-bind:class="{clear: c.Counts.Up}"><span v-if="c.Counts.Up">Up</span></td>
+          <td v-bind:class="[c.Counts.Dn ? c.Counts.Sev_sev : '']"><span v-if="c.Counts.Dn">DOWN</span></td>
+          <td v-bind:class="{override: c.Counts.Ov}"><span v-if="c.Counts.Ov">Override</span></td>
+        </template>
+    </tr>
+  </template>
+</table>
+

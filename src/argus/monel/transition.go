@@ -62,7 +62,7 @@ func (m *M) commonUpdate(prevOv argus.Status) {
 	m.setAlarm()
 	m.loggitL("TRANSITION", m.P.Reason)
 	dl.Verbose("TRANSITION [%s -> %s] %s (%s)", prevOv, m.P.OvStatus, m.Cf.Unique, m.P.Reason)
-	m.statsTransition(prevOv)
+	m.statsTransition()
 	m.determineSummary()
 	m.updateNotifies()
 	m.maybeNotify(prevOv)
@@ -78,9 +78,9 @@ func (m *M) commonUpdate(prevOv argus.Status) {
 func (m *M) commonUpdateNoChange() {
 
 	m.WebTime = clock.Nano()
+	m.statsTransition()
 	m.determineSummary()
 	m.andUpwards()
-
 }
 
 func (m *M) andUpwards() {

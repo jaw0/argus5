@@ -1,0 +1,6 @@
+
+<table id=darpinfo>
+  <template v-for="d,n in mon.darp">
+    <tr><th>{{ n }}</th><td v-bind:class="[d.Status_sev]">{{ d.Status_fmt }}</td></tr>
+  </template>
+</table>

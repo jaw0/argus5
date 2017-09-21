@@ -59,3 +59,24 @@ func Timespec(v string, def int) (int64, error) {
 
 	return tot, nil
 }
+
+func Elapsed(e int64) string {
+
+	sec := e % 60
+	e /= 60
+	min := e % 60
+	e /= 60
+	hrs := e % 24
+	e /= 24
+	day := e % 30 // -ish
+	e /= 30
+	mon := e
+
+	if mon > 0 {
+		return fmt.Sprintf("%dM %dd %0.2d:%0.2d", mon, day, hrs, min)
+	}
+	if day > 0 {
+		return fmt.Sprintf("%dd %0.2d:%0.2d", day, hrs, min)
+	}
+	return fmt.Sprintf("%0.2d:%0.2d:%0.2d", hrs, min, sec)
+}

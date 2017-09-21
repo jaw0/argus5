@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Argus</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/themes/base/jquery-ui.css" rel="stylesheet" type="text/css">
+  <link href="https://opensource.keycdn.com/fontawesome/4.7.0/font-awesome.min.css" rel="stylesheet" type="text/css">
+  <link href="/static/argus.css" type="text/css" rel="stylesheet">
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js"></script>
+  <script src="https://unpkg.com/vue"></script>
+  <script src="/static/argus.js"></script>
+
+  <link rel="icon" href="/static/sadred.gif" type="image/gif">
+
+  <script>
+        var devmode = {[ .DevMode ]}
+        var objname = "{[ .Q.obj ]}"
+        var urlhost = "{[ .Host ]}"
+        var username = "{[ .User ]}"
+        var argusver = "{[ .Argus.Version ]}"
+
+        {[template "script" . ]}
+
+        $( function() { $( document ).tooltip(); } );
+        argus_onload()
+  </script>
+
+</head>
+<body>
+<div class="header">{[ .Header ]}</div>
+
+<table width="100%" border=0 cellpadding=0 cellspacing=0 class=main id=argusmain>
+  <tr><td  valign=bottom align=left class=headerbranding>{[ .Header_Branding ]}</td></tr>
+
+<!-- errors during startup -->
+{[ template "_info_user" . ]}
+
+<tr><td valign=top class=maincontent colspan=2>
+
+{[ template "content" . ]}
+
+</td></tr>
+<tr><td colspan=2>
+  <div class="footerargus"><a href="{[ .Argus.Url ]}">Argus Monitoring</a>/{[ .Argus.Version ]}</div>
+</td></tr>
+</table>
+
+<div class="footer">{[ .Footer ]}</div>
+</body>
+</html>
+
+{[define "script" ]}{[end]}
+

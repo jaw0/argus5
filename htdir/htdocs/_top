@@ -1,0 +1,12 @@
+
+<table class=childtop v-if="mon.childsum">
+  <tr><th>Name</th><th>Up</th><th>Down</th><th>Override</th></tr>
+  <template v-for="c in mon.childsum">
+    <tr><td><a v-bind:href="c.Desc.PageUrl">{{ c.Desc.Label }}</a></td>
+        <td v-bind:class="{clear: c.Counts.Up}">{{ c.Counts.Up }}</td>
+        <td v-bind:class="[c.Counts.Dn ? c.Counts.Sev_sev : '']">{{ c.Counts.Dn }}</td>
+        <td v-bind:class="{override: c.Counts.Ov}">{{ c.Counts.Ov }}</td>
+    </tr>
+  </template>
+</table>
+

@@ -112,7 +112,20 @@ func (m *M) restore(pm map[string]interface{}) {
 	notes := pm["notify"].([]interface{})
 
 	for _, idi := range notes {
-		id := idi.(int)
+		var id int
+		switch idi := idi.(type) {
+		case float32:
+			id = int(idi)
+		case float64:
+			id = int(idi)
+		case int:
+			id = int(idi)
+		case int32:
+			id = int(idi)
+		case int64:
+			id = int(idi)
+		}
+
 		n := notify.Load(m.NotifyCf, id)
 		if n != nil {
 			m.Notifies = append(m.Notifies, n)

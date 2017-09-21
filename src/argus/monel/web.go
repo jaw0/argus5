@@ -33,7 +33,10 @@ type childSummary struct {
 	Counts   childSummaryCount
 	Status   argus.Status
 	HasChild bool
-	Summy    [argus.MAXSTATUS + 1][]*objectDescr
+	Up       []*objectDescr
+	Dn       []*objectDescr
+	Ov       []*objectDescr
+	Sev      argus.Status // max sev of Dn[]
 }
 
 func init() {
@@ -144,8 +147,8 @@ func (m *M) webJson(creds []string, md map[string]interface{}) {
 	md["override"] = m.P.Override
 	md["annotation"] = m.P.Annotation
 	md["reason"] = m.P.Reason
-	md["stats"] = m.P.Stats // XXX
-	md["log"] = m.P.Log     // ok. log is only ever appended to
+	md["stats"] = m.ExportStats()
+	md["log"] = m.P.Log
 
 	// notifies
 	not := make([]*notify.ExportInfo, 0, len(m.Notifies))
@@ -205,7 +208,18 @@ func (m *M) childSummary(creds []string) *childSummary {
 		cc.Lock.RLock()
 		st := cc.P.OvStatus
 		desc := &objectDescr{cc.Cf.Unique, cc.Cf.Uname, cc.Cf.Label}
-		cs.Summy[st] = append(cs.Summy[st], desc)
+
+		switch st {
+		case argus.OVERRIDE:
+			cs.Ov = append(cs.Ov, desc)
+		case argus.CLEAR, argus.UNKNOWN, argus.DEPENDS:
+			cs.Up = append(cs.Up, desc)
+		default:
+			cs.Dn = append(cs.Dn, desc)
+			if st > cs.Sev {
+				cs.Sev = st
+			}
+		}
 		cs.HasChild = true
 		cc.Lock.RUnlock()
 	}
@@ -240,4 +254,7 @@ func (m *M) webDecor(md map[string]interface{}) {
 		}
 		child = append(child, objectDescr{c.Cf.Unique, c.Cf.Uname, c.Cf.Label})
 	}
+
+	md["parent"] = parent
+	md["child"] = child
 }

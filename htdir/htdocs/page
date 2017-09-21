@@ -1,0 +1,21 @@
+{[define "content"]}
+
+<div id="arguspage">
+{[ template "_info" . ]}
+{[ template "_darp" . ]}
+{[ template "_override" . ]}
+<hr>
+{[ template "_child" . ]}
+{ [ template "_graphs" . ]}
+{[ template "_notifies" . ]}
+{[ template "_stats" . ]}
+{[ template "_logs" . ]}
+</div>
+
+{[end]}
+{[define "script" ]}
+  var datasrc = "\/\/" + urlhost + "/api/page"
+  var dataarg = {obj: objname}
+
+  argus_page()
+{[end]}

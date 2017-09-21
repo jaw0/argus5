@@ -67,7 +67,7 @@ func Load(conf *Conf, idno int) *N {
 	}
 	file := cf.Datadir + "/notify/" + fmt.Sprintf("%d", idno)
 
-	err := argus.Load(file, n.p)
+	err := argus.Load(file, &n.p)
 
 	if err != nil {
 		dl.Problem("cannot load notify: %v", err)

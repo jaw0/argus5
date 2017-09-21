@@ -1,0 +1,17 @@
+
+<tr><td colspan=2>
+  <table border=0 width="100%" bgcolor="#ddd" id=infouser class=topbar>
+    <tr><td align=left>
+           <span class=objectname>{[ .ObjTitle ]}</span>
+        </td>
+        <td align=right>
+           <i id=spinnericon class="fa fa-spinner fa-pulse"></i>
+           <a class=topnav href="/view/home?obj={[ .Home ]}" title="Home"><i class="fa fa-home"></i></a>
+           <a class=topnav href="" title="Overview"><i class="fa fa-tasks"></i></a>
+           <a class=topnav href="" title="Notifications"><i id=notifiesicon  class="fa fa-envelope-o"></i></A>
+           <a class=topnav href="" title="Startup Errors"><i id=haserrorsicon class="fa fa-warning"></i></a>
+           <i id=speakericon class="fa fa-bell-o"></i>
+           <span class=username>User: <tt>{[ .User ]}</tt></span>
+    </td></tr>
+  </table>
+</td></tr>

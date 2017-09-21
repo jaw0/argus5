@@ -1,0 +1,10 @@
+
+</td></tr>
+<tr><td colspan=2>
+  <div class="footerargus"><a href="{[ .Argus.Url ]}">Argus</a>/{[ .Argus.Version ]}</div>
+</td></tr>
+</table>
+
+<div class="footer">{[ .Footer ]}</div>
+</body>
+</html>

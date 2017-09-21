@@ -201,7 +201,9 @@ func GetStatuses() map[string]bool {
 	defer lock.RUnlock()
 
 	for n, s := range darpStatus {
-		if s.IsUp && s.Lastt > now-120 {
+		if n == MyId {
+			st[n] = true
+		} else if s.IsUp && s.Lastt > now-120 {
 			st[n] = true
 		} else {
 			st[n] = false

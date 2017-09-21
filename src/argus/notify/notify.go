@@ -74,6 +74,7 @@ type Persist struct {
 }
 type ExportInfo struct {
 	IdNo     int
+	Created  int64
 	IsActive bool
 	OvStatus argus.Status
 }
@@ -142,7 +143,7 @@ func (n *N) WebExport() *ExportInfo {
 	n.lock.RLock()
 	defer n.lock.RUnlock()
 
-	return &ExportInfo{n.p.IdNo, n.p.IsActive, n.p.OvStatus}
+	return &ExportInfo{n.p.IdNo, n.p.Created, n.p.IsActive, n.p.OvStatus}
 }
 
 // ################################################################

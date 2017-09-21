@@ -1,0 +1,13 @@
+
+<table id=stats>
+  <tr><td></td><th>Start</th><th>Elapsed</th><th>% Up</th><th>% Dn</th><th># Dn</th></tr>
+  <template v-for="s in mon.stats">
+        <tr v-bind:class="{hilite: s.HiLite}"><td>{{ s.Label }}</td>
+            <td align=right>{{ s.Start_fmt }}</td>
+            <td align=right>{{ s.Elapsed }}</td>
+            <td align=right>{{ s.PctUp }}</td>
+            <td align=right>{{ s.PctDn }}</td>
+            <td>{{ s.NDown }}</td>
+        </tr>
+  </template>
+</table>
