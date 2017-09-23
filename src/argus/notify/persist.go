@@ -70,7 +70,7 @@ func Load(conf *Conf, idno int) *N {
 	err := argus.Load(file, &n.p)
 
 	if err != nil {
-		dl.Problem("cannot load notify: %v", err)
+		dl.Debug("cannot load notify: %v", err)
 		return nil
 	}
 

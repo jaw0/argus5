@@ -58,6 +58,9 @@ func (p *Prog) Config(conf *configure.CF, s *service.Service) error {
 	return nil
 }
 
+func (p *Prog) Hostname() string {
+	return ""
+}
 func (p *Prog) Init() error {
 	return nil
 }

@@ -19,13 +19,13 @@ import (
 	"argus/diag"
 	"argus/monel"
 	_ "argus/monitor"
+	"argus/monitor/ping"
 	"argus/notify"
 	"argus/resolv"
 	"argus/sched"
 	"argus/web"
 )
 
-var configfile string
 var dl = diag.Logger("main")
 var shutdown = make(chan int)
 var sigchan = make(chan os.Signal, 5)
@@ -38,9 +38,16 @@ func init() {
 }
 
 func main() {
+	var configfile string
+	var foreground bool
 
 	flag.StringVar(&configfile, "c", "/dev/null", "config file")
+	flag.BoolVar(&foreground, "f", false, "run in foreground")
 	flag.Parse()
+
+	if !foreground {
+		daemonize()
+	}
 
 	diag.Init("argusd")
 
@@ -50,9 +57,10 @@ func main() {
 	diag.Verbose("starting....")
 
 	// init sighandlers
-	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
+	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP, syscall.SIGUSR2)
 	go sigHandle()
 
+	ping.Init()
 	sched.Init()
 	resolv.Init()
 	notify.Init()
@@ -89,7 +97,11 @@ func sigHandle() {
 
 	for {
 		select {
-		case <-sigchan:
+		case n := <-sigchan:
+			if n == syscall.SIGUSR2 {
+				diag.Bug("usr2")
+				continue
+			}
 			sched.Stop()
 		}
 	}

@@ -50,6 +50,9 @@ var lock sync.Mutex
 func init() {
 	// register with service factory
 	service.Register("Ping", New)
+}
+
+func Init() {
 
 	// start workers
 	for i := 0; i < WORKERS; i++ {
@@ -85,6 +88,9 @@ func (p *Ping) Init() error {
 	return nil
 }
 
+func (p *Ping) Hostname() string {
+	return p.Cf.Hostname
+}
 func (p *Ping) Recycle() {
 }
 func (p *Ping) Abort() {

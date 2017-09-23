@@ -85,6 +85,8 @@ func (m *M) Restore() {
 	m.restore(dat)
 	m.Me.Restore(dat)
 	m.Lock.Unlock()
+
+	m.setOverrideExpire()
 }
 
 func (m *M) persist(pm map[string]interface{}) {

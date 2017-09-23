@@ -67,6 +67,9 @@ func (d *DB) Init() error {
 	return nil
 }
 
+func (d *DB) Hostname() string {
+	return ""
+}
 func (d *DB) Recycle() {
 }
 func (d *DB) Abort() {

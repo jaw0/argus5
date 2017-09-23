@@ -65,6 +65,18 @@ func New(cf *Conf, obj Starter) *D {
 	d.ReSchedule(0)
 	return d
 }
+
+func At(unix int64, text string, f func()) {
+
+	d := &D{
+		when: unix,
+		text: text,
+		auto: false,
+		obj:  Func(f),
+	}
+	schedchan <- d
+}
+
 func NewFunc(cf *Conf, f func()) *D {
 	return New(cf, Func(f))
 }

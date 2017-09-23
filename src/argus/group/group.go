@@ -72,3 +72,5 @@ func (g *Group) Children() []*monel.M {
 }
 func (g *Group) Dump(ctx *api.Context) {
 }
+func (g *Group) CheckNow() {
+}

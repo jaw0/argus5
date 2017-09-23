@@ -21,11 +21,11 @@
         var urlhost = "{[ .Host ]}"
         var username = "{[ .User ]}"
         var argusver = "{[ .Argus.Version ]}"
+        var token    = "{[ .Token ]}"
 
         {[template "script" . ]}
 
         $( function() { $( document ).tooltip(); } );
-        argus_onload()
   </script>
 
 </head>
@@ -49,6 +49,9 @@
 </table>
 
 <div class="footer">{[ .Footer ]}</div>
+<script>
+    argus_onload()
+</script>
 </body>
 </html>
 

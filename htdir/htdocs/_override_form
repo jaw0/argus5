@@ -1,0 +1,46 @@
+
+
+<div id="overridediv" style="display: none;"><div class=overridedivinner>
+
+    <center><b class=heading>Override</b></center>
+    <table cellpadding=0 cellspacing=0>
+      <tr><td>Comment: </td><td><input type="text" name="text" size="32" /></td></tr>
+      <tr><td>Mode: </td><td><select name="mode">
+        <option  value="auto">auto</option>
+        <option selected=1 value="manual">manual</option></select></td></tr>
+      <tr><td>Expires: </td><td><select name="expires" tabindex="4">
+          <option value="0">            never</option>
+          <option value="900">          15 min</option>
+          <option value="1800">         30 min</option>
+          <option value="3600">         1 hour</option>
+          <option value="7200">         2 hours</option>
+          <option value="10800">        3 hours</option>
+          <option selected="selected" value="14400">4 hours</option>
+          <option value="21600">        6 hours</option>
+          <option value="28800">        8 hours</option>
+          <option value="43200">        12 hours</option>
+          <option value="64800">        18 hours</option>
+          <option value="86400">        24 hours</option>
+          <option value="129600">       36 hours</option>
+          <option value="172800">       2 days</option>
+          <option value="259200">       3 days</option>
+          <option value="345600">       4 days</option>
+          <option value="432000">       5 days</option>
+          <option value="604800">       7 days</option>
+          <option value="864000">       10 days</option>
+          <option value="1209600">      14 days</option>
+          <option value="1728000">      20 days</option>
+          <option value="2592000">      30 days</option>
+          <option value="3888000">      45 days</option>
+        </select></td></tr>
+      <tr><td colspan=2><br><center>
+        <a class="button buttsave"    onclick="override_save();"><i class="fa fa-plus-circle"></i> save</a>
+        <a class="button buttcancel"  onclick="override_dismiss();"><i class="fa fa-minus-circle"></i> cancel</a>
+        </td></tr>
+    </table>
+
+    <div id=overridefoot>auto mode - disengage override when status returns to up<br>
+      manual mode - require override be disengaged manually</div>
+
+</div></div>
+

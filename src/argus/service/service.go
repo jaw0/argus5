@@ -27,6 +27,7 @@ type Monitor interface {
 	Abort()
 	DoneConfig()
 	DumpInfo() map[string]interface{}
+	Hostname() string
 }
 
 type Conf struct {
@@ -125,10 +126,17 @@ func (s *Service) SetNames(uname string, label string, friendly string) {
 	s.mon.SetNames(uname, label, friendly)
 }
 
+func (s *Service) Hostname() string {
+	return s.check.Hostname()
+}
 func Find(id string) *Service {
 	lock.RLock()
 	defer lock.RUnlock()
 	return allService[id]
+}
+
+func (s *Service) CheckNow() {
+	s.Start()
 }
 
 func (s *Service) Start() {
@@ -177,6 +185,9 @@ func (s *Service) Done() {
 	}
 }
 
+func (s *Service) Pass() {
+	s.SetResult(argus.CLEAR, "", "")
+}
 func (s *Service) Fail(reason string) {
 	s.SetResult(s.Cf.Severity, "", reason)
 }

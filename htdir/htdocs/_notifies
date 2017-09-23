@@ -1,6 +1,9 @@
 
-<div id=notifies>
-<template v-for="n in mon.notify">
-  <a href="" v-bind:class="[n.OvStatus_sevf]" v-bind:title="n.Created_fmt">{{ n.IdNo }} </a>
-</template>
-</div>
+<table id=notifies v-if="mon.notify">
+<tr><th valign=top>Alerts:</th>
+<td>
+  <template v-for="n in mon.notify">
+    <a href="" v-bind:class="[n.OvStatus_sevf]" v-bind:title="n.OvStatus_fmt + ' - ' + n.Created_fmt">{{ n.IdNo }} </a>
+  </template>
+</td></tr>
+</table>

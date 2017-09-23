@@ -1,0 +1,19 @@
+
+<div style="float:right;">
+  <center><b class=heading>Notes</b></center>
+
+  <div id=notesdpy><table>
+    <tr><td><pre>{{ mon.annotation }}</pre></td></tr>
+    <tr v-if="deco.canAnnotate"><td align=right><a class=button onclick="annotate_edit();">
+        <i class="fa fa-pencil"></i> Edit</a></td></tr>
+  </table></div>
+
+  <div id="notesform" style="display: none;"><table>
+    <tr><td><textarea>{{ mon.annotation }}</textarea></td></tr>
+    <tr v-if="deco.canAnnotate"><td align=right><a class="button buttsave" onclick="annotate_save();">
+        <i class="fa fa-plus-circle"></i> Save</a>
+        <a class="button buttcancel"  onclick="annotate_cancel();"><i class="fa fa-minus-circle"></i> cancel</a>
+    </td></tr>
+  </table></div>
+</div>
+<br>

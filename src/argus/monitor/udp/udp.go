@@ -114,7 +114,9 @@ func (t *UDP) Config(conf *configure.CF, s *service.Service) error {
 func (t *UDP) Init() error {
 	return nil
 }
-
+func (t *UDP) Hostname() string {
+	return t.Cf.Hostname
+}
 func (t *UDP) Recycle() {
 }
 func (t *UDP) Abort() {

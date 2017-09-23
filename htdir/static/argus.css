@@ -52,6 +52,10 @@
 
 /****************************************************************/
 
+.redbounce {
+    color:	#c22;
+}
+
 .objectname {
     font-family: monospace;
     font-size: 125%;
@@ -71,4 +75,157 @@
 }
 
 
+.ui-tooltip {
+    font-size:	75%;
+}
 
+/****************************************************************/
+
+/* override info */
+.overridediv {
+
+    background: repeating-linear-gradient(
+        315deg,
+        #fff,
+        #fff 25px,
+        #fff0e0 25px,
+        #fff0e0 50px
+    );
+}
+.overridediv .heading {
+    background-color: #eee;
+}
+
+/* override form */
+#overridefoot {
+	margin-top:		6px;
+	font-style:		italic;
+	font-size:		12px;
+}
+
+#overridediv {
+    background-color: 	rgba(0, 0, 0, 0.5);
+    width:		100%;
+    height:		100%;
+    position:		fixed;
+    top:		0;
+    left:		0;
+}
+.overridedivinner {
+    width:		350px;
+    margin-left:	100px;
+    margin-top:		50px;
+    padding-left:	50px;
+    padding-top:	5px;
+    padding-bottom:	10px;
+    border-radius:	10px;
+    -moz-border-radius:	10px;
+    border:		3px solid #8ee;
+    opacity:		1.0;
+    background-color:	#eff;
+}
+
+/****************************************************************/
+
+pre {
+    border:		1px solid #888;
+    width:		350px;
+    min-height:		40px;
+}
+
+input[name=url] {
+    font-family:	monospaced;
+    background: 	#ffe;
+}
+input[type=text] {
+    width:		250px;
+    background: 	#fff;
+}
+input[type=submit], input[type=button], a.button {
+    font: 		14px "Trebuchet MS", Arial, Helvetica, sans-serif;
+    border-radius:	5px;
+    -moz-border-radius:	5px;
+    color: 		#446;
+    background-color: 	#ffe;
+}
+a.button {
+    border:		2px outset #bbb;
+    padding:		3px;
+    margin:		3px;
+    cursor: 		pointer;
+}
+
+.buttcancel, .buttremove {
+    background-color:	#fbb !important;
+}
+.buttsave {
+    background-color:	#beb !important;
+}
+
+#statusinfobuttons td {
+    padding:		2px;
+    border:		1px outset #bbb;
+    border-radius:	3px;
+    -moz-border-radius:	3px;
+    background-color:	#ddd;
+}
+#statusinfobuttons td:hover {
+    background-color:	#fff;
+}
+
+textarea {
+    width:		350px;
+    min-height:		10em;
+    background: 	#fff;
+}
+
+th {
+    text-align: left;
+}
+
+/****************************************************************/
+/* animated buttons */
+@-webkit-keyframes argus-bouncer {
+  0%,6%,12%,18%,24%,100% {
+    -webkit-transform: translate(0,0);
+  }
+  3% {
+    -webkit-transform: translate(1px,-10px);
+  }
+  9% {
+    -webkit-transform: translate(0px,8px);
+  }
+  15% {
+    -webkit-transform: translate(0px,-5px);
+  }
+  21% {
+    -webkit-transform: translate(1px,2px);
+  }
+}
+
+@-moz-keyframes argus-bouncer {
+  0%,6%,12%,18%,24%,100% {
+    -moz-transform: translate(0,0);
+  }
+  3% {
+    -moz-transform: translate(1px,-10px);
+  }
+  9% {
+    -moz-transform: translate(0px,8px);
+  }
+  15% {
+    -moz-transform: translate(0px,-5px);
+  }
+  21% {
+    -moz-transform: translate(1px,2px);
+  }
+}
+
+.redbounce {
+    -webkit-animation: argus-bouncer 2s infinite;
+    -moz-animation:    argus-bouncer 2s infinite;
+}
+.redbounce:hover {
+    -webkit-animation: none;
+    -moz-animation:    none;
+}

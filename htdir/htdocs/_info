@@ -1,9 +1,11 @@
 
-<table id=statusinfo><tr><td valign=top bgcolor="#ddd">
-  <a href="" title="Annotate"><i class="fa fa-comment-o"></i></a><br>
-  <a href="" title="Override"><i class="fa fa-flag-o"></i></a><br>
-  <a href="" title="Check Now"><i class="fa fa-refresh"></a></i><br>
-  <a v-for="p in deco.parent" v-bind:href="p.PageUrl" v-bind:title="p.Unique"><i class="fa fa-level-up"></i></a><br>
+<table id=statusinfo><tr><td valign=top>
+  <table id=statusinfobuttons>
+    <tr v-if="deco.canOverride && !mon.override"><td><a onclick="override_show();" title="Override" id=overridebutton>
+        <i class="fa fa-flag-o"></i></a></td></tr>
+    <tr v-if="deco.canCheckNow"><td><a onclick="checknow();" title="Check Now"><i class="fa fa-refresh"></a></i></td></tr>
+    <tr v-for="p in deco.parent"><td><a v-bind:href="p.PageUrl" v-bind:title="p.Unique"><i class="fa fa-level-up"></i></a></td></tr>
+  </table>
 </td><td valign=top>
   <table>
     <tr><th>name</th><td class=objectname>{{ deco.name }}</td></tr>
@@ -15,7 +17,6 @@
     <tr v-if="deco.info"><th>info</th><td>{{ deco.info }}</td></tr>
     <tr v-if="deco.details"><th>details</th><td>{{ deco.details }}</td></tr>
     <tr v-if="deco.comment"><th>comment</th><td>{{ deco.comment }}</td></tr>
-    <tr v-if="mon.annotation"><th>annotation</th><td>{{ mon.annotation }}</td></tr>
 
   </table>
 </td></tr></table>

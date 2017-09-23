@@ -12,6 +12,13 @@ import (
 var haveErrors = false
 var haveWarns = false
 
+func HasErrors() bool {
+	return haveErrors
+}
+func HasWarnings() bool {
+	return haveWarns
+}
+
 func Loggit(msg string, args ...interface{}) {
 
 	// main log

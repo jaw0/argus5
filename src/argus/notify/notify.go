@@ -116,14 +116,33 @@ var NotifyCfDefaults = Conf{
 	Ack_On_Worse:  [argus.CRITICAL + 1]bool{int(argus.UNKNOWN): true},
 }
 
+const SECSNANO = 1000000000
+
 // ################################################################
+
+func NumActive() int {
+	lock.RLock()
+	defer lock.RUnlock()
+	return len(actives)
+}
 
 func (n *N) Update(status argus.Status) {
 
+	if n.updateStatus(status) {
+		notechan <- n
+	}
+}
+
+func (n *N) updateStatus(status argus.Status) bool {
+
 	n.lock.Lock()
 	defer n.lock.Unlock()
+
+	if !n.p.IsActive {
+		return false
+	}
 	n.p.CurrOv = status
-	notechan <- n
+	return true
 }
 
 func (n *N) log(who string, msg string) {
@@ -143,7 +162,7 @@ func (n *N) WebExport() *ExportInfo {
 	n.lock.RLock()
 	defer n.lock.RUnlock()
 
-	return &ExportInfo{n.p.IdNo, n.p.Created, n.p.IsActive, n.p.OvStatus}
+	return &ExportInfo{n.p.IdNo, n.p.Created * SECSNANO, n.p.IsActive, n.p.OvStatus}
 }
 
 // ################################################################

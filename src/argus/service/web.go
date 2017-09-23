@@ -22,6 +22,7 @@ func (s *Service) WebJson(md map[string]interface{}) {
 	md["lasttest"] = s.Lasttest
 	darp := make(map[string]darpStatusResult)
 	md["darp"] = darp
+	md["hostname"] = s.check.Hostname()
 
 	for k, st := range s.p.Statuses {
 		r := s.p.Results[k]

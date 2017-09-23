@@ -40,7 +40,7 @@ func (m *M) updateStatus(status argus.Status, result string, reason string) bool
 }
 
 // update group status + ovstatus
-func (m *M) UpUpdate(by *M) {
+func (m *M) ReUpdate(reason string) {
 
 	m.Lock.Lock()
 	defer m.Lock.Unlock()
@@ -51,9 +51,16 @@ func (m *M) UpUpdate(by *M) {
 		m.commonUpdateNoChange()
 		return
 	}
-	m.P.Reason = by.Cf.Uname
+	if reason != "" {
+		m.P.Reason = reason
+	}
 
 	m.commonUpdate(prev)
+}
+
+// update group status + ovstatus
+func (m *M) UpUpdate(by *M) {
+	m.ReUpdate(by.Cf.Uname)
 }
 
 func (m *M) commonUpdate(prevOv argus.Status) {
@@ -193,6 +200,7 @@ func (m *M) determineStatus() bool {
 	m.checkDepends()
 	m.checkOverride()
 
+	dl.Debug("-> %s", m.P.OvStatus)
 	return m.P.OvStatus != prevo
 }
 

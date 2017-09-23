@@ -1,12 +1,19 @@
 
 <template v-if="mon.override">
-<table id=override>
+<hr>
+<div class=overridediv>
+<table class=overridetable>
+  <tr><th colspan=2 align=center class=heading>Override</th>
+        <td rowspan=6 valign=bottom>
+          <a class="button buttremove"    onclick="override_remove();"><i class="fa fa-times-circle"></i> Remove</a>
+        </td>
+  </tr>
   <tr><th>User</th><td>{{ mon.override.User }}</td></tr>
-  <tr><th>When</th><td>{{ mon.override}}</td></tr>
-  <tr><th>Expires</th><td>{{ mon.override.Expires_fmt }}</td></tr>
+  <tr v-if="mon.override.Expires"><th>Expires</th><td>{{ mon.override.Expires_fmt }}</td></tr>
   <tr><th>Mode</th><td>{{ mon.override.Auto ? "auto" : "manual" }}</td></tr>
   <tr v-if="mon.override.Ticket"><th>Ticket</th><td>{{ mon.override.Ticket }}</td></tr>
   <tr><th>Text</th><td>{{ mon.override.Text }}</td></tr>
 </table>
+</div>
 </template>
 

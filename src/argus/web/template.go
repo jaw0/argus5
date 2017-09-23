@@ -140,6 +140,7 @@ func serveTemplate(tm map[string]*template.Template, devmode bool, ctx *Context)
 		"Header_Branding": template.HTML(webConf.Header_Branding),
 		"Footer":          template.HTML(webConf.Footer),
 		"Host":            ctx.R.Host,
+		"Token":           ctx.XSRFToken,
 		"DevMode":         devmode,
 		"ObjTitle":        objtitle, // object name (if exists), or page name
 		"Q":               query,

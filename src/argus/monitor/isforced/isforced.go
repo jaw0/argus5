@@ -37,6 +37,9 @@ func (d *D) Init() error {
 	return nil
 }
 
+func (d *D) Hostname() string {
+	return ""
+}
 func (d *D) Recycle() {
 }
 func (d *D) DoneConfig() {

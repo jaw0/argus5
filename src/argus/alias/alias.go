@@ -109,3 +109,6 @@ func (a *Alias) WebJson(md map[string]interface{}) {
 func (a *Alias) Dump(ctx *api.Context) {
 	ctx.SendKVP("alias/target", a.Target)
 }
+
+func (a *Alias) CheckNow() {
+}

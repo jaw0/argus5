@@ -114,6 +114,9 @@ func (t *TCP) Init() error {
 	return nil
 }
 
+func (t *TCP) Hostname() string {
+	return t.Cf.Hostname
+}
 func (t *TCP) Recycle() {
 }
 func (t *TCP) Abort() {

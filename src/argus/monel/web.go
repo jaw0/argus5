@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"argus/argus"
+	"argus/clock"
 	"argus/notify"
 	"argus/web"
 )
@@ -40,35 +41,20 @@ type childSummary struct {
 }
 
 func init() {
-	web.Add(web.PRIVATE, "/api/page", apiJson)
+	web.Add(web.PRIVATE, "/api/page", webJson)
+	web.Add(web.WRITE, "/api/annotate", webAnnotate)
 }
 
-func apiJson(ctx *web.Context) {
+func webJson(ctx *web.Context) {
 
 	since, _ := strconv.ParseInt(ctx.Get("since"), 10, 64)
-	obj := ctx.Get("obj")
 
-	m := Find(obj)
-
+	m, creds := webObjUserCheck(ctx)
 	if m == nil {
-		ctx.W.WriteHeader(404)
 		return
 	}
 
-	var creds []string
-	if ctx.User != nil {
-		creds = strings.Fields(ctx.User.Groups)
-	}
-
-	if !ACLPermitsUser(m.Cf.ACL_Page, creds) {
-		ctx.W.WriteHeader(403)
-		return
-	}
-
-	d := make(map[string]interface{})
-
-	// general metadata - always include
-	m.webMeta(d)
+	d := m.newWebMetaResponse()
 
 	// only include these if something has changed
 	if !m.webChangedSince(since) {
@@ -79,8 +65,7 @@ func apiJson(ctx *web.Context) {
 		d["mon"] = mond
 		d["deco"] = deco
 
-		m.webDecor(deco)
-
+		m.webDecor(creds, deco)
 		m.webJson(creds, mond)
 		m.Me.WebJson(mond)
 	}
@@ -130,11 +115,14 @@ func (m *M) webChangedSince(since int64) bool {
 func (m *M) webMeta(md map[string]interface{}) {
 
 	m.Lock.RLock()
-	m.Lock.RUnlock()
+	defer m.Lock.RUnlock()
 
 	md["alarm"] = m.P.Alarm
 	md["sirentime"] = m.P.SirenTime
 	md["webtime"] = m.WebTime
+	md["unacked"] = notify.NumActive()
+	md["hasErrors"] = argus.HasErrors()
+	md["hasWarns"] = argus.HasWarnings()
 }
 
 func (m *M) webJson(creds []string, md map[string]interface{}) {
@@ -228,10 +216,10 @@ func (m *M) childSummary(creds []string) *childSummary {
 }
 
 // gather the data needed for static labels, buttons, etc
-func (m *M) webDecor(md map[string]interface{}) {
+func (m *M) webDecor(creds []string, md map[string]interface{}) {
 
 	m.Lock.RLock()
-	m.Lock.RUnlock()
+	defer m.Lock.RUnlock()
 
 	md["name"] = m.Cf.Uname
 	md["unique"] = m.Cf.Unique
@@ -242,19 +230,86 @@ func (m *M) webDecor(md map[string]interface{}) {
 	md["details"] = m.Cf.Details
 	md["comment"] = m.Cf.Comment
 
+	md["canOverride"] = m.Cf.Overridable && ACLPermitsUser(m.Cf.ACL_Override, creds)
+	md["canAnnotate"] = ACLPermitsUser(m.Cf.ACL_Annotate, creds)
+	md["canCheckNow"] = ACLPermitsUser(m.Cf.ACL_CheckNow, creds)
+
 	var parent []objectDescr
-	var child []objectDescr
 
 	for _, p := range m.Parent {
 		parent = append(parent, objectDescr{p.Cf.Unique, p.Cf.Uname, p.Cf.Label})
 	}
-	for _, c := range m.Children {
-		if c.Cf.Hidden {
-			continue
-		}
-		child = append(child, objectDescr{c.Cf.Unique, c.Cf.Uname, c.Cf.Label})
-	}
 
 	md["parent"] = parent
-	md["child"] = child
+}
+
+// ################################################################
+
+func webAnnotate(ctx *web.Context) {
+
+	m, creds := webObjUserCheck(ctx)
+	if m == nil {
+		return
+	}
+
+	if !ACLPermitsUser(m.Cf.ACL_Annotate, creds) {
+		dl.Debug("denied")
+		ctx.W.WriteHeader(403)
+		return
+	}
+
+	d := m.newWebMetaResponse()
+
+	text := ctx.Get("text")
+
+	m.Lock.Lock()
+	m.P.Annotation = text
+	d["annotation"] = m.P.Annotation
+	m.WebTime = clock.Nano()
+	m.Lock.Unlock()
+
+	if text == "" {
+		m.Loggit("ANNOTATION", "removed by "+ctx.User.Name)
+	} else {
+		m.Loggit("ANNOTATION", "added by "+ctx.User.Name)
+	}
+
+	js, _ := json.MarshalIndent(d, "", "  ")
+	ctx.W.Header().Set("Content-Type", "application/json; charset=utf-8")
+	ctx.W.Write(js)
+}
+
+// ################################################################
+
+func (m *M) newWebMetaResponse() map[string]interface{} {
+
+	d := make(map[string]interface{})
+	// general metadata - always include on every response
+	m.webMeta(d)
+	return d
+}
+
+func webObjUserCheck(ctx *web.Context) (*M, []string) {
+
+	obj := ctx.Get("obj")
+	m := Find(obj)
+
+	if m == nil {
+		dl.Verbose("obj not found %s", obj)
+		ctx.W.WriteHeader(404)
+		return nil, nil
+	}
+
+	var creds []string
+	if ctx.User != nil {
+		creds = strings.Fields(ctx.User.Groups)
+	}
+
+	if !ACLPermitsUser(m.Cf.ACL_Page, creds) {
+		dl.Debug("denied")
+		ctx.W.WriteHeader(403)
+		return nil, nil
+	}
+
+	return m, creds
 }

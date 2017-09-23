@@ -29,6 +29,7 @@ type Moneler interface {
 	WebJson(map[string]interface{})
 	Config(*configure.CF) error
 	Dump(*api.Context)
+	CheckNow()
 	Init() error
 	DoneConfig()
 	Recycle()
