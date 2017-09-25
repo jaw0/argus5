@@ -40,6 +40,11 @@ type childSummary struct {
 	Sev      argus.Status // max sev of Dn[]
 }
 
+const (
+	WEBMAXLOG    = 100
+	WEBMAXNOTIFY = 100
+)
+
 func init() {
 	web.Add(web.PRIVATE, "/api/page", webJson)
 	web.Add(web.WRITE, "/api/annotate", webAnnotate)
@@ -136,14 +141,28 @@ func (m *M) webJson(creds []string, md map[string]interface{}) {
 	md["annotation"] = m.P.Annotation
 	md["reason"] = m.P.Reason
 	md["stats"] = m.ExportStats()
-	md["log"] = m.P.Log
 
-	// notifies
-	not := make([]*notify.ExportInfo, 0, len(m.Notifies))
-	for _, n := range m.Notifies {
+	// reverse and truncate notifies, logs
+	log := make([]*Log, 0, min(WEBMAXLOG, len(m.P.Log)))
+	not := make([]*notify.ExportInfo, 0, min(WEBMAXNOTIFY, len(m.Notifies)))
+
+	for i := len(m.Notifies) - 1; i >= 0; i-- {
+		n := m.Notifies[i]
 		not = append(not, n.WebExport())
+		if len(not) >= WEBMAXNOTIFY {
+			break
+		}
 	}
+
+	for i := len(m.P.Log) - 1; i >= 0; i-- {
+		log = append(log, m.P.Log[i])
+		if len(log) >= WEBMAXLOG {
+			break
+		}
+	}
+
 	md["notify"] = not
+	md["log"] = log
 
 	childs := m.Me.Children()
 	m.Lock.RUnlock()
@@ -152,7 +171,7 @@ func (m *M) webJson(creds []string, md map[string]interface{}) {
 	var childsum []*childSummary
 
 	for _, c := range childs {
-		if c.Cf.Hidden || !ACLPermitsUser(c.Cf.ACL_Page, creds) {
+		if c.Cf.Hidden || !argus.ACLPermitsUser(c.Cf.ACL_Page, creds) {
 			continue
 		}
 
@@ -189,7 +208,7 @@ func (m *M) childSummary(creds []string) *childSummary {
 	dl.Debug("%s %v -> %v", m.Cf.Unique, m.P.OvStatusSummary, cs)
 
 	for _, cc := range childs {
-		if cc.Cf.Hidden || !ACLPermitsUser(cc.Cf.ACL_Page, creds) {
+		if cc.Cf.Hidden || !argus.ACLPermitsUser(cc.Cf.ACL_Page, creds) {
 			continue
 		}
 
@@ -230,9 +249,9 @@ func (m *M) webDecor(creds []string, md map[string]interface{}) {
 	md["details"] = m.Cf.Details
 	md["comment"] = m.Cf.Comment
 
-	md["canOverride"] = m.Cf.Overridable && ACLPermitsUser(m.Cf.ACL_Override, creds)
-	md["canAnnotate"] = ACLPermitsUser(m.Cf.ACL_Annotate, creds)
-	md["canCheckNow"] = ACLPermitsUser(m.Cf.ACL_CheckNow, creds)
+	md["canOverride"] = m.Cf.Overridable && argus.ACLPermitsUser(m.Cf.ACL_Override, creds)
+	md["canAnnotate"] = argus.ACLPermitsUser(m.Cf.ACL_Annotate, creds)
+	md["canCheckNow"] = argus.ACLPermitsUser(m.Cf.ACL_CheckNow, creds)
 
 	var parent []objectDescr
 
@@ -252,7 +271,7 @@ func webAnnotate(ctx *web.Context) {
 		return
 	}
 
-	if !ACLPermitsUser(m.Cf.ACL_Annotate, creds) {
+	if !argus.ACLPermitsUser(m.Cf.ACL_Annotate, creds) {
 		dl.Debug("denied")
 		ctx.W.WriteHeader(403)
 		return
@@ -305,11 +324,18 @@ func webObjUserCheck(ctx *web.Context) (*M, []string) {
 		creds = strings.Fields(ctx.User.Groups)
 	}
 
-	if !ACLPermitsUser(m.Cf.ACL_Page, creds) {
+	if !argus.ACLPermitsUser(m.Cf.ACL_Page, creds) {
 		dl.Debug("denied")
 		ctx.W.WriteHeader(403)
 		return nil, nil
 	}
 
 	return m, creds
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

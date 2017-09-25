@@ -9,9 +9,19 @@
            <a class=topnav href="/view/home?obj={[ .Home ]}" title="Home"><i class="fa fa-home"></i></a>
            <a class=topnav href="" title="Overview"><i class="fa fa-tasks"></i></a>
            <a class=topnav href="" title="Notifications"><i id=notifiesicon  class="fa fa-envelope-o"></i></A>
-           <a class=topnav href="" title="Startup Errors"><i id=haserrorsicon class="fa fa-warning"></i></a>
-           <i id=speakericon class="fa fa-bell-o"></i>
+           <a class=topnav onclick="lofgile_show();" title="Startup Errors"><i id=haserrorsicon class="fa fa-warning"></i></a>
+           <i id=sirenicon class="fa fa-bell-o"></i>
            <span class=username>User: <tt>{[ .User ]}</tt></span>
     </td></tr>
   </table>
 </td></tr>
+
+{[/*
+   we had got within earshot of the land, and the ship was going at a
+   good rate, the Sirens saw that we were getting in shore and began
+   with their singing.
+     -- Homer, Odyssey
+*/]}
+<audio loop id="sirensound">
+  <source src="/static/whoopwhoop.wav" type="audio/wav">
+</audio>

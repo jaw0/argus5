@@ -34,3 +34,13 @@ func IncludesTag(tags string, tag string, wildcard bool) bool {
 
 	return false
 }
+
+func ACLPermitsUser(acl string, creds []string) bool {
+
+	for _, cred := range creds {
+		if IncludesTag(acl, cred, false) {
+			return true
+		}
+	}
+	return false
+}

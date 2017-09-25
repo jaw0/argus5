@@ -112,7 +112,7 @@ func webOverride(ctx *web.Context) {
 
 	m, creds := webObjUserCheck(ctx)
 
-	if !ACLPermitsUser(m.Cf.ACL_Override, creds) ||
+	if !argus.ACLPermitsUser(m.Cf.ACL_Override, creds) ||
 		!m.Cf.Overridable {
 		dl.Debug("denied")
 		ctx.W.WriteHeader(403)

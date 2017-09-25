@@ -30,6 +30,7 @@ var DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 var webtime = 0
 var jsondata
+var jsonnotify
 
 console.log("argusjs")
 
@@ -46,7 +47,13 @@ function argus_page(){
 
 function build_page(){
 
+    argus.log("build page")
     spinner_on()
+
+    if( jsondata && jsondata.webtime ){
+        dataarg.since = jsondata.webtime
+        argus.log("since: " + dataarg.since)
+    }
 
     // fetch json
     jQuery.ajax({
@@ -57,6 +64,12 @@ function build_page(){
         fail: build_page_fail
     });
 
+}
+
+function build_page_force(){
+    dataarg.since = 0
+    jsondata.webtime = 0
+    build_page()
 }
 
 function build_page_fail(){
@@ -73,9 +86,15 @@ function build_page_ok(d){
     process_meta(d)
     convert_data(d)
 
+    if( d.unchanged ){
+        argus.log("unchanged")
+        return
+    }
+    argus.log("since " + dataarg["since"] + " wt " + d.webtime)
+
     if( jsondata != null ){
         // copy data into existing vue
-        copy_data(d)
+        copy_data(d, jsondata)
         return
     }
 
@@ -88,6 +107,7 @@ function build_page_ok(d){
     })
 
     configure_topnav_buttons()
+    setInterval( build_page, 30000 )
 }
 
 // ****************************************************************
@@ -100,12 +120,7 @@ function configure_topnav_buttons(){
 
 // ****************************************************************
 function override_init(){
-    $(document).keydown(function(e) {
-        // 27 = escape
-        if (e.which == 27) {
-            override_dismiss();
-        }
-    });
+    escape_key( override_dismiss )
 }
 
 function override_show(){
@@ -271,8 +286,9 @@ function checknow_success(r){
 
     process_meta(r)
     $('body').show()
-    spinner_off()
-    // RSN - refetch page json
+    // wait a bit, then refetch page data
+    // spinner is left on as a visual indication
+    setTimeout( build_page_force, 5000 )
 }
 
 function checknow_error(r, err){
@@ -281,21 +297,173 @@ function checknow_error(r, err){
     spinner_off()
 }
 
+// ****************************************************************
 
+function notify_show(elem){
+
+    // find idno
+    var idno = $(elem).attr("data-idno")
+    if( !idno ) return
+
+    argus.log("notify idno: " + idno)
+    var args = { obj: objname, idno: idno }
+
+    spinner_on()
+
+    $.ajax({
+        type:	    'POST',
+        url:	    '/api/notify',
+        data:       args,
+        dataType:   'json',
+        timeout:    5000,
+        success:    notify_success,
+        error:      notify_error,
+    });
+}
+
+function notify_success(r){
+
+    argus.log("notify success")
+    spinner_off()
+    r = convert_data(r)
+
+    if( jsonnotify != null ){
+        // copy data into existing vue
+        copy_data(r, jsonnotify)
+        notify_display()
+        return
+    }
+
+    jsonnotify = r
+
+    var app = new Vue({
+        el: '#notifydetailinner',
+        data: jsonnotify
+    })
+
+    notify_display()
+}
+
+function notify_display(){
+    escape_key(notify_dismiss)
+    $('#notifydetailinner').hide()
+    $('#notifydetailouter').fadeIn()
+    $('#notifydetailinner').slideDown()
+}
+
+function notify_error(){
+    argus.log("notify error")
+    spinner_off()
+}
+
+function notify_dismiss(){
+
+    $('#notifydetailinner').slideUp()
+    $('#notifydetailouter').fadeOut()
+
+}
+
+function notify_ack(idno){
+
+    argus.log("ack: " + idno)
+    notify_dismiss()
+    spinner_on()
+
+    var args = { idno: idno, xtok: token }
+
+    $.ajax({
+        type:	    'POST',
+        url:	    '/api/notifyack',
+        data:       args,
+        dataType:   'json',
+        timeout:    5000
+    });
+}
 
 
 // ****************************************************************
 
-function copy_data(d){
+function lofgile_show(elem){
 
+    var args = {}
+    spinner_on()
+
+    $.ajax({
+        type:	    'POST',
+        url:	    '/api/lofgile',
+        data:       args,
+        dataType:   'json',
+        timeout:    5000,
+        success:    lofgile_success,
+        error:      lofgile_error,
+    });
+}
+
+var xlog
+function lofgile_success(r){
+
+    argus.log("lofgile success")
+    spinner_off()
+
+    xlog = r
+    var app = new Vue({
+        el: '#lofgileinner',
+        data: r
+    })
+
+    lofgile_display()
+}
+
+function lofgile_display(){
+    escape_key(lofgile_dismiss)
+    $('#lofgileinner').hide()
+    $('#lofgileouter').fadeIn()
+    $('#lofgileinner').slideDown()
+}
+
+function lofgile_error(){
+    argus.log("lofgile error")
+    spinner_off()
+}
+
+function lofgile_dismiss(){
+
+    $('#lofgileinner').slideUp()
+    $('#lofgileouter').fadeOut()
+}
+
+//****************************************************************
+
+function copy_data(src, dst){
+    var kl = Object.keys(src)
+
+    for( i in kl ){
+        var k = kl[i]
+
+        dst[k] = src[k]
+    }
 }
 
 function process_meta(d){
 
     // errors
     // redirect
-    // siren
 
+    if( d.alarm ){
+        // get hushed cookie
+        var hushed = 0
+
+        if( hushed ){
+            $('#sirenicon').removeClass('fa-bell-o').addClass('fa-bell-slash-o')
+        }else{
+            $('#sirenicon').removeClass('fa-bell-slash-o').addClass('fa-bell-o')
+            $('#sirensound').trigger('play')
+        }
+
+        $('#sirenicon').show()
+    }else{
+        $('#sirenicon').hide()
+    }
 
     if( d.unacked ){
         $('#notifiesicon').addClass('redbounce').removeClass('fa-envelope-o').addClass('fa-envelope-open-o')
@@ -339,13 +507,14 @@ function convert_data(o){
                 o[k + "_sevf"] = argus.sev(c) + "-f" // reverse color
             }
             if( c > 1500000000000000000 ){
-                o[k + "_fmt"] = date_format(c)
+                o[k + "_fmt"] = date_format(c/1000000)
+            }else if( c > 1500000000 ){
+                o[k + "_fmt"] = date_format(c*1000)
             }
         }
         if( k == "Unique" ){
             o["PageUrl"] = argus.view_page_url(c)
         }
-
 
     }
     return o
@@ -359,20 +528,29 @@ function number_2digits(n) {
     return "0" + n
 }
 
-function date_format(nano){
+function date_format(milli){
 
-    var d = new Date(nano / 1000000)
+    var d = new Date(milli)
 
     var td = DAY[d.getDay()] + " " + d.getDate() + " " + MONTH[d.getMonth()]
     var tt = number_2digits(d.getHours()) + ":" + number_2digits(d.getMinutes()) + ":" + number_2digits(d.getSeconds())
     return td + " " + tt + " " + d.getFullYear()
 }
-function date_short(nano){
-    var d = new Date(nano / 1000000)
+function date_short(milli){
+    var d = new Date(milli)
 
     var td = d.getDate() + "/" + MONTH[d.getMonth()]
     var tt = number_2digits(d.getHours()) + ":" + number_2digits(d.getMinutes()) + ":" + number_2digits(d.getSeconds())
     return td + " " + tt
+}
+
+function escape_key(f){
+    $(document).keydown(function(e) {
+        // 27 = escape
+        if (e.which == 27) {
+            f()
+        }
+    });
 }
 
 function spinner_on(){

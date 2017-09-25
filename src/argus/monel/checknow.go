@@ -9,11 +9,11 @@ import (
 	"encoding/json"
 
 	"argus/api"
+	"argus/argus"
 	"argus/web"
 )
 
 func init() {
-
 	web.Add(web.WRITE, "/api/checknow", webCheckNow)
 	api.Add(true, "checknow", apiCheckNow)
 }
@@ -25,7 +25,7 @@ func webCheckNow(ctx *web.Context) {
 		return
 	}
 
-	if !ACLPermitsUser(m.Cf.ACL_CheckNow, creds) {
+	if !argus.ACLPermitsUser(m.Cf.ACL_CheckNow, creds) {
 		dl.Debug("denied")
 		ctx.W.WriteHeader(403)
 		return

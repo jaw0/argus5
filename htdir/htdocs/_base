@@ -49,6 +49,9 @@
 </table>
 
 <div class="footer">{[ .Footer ]}</div>
+
+{[template "_notify"]}
+{[template "_lofgile"]}
 <script>
     argus_onload()
 </script>

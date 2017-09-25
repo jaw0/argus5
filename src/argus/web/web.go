@@ -7,11 +7,13 @@ package web
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
+	"argus/argus"
 	"argus/config"
 	"argus/diag"
 	"argus/users"
@@ -192,7 +194,21 @@ func (w *responseWriter) WriteHeader(s int) {
 
 // ################################################################
 
+func webLog(ctx *Context) {
+
+	logs := struct {
+		Logs interface{}
+	}{argus.LogMsgs()}
+
+	js, _ := json.MarshalIndent(logs, "", "  ")
+	ctx.W.Header().Set("Content-Type", "application/json; charset=utf-8")
+	ctx.W.Write(js)
+}
+
+// ################################################################
+
 func init() {
 	http.Handle("/robots.txt", http.RedirectHandler("/static/robots.txt", 302))
 	http.Handle("/favicon.ico", http.RedirectHandler("/static/favicon.ico", 302))
+	Add(PRIVATE, "/api/lofgile", webLog)
 }

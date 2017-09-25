@@ -6,8 +6,18 @@
 package notify
 
 import (
+	"encoding/json"
+	"strconv"
+
+	"argus/api"
 	"argus/argus"
+	"argus/web"
 )
+
+func init() {
+	web.Add(web.WRITE, "/api/notifyack", webAck)
+	api.Add(true, "notifyack", apiAck)
+}
 
 // package lock is already held
 func (n *N) maybeAck() {
@@ -68,8 +78,47 @@ func (n *N) ack(who string) {
 	n.Save()
 	n.log(who, "acked")
 
-	for _, dst := range n.p.Status {
+	for dst, _ := range n.p.Status {
 		n.p.Status[dst] = "acked"
 	}
+}
 
+func webAck(ctx *web.Context) {
+
+	n, creds := webGetNotifyCreds(ctx)
+	if n == nil {
+		return
+	}
+
+	if !argus.ACLPermitsUser(globalDefaults.ACL_NotifyAck, creds) {
+		dl.Debug("denied")
+		ctx.W.WriteHeader(403)
+		return
+	}
+
+	n.lock.Lock()
+	n.ack(ctx.User.Name)
+	js, _ := json.MarshalIndent(n.p, "", "  ")
+	n.lock.Unlock()
+
+	ctx.W.Header().Set("Content-Type", "application/json; charset=utf-8")
+	ctx.W.Write(js)
+}
+
+func apiAck(ctx *api.Context) {
+
+	idno, _ := strconv.ParseInt(ctx.Args["idno"], 10, 32)
+	lock.RLock()
+	n := byid[int(idno)]
+	lock.RUnlock()
+
+	if n == nil {
+		ctx.Send404()
+		return
+	}
+
+	n.lock.Lock()
+	n.ack("api")
+	n.lock.Unlock()
+	ctx.SendOKFinal()
 }

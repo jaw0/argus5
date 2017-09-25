@@ -1,16 +1,26 @@
 // Copyright (c) 2017
 // Author: Jeff Weisberg <jaw @ tcp4me.com>
 // Created: 2017-Sep-04 13:55 (EDT)
-// Function:
+// Function: startup/config errors
 
 package argus
 
 import (
+	"fmt"
+
 	"argus/diag"
 )
 
+const MAXLOGS = 100
+
+type logMsg struct {
+	Tag string
+	Msg string
+}
+
 var haveErrors = false
 var haveWarns = false
+var logmsgs []logMsg
 
 func HasErrors() bool {
 	return haveErrors
@@ -18,18 +28,19 @@ func HasErrors() bool {
 func HasWarnings() bool {
 	return haveWarns
 }
+func LogMsgs() []logMsg {
+	return logmsgs
+}
 
-func Loggit(msg string, args ...interface{}) {
-
-	// main log
-	// diag.verbose
+func Loggit(tag string, msg string, args ...interface{}) {
 
 	diag.Verbose(msg, args...)
 
-	// open datadir/log
-	// [date] msg
-	// close
+	txt := fmt.Sprintf(msg, args...)
 
+	if len(logmsgs) < MAXLOGS {
+		logmsgs = append(logmsgs, logMsg{tag, txt})
+	}
 }
 
 func ConfigError(file string, line int, fmt string, args ...interface{}) {
@@ -39,16 +50,16 @@ func ConfigError(file string, line int, fmt string, args ...interface{}) {
 	msg := "ERROR: in file %s on line %d: " + fmt
 	arg := []interface{}{file, line}
 	arg = append(arg, args...)
-	Loggit(msg, arg...)
+	Loggit("logerror", msg, arg...)
 
 }
 func ConfigWarning(file string, line int, fmt string, args ...interface{}) {
 
 	haveWarns = true
 
-	msg := "UH OH: in file %s on line %d: " + fmt
+	msg := "WARNING: in file %s on line %d: " + fmt
 	arg := []interface{}{file, line}
 	arg = append(arg, args...)
-	Loggit(msg, arg...)
+	Loggit("logwarning", msg, arg...)
 
 }

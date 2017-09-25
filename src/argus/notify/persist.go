@@ -80,6 +80,7 @@ func Load(conf *Conf, idno int) *N {
 	return n
 }
 
+// lock should already be held
 func (n *N) Save() {
 
 	cf := config.Cf()
@@ -91,9 +92,7 @@ func (n *N) Save() {
 
 	dl.Debug("persisting to '%s'", file)
 
-	n.lock.RLock()
 	err := argus.Save(file, n.p)
-	n.lock.RUnlock()
 
 	if err != nil {
 		dl.Problem("cannot save notification to '%s': %v", file, err)

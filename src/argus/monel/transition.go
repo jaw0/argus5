@@ -176,7 +176,7 @@ func (m *M) permitNotify(status argus.Status) bool {
 func (m *M) setAlarm() {
 
 	m.P.TransTime = clock.Nano()
-	a := m.P.Alarm
+	a := false
 
 	if m.P.OvStatus > argus.CLEAR && m.P.OvStatus <= argus.CRITICAL {
 		a = true

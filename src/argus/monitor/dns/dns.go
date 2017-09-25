@@ -14,7 +14,6 @@ import (
 
 	"github.com/miekg/dns"
 
-	"argus/argus"
 	"argus/configure"
 	"argus/diag"
 	"argus/lfsr"

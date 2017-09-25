@@ -1,0 +1,10 @@
+<div id="lofgileouter" style="display:none;">
+  <div id="lofgileinner">
+
+    <i class="buttdismiss fa fa-lg fa-times" onclick="lofgile_dismiss();" style="float:right;"></i>
+
+    <table>
+        <tr v-for="l in Logs"><td v-bind:class="[l.Tag]">{{ l.Msg }}</td></tr>
+    </table>
+  </div>
+</div>

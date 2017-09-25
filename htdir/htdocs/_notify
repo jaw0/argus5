@@ -1,0 +1,37 @@
+<div id="notifydetailouter" style="display:none;">
+  <div id="notifydetailinner">
+
+      <i class="buttdismiss fa fa-lg fa-times" onclick="notify_dismiss();" style="float:right;"></i>
+      <div class=notifyhead>Alert - {{ N.IdNo }}</div>
+
+      <table>
+        <tr><th>ID</th><td>{{ N.IdNo }}</td></tr>
+        <tr><th>Object</th><td><a v-bind:href="N.PageUrl">{{ N.Unique }}</td></tr>
+        <tr><th>Message</th><td v-bind:class="[ N.OvStatus_sev ]" >{{ N.Message }}</td></tr>
+        <tr v-if="N.Reason"><th>Reason</th><td>{{ N.Reason }}</td></tr>
+        <tr><th>Created</th><td>{{ N.Created_fmt }}</td></tr>
+        <tr><th>Status</th><td v-if="N.IsActive">Active</td><td v-else="">Acked</td></tr>
+        <tr v-if="N.IsActive && CanAck"><td></td><td>
+                <a class="button" v-bind:onclick="'notify_ack('+ N.IdNo +');'">
+                  <i class="fa fa-stop-circle"></i> Ack</a></td></tr>
+      </table>
+      <br>
+
+      <div class=notifyhead>Per User Status</div>
+
+      <table><tr>
+        <td v-for="s,u in N.Status" class=notifyuser><b>{{ u }}</b><br>{{ s }}</td>
+      </tr></table>
+
+      <div class=notifyhead>Audit Log</div>
+
+        <table class=notifylog cellspacing=0>
+          <tr v-for="l in N.Log">
+            <td>{{ l.When_fmt }}</td>
+            <td>{{ l.Who }}</td>
+            <td>{{ l.Msg }}</td>
+          </tr>
+        </table>
+
+  </div>
+</div>

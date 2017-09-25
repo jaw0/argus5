@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"argus/api"
+	"argus/argus"
 	"argus/config"
 	"argus/construct"
 	"argus/darp"
@@ -54,6 +55,7 @@ func main() {
 	// load small base config
 	config.Load(configfile)
 
+	argus.Loggit("", "Argus starting")
 	diag.Verbose("starting....")
 
 	// init sighandlers
@@ -82,6 +84,7 @@ func main() {
 	api.Init()           // start local api server
 	darp.Init(&MakeIt{}) // after config is loaded
 
+	argus.Loggit("", "Argus running")
 	// block + wait
 	sched.Wait()
 
@@ -90,6 +93,7 @@ func main() {
 	notify.Stop()
 	monel.Stop()
 	diag.Verbose("stopped")
+	argus.Loggit("", "Argus exiting")
 	os.Exit(exitvalue)
 }
 

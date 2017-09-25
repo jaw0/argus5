@@ -171,8 +171,6 @@ func (s *Service) JoinMulti() bool {
 
 func (s *Service) Done() {
 
-	// debug
-
 	s.mon.Lock.Lock()
 	defer s.mon.Lock.Unlock()
 	s.reschedule()
