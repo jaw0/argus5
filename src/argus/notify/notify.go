@@ -6,6 +6,7 @@
 package notify
 
 import (
+	"expvar"
 	"sync"
 	"time"
 
@@ -103,6 +104,7 @@ var dstQueue = make(map[string]*queuedat)
 var dl = diag.Logger("notify")
 var notechan = make(chan *N, 16)
 var idno = 1000
+var NActive = expvar.NewInt("notifies")
 
 var globalDefaults = GlobalConf{
 	Message_Fmt:      "{{.IDNO}} {{.CREATED}} {{.CONTENT}}",
@@ -235,6 +237,7 @@ func (n *N) work() {
 		byid[n.p.IdNo] = n
 		if n.p.IsActive {
 			actives[n.p.IdNo] = n
+			NActive.Set(int64(len(actives)))
 		}
 		n.maybeQueue()
 	} else {

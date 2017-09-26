@@ -2,7 +2,7 @@
 
   <form method=post action="/login-1">
   <input type=hidden name=next value="{[ .Q.next ]}">
-  <table>
+  <table id=loginform>
     <tr><th>User</th><td><input type=text name=name value="{[ .Q.name ]}"></td></tr>
     <tr><th>Pass</th><td><input type=password name=pass value="{[ .Q.pass ]}"></td></tr>
     <tr><td></td><td><input type=Submit value=Login></td></tr>

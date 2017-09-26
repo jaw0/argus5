@@ -1,5 +1,13 @@
 {[define "content" ]}
 
+<div id="arguspage" class=tophome>
 {[ template "_top" . ]}
+</div>
 
 {[end ]}
+{[define "script" ]}
+  var datasrc = "\/\/" + urlhost + "/api/page"
+  var dataarg = {obj: objname}
+
+  argus_page()
+{[end]}

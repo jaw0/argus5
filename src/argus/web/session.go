@@ -21,6 +21,7 @@ type Session struct {
 	Name      string
 	XSRFToken string
 	Expires   int64
+	Hush      int64
 }
 
 const (
@@ -141,4 +142,38 @@ func (ctx *Context) GetSession() {
 	dl.Debug("found sess %s", sess.Name)
 	ctx.User = user
 	ctx.XSRFToken = sess.XSRFToken
+	ctx.Hush = sess.Hush
+}
+
+func DelSession(ctx *Context) {
+
+	cookie, _ := ctx.R.Cookie(COOKIENAME)
+	if cookie == nil {
+		return
+	}
+
+	lock.Lock()
+	defer lock.Unlock()
+
+	delete(sessions, cookie.Value)
+	save()
+
+}
+
+func Hush(ctx *Context) {
+
+	cookie, _ := ctx.R.Cookie(COOKIENAME)
+	if cookie == nil {
+		return
+	}
+
+	lock.Lock()
+	defer lock.Unlock()
+
+	sess := sessions[cookie.Value]
+	if sess == nil {
+		return
+	}
+
+	sess.Hush = clock.Nano()
 }

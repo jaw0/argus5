@@ -59,7 +59,7 @@ func webJson(ctx *web.Context) {
 		return
 	}
 
-	d := m.newWebMetaResponse()
+	d := m.newWebMetaResponse(ctx)
 
 	// only include these if something has changed
 	if !m.webChangedSince(since) {
@@ -117,13 +117,14 @@ func (m *M) webChangedSince(since int64) bool {
 
 // ################################################################
 
-func (m *M) webMeta(md map[string]interface{}) {
+func (m *M) webMeta(ctx *web.Context, md map[string]interface{}) {
 
 	m.Lock.RLock()
 	defer m.Lock.RUnlock()
 
 	md["alarm"] = m.P.Alarm
 	md["sirentime"] = m.P.SirenTime
+	md["sirenhush"] = ctx.Hush > m.P.SirenTime
 	md["webtime"] = m.WebTime
 	md["unacked"] = notify.NumActive()
 	md["hasErrors"] = argus.HasErrors()
@@ -277,7 +278,7 @@ func webAnnotate(ctx *web.Context) {
 		return
 	}
 
-	d := m.newWebMetaResponse()
+	d := m.newWebMetaResponse(ctx)
 
 	text := ctx.Get("text")
 
@@ -300,11 +301,11 @@ func webAnnotate(ctx *web.Context) {
 
 // ################################################################
 
-func (m *M) newWebMetaResponse() map[string]interface{} {
+func (m *M) newWebMetaResponse(ctx *web.Context) map[string]interface{} {
 
 	d := make(map[string]interface{})
 	// general metadata - always include on every response
-	m.webMeta(d)
+	m.webMeta(ctx, d)
 	return d
 }
 

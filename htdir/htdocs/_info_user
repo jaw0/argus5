@@ -1,6 +1,6 @@
 
 <tr><td colspan=2>
-  <table border=0 width="100%" bgcolor="#ddd" id=infouser class=topbar>
+  <table border=0 width="100%" id=infouser class=topbar>
     <tr><td align=left>
            <span class=objectname>{[ .ObjTitle ]}</span>
         </td>
@@ -10,8 +10,9 @@
            <a class=topnav href="" title="Overview"><i class="fa fa-tasks"></i></a>
            <a class=topnav href="" title="Notifications"><i id=notifiesicon  class="fa fa-envelope-o"></i></A>
            <a class=topnav onclick="lofgile_show();" title="Startup Errors"><i id=haserrorsicon class="fa fa-warning"></i></a>
-           <i id=sirenicon class="fa fa-bell-o"></i>
+           <i id=sirenicon class="fa fa-bell-o" onclick="hush_siren();"></i>
            <span class=username>User: <tt>{[ .User ]}</tt></span>
+           <a class=topnav href="/logout" title="Log Out"><i class="fa fa-user-o fa-sm"></i></a>
     </td></tr>
   </table>
 </td></tr>
@@ -22,6 +23,6 @@
    with their singing.
      -- Homer, Odyssey
 */]}
-<audio loop id="sirensound">
+<audio id="sirensound">
   <source src="/static/whoopwhoop.wav" type="audio/wav">
 </audio>

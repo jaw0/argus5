@@ -38,6 +38,7 @@
 <!-- errors during startup -->
 {[ template "_info_user" . ]}
 
+<tr><td id="errormsg"></td></tr>
 <tr><td valign=top class=maincontent colspan=2>
 
 {[ template "content" . ]}

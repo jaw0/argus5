@@ -6,6 +6,7 @@
 package monel
 
 import (
+	"expvar"
 	"fmt"
 	"sync"
 
@@ -21,6 +22,7 @@ var dl = diag.Logger("monel")
 
 var lock sync.RWMutex
 var byname = make(map[string]*M)
+var NMonel = expvar.NewInt("objects")
 
 // Service, Group, Alias
 type Moneler interface {
@@ -181,6 +183,7 @@ func (m *M) Init() {
 
 	lock.Lock()
 	byname[m.Cf.Unique] = m
+	NMonel.Set(int64(len(byname)))
 	lock.Unlock()
 }
 
@@ -190,6 +193,7 @@ func (m *M) Recycle(cascade bool) {
 
 	lock.Lock()
 	delete(byname, m.Cf.Unique)
+	NMonel.Set(int64(len(byname)))
 	lock.Unlock()
 
 	m.Lock.Lock()

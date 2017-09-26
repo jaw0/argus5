@@ -1,5 +1,6 @@
 
-<table id=darpinfo>
+<table id=darpinfo v-if="mon.darp">
+  <tr><th colspan=2>DARP Info</th></tr>
   <template v-for="d,n in mon.darp">
     <tr><th>{{ n }}</th><td v-bind:class="[d.Status_sev]">{{ d.Status_fmt }}</td></tr>
   </template>

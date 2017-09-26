@@ -6,6 +6,7 @@
 package sched
 
 import (
+	"expvar"
 	"math/rand"
 	"sort"
 	"sync"
@@ -46,6 +47,7 @@ var workchan = make(chan *D, 1000)
 var stopchan = make(chan struct{})
 var done sync.WaitGroup
 var dl = diag.Logger("sched")
+var NRun = expvar.NewInt("runs")
 
 func New(cf *Conf, obj Starter) *D {
 
@@ -211,6 +213,7 @@ func (d *D) run() {
 	//	}
 	//}()
 
+	NRun.Add(1)
 	d.obj.Start()
 }
 

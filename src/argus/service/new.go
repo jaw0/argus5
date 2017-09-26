@@ -88,6 +88,7 @@ func (s *Service) Init() error {
 
 	lock.Lock()
 	allService[s.mon.Cf.Unique] = s
+	NService.Set(int64(len(allService)))
 	lock.Unlock()
 
 	// QQQ - or wait until DoneConfig?
@@ -109,6 +110,7 @@ func (s *Service) Recycle() {
 
 	lock.Lock()
 	delete(allService, s.mon.Cf.Unique)
+	NService.Set(int64(len(allService)))
 	lock.Unlock()
 
 	if s.sched != nil {

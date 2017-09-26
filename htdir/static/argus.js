@@ -61,7 +61,7 @@ function build_page(){
         url: datasrc,
         data: dataarg,
         success: build_page_ok,
-        fail: build_page_fail
+        error: ajax_fail
     });
 
 }
@@ -72,9 +72,17 @@ function build_page_force(){
     build_page()
 }
 
-function build_page_fail(){
-    alert("error loading data")
+function ajax_fail(r, err){
+    argus.log("error loading data " + err)
     spinner_off()
+
+    if( r.status == 403 ){
+        window.location = "/view/login"
+        return
+    }
+
+    $('#errormsg').text("ERROR: " + err)
+    $('#errormsg').show()
 }
 
 function build_page_ok(d){
@@ -159,7 +167,7 @@ function override_save(){
         dataType:   'json',
         timeout:    5000,
         success:    override_success,
-        error:      override_error,
+        error:      ajax_fail,
     });
 }
 
@@ -176,13 +184,12 @@ function override_remove(){
         dataType:   'json',
         timeout:    5000,
         success:    override_success,
-        error:      override_error,
+        error:      ajax_fail,
     });
 }
 
 function override_success(r){
     // r = results from server
-    // handle error
 
     process_meta(r)
 
@@ -193,10 +200,6 @@ function override_success(r){
     }
 
     spinner_off()
-}
-function override_error(r, err){
-    spinner_off()
-    argus.log("override save error: " + err)
 }
 
 
@@ -254,6 +257,7 @@ function annotate_error(r, err){
     spinner_off()
     $('#notesdpy').slideDown()
     argus.log("annotate save error: " + err)
+    ajax_fail(r,err)
 }
 
 
@@ -264,9 +268,7 @@ function checknow(){
 
     argus.log("check now")
 
-    var args = { obj: objname }
-
-    args.xtok    = token
+    var args = { obj: objname, xtok: token }
 
     $('body').hide()
     spinner_on()
@@ -295,6 +297,7 @@ function checknow_error(r, err){
 
     $('body').show()
     spinner_off()
+    ajax_fail(r,err)
 }
 
 // ****************************************************************
@@ -317,7 +320,7 @@ function notify_show(elem){
         dataType:   'json',
         timeout:    5000,
         success:    notify_success,
-        error:      notify_error,
+        error:      ajax_fail,
     });
 }
 
@@ -351,23 +354,15 @@ function notify_display(){
     $('#notifydetailinner').slideDown()
 }
 
-function notify_error(){
-    argus.log("notify error")
-    spinner_off()
-}
-
 function notify_dismiss(){
-
     $('#notifydetailinner').slideUp()
     $('#notifydetailouter').fadeOut()
-
 }
 
 function notify_ack(idno){
 
     argus.log("ack: " + idno)
     notify_dismiss()
-    spinner_on()
 
     var args = { idno: idno, xtok: token }
 
@@ -395,17 +390,15 @@ function lofgile_show(elem){
         dataType:   'json',
         timeout:    5000,
         success:    lofgile_success,
-        error:      lofgile_error,
+        error:      ajax_fail
     });
 }
 
-var xlog
 function lofgile_success(r){
 
     argus.log("lofgile success")
     spinner_off()
 
-    xlog = r
     var app = new Vue({
         el: '#lofgileinner',
         data: r
@@ -421,16 +414,25 @@ function lofgile_display(){
     $('#lofgileinner').slideDown()
 }
 
-function lofgile_error(){
-    argus.log("lofgile error")
-    spinner_off()
-}
-
 function lofgile_dismiss(){
-
     $('#lofgileinner').slideUp()
     $('#lofgileouter').fadeOut()
 }
+
+//****************************************************************
+
+function hush_siren(){
+
+    $('#sirensound').trigger('pause')
+
+    $.ajax({
+        type:	    'POST',
+        url:	    '/hush',
+        dataType:   'json',
+        timeout:    5000
+    });
+}
+
 
 //****************************************************************
 
@@ -446,14 +448,9 @@ function copy_data(src, dst){
 
 function process_meta(d){
 
-    // errors
-    // redirect
-
     if( d.alarm ){
-        // get hushed cookie
-        var hushed = 0
 
-        if( hushed ){
+        if( d.sirenhush ){
             $('#sirenicon').removeClass('fa-bell-o').addClass('fa-bell-slash-o')
         }else{
             $('#sirenicon').removeClass('fa-bell-slash-o').addClass('fa-bell-o')
@@ -473,13 +470,16 @@ function process_meta(d){
 
     if( d.hasErrors ){
         $('#haserrorsicon').removeClass('fa-info-circle').addClass('fa-warning')
-        $('#haserrorsicon').removeClass('warning').addClass('redbounce')
+        $('#haserrorsicon').removeClass('major-f').addClass('redbounce')
+        $('#haserrorsicon').show()
     }else if( d.hasWarns ){
         $('#haserrorsicon').removeClass('fa-info-circle').addClass('fa-warning')
         $('#haserrorsicon').removeClass('redbounce').addClass('major-f')
+        $('#haserrorsicon').show()
     }else{
         $('#haserrorsicon').removeClass('fa-warning').addClass('fa-info-circle')
         $('#haserrorsicon').removeClass('redbounce').removeClass('major-f')
+        $('#haserrorsicon').hide()
     }
 }
 
@@ -559,4 +559,5 @@ function spinner_on(){
 
 function spinner_off(){
     $('#spinnericon').hide()
+    $('#errormsg').hide()
 }

@@ -14,6 +14,8 @@ import (
 func init() {
 	Add(PUBLIC, "/", webHome)
 	Add(PUBLIC, "/login-1", webLogin1)
+	Add(PRIVATE, "/logout", webLogout)
+	Add(PRIVATE, "/hush", webHush)
 }
 
 func webHome(ctx *Context) {
@@ -50,6 +52,16 @@ func webLogin1(ctx *Context) {
 	http.Redirect(ctx.W, ctx.R, "/view/login?fail=1", 302)
 
 	dl.Verbose("login failure '%s' from %s'", name, ctx.R.RemoteAddr)
+}
+
+func webLogout(ctx *Context) {
+
+	DelSession(ctx)
+	http.Redirect(ctx.W, ctx.R, "/view/login", 302)
+}
+
+func webHush(ctx *Context) {
+	Hush(ctx)
 }
 
 func (ctx *Context) webHome() string {

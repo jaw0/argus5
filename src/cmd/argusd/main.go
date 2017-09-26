@@ -14,6 +14,7 @@ import (
 
 	"argus/api"
 	"argus/argus"
+	"argus/clock"
 	"argus/config"
 	"argus/construct"
 	"argus/darp"
@@ -24,6 +25,7 @@ import (
 	"argus/notify"
 	"argus/resolv"
 	"argus/sched"
+	"argus/service"
 	"argus/web"
 )
 
@@ -31,9 +33,12 @@ var dl = diag.Logger("main")
 var shutdown = make(chan int)
 var sigchan = make(chan os.Signal, 5)
 var exitvalue = 0
+var starttime = clock.Unix()
 
 func init() {
-	api.Add(false, "/hello", func(c *api.Context) { c.Conn.Write([]byte("hello, api\n")) })
+	api.Add(true, "hup", apiHup)
+	api.Add(true, "shutdown", apiStop)
+	api.Add(true, "status", apiStatus)
 
 	web.Add(web.PUBLIC, "/hello", func(c *web.Context) { c.W.Write([]byte("hello, web!\n")) })
 }
@@ -83,6 +88,7 @@ func main() {
 	web.Configured()
 	api.Init()           // start local api server
 	darp.Init(&MakeIt{}) // after config is loaded
+	go statsCollector()
 
 	argus.Loggit("", "Argus running")
 	// block + wait
@@ -106,6 +112,7 @@ func sigHandle() {
 				diag.Bug("usr2")
 				continue
 			}
+			exitvalue = 1
 			sched.Stop()
 		}
 	}
@@ -129,4 +136,34 @@ func createStatsDirs() {
 			os.Mkdir(dir, 0777)
 		}
 	}
+}
+
+func apiHup(ctx *api.Context) {
+
+	sigchan <- syscall.SIGHUP
+	ctx.SendOKFinal()
+}
+
+func apiStop(ctx *api.Context) {
+
+	ctx.SendOKFinal()
+	exitvalue = 0
+	sched.Stop()
+}
+
+func apiStatus(ctx *api.Context) {
+
+	ctx.SendOK()
+	ctx.SendKVP("status", "running")
+	ctx.SendKVP("version", argus.Version)
+	ctx.SendKVP("objects", monel.NMonel.String())
+	ctx.SendKVP("services", service.NService.String())
+	ctx.SendKVP("alerts", notify.NActive.String())
+	ctx.SendKVP("uptime", argus.Elapsed(clock.Unix()-starttime))
+	ctx.SendKVP("monrate", fmt.Sprintf("%.2f per second", monrate.Value()))
+	ctx.SendKVP("idle", fmt.Sprintf("%.2f%%", 100*idlerate.Value()))
+
+	// RSN - darp info
+
+	ctx.SendFinal()
 }

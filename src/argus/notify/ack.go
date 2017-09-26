@@ -75,6 +75,7 @@ func (n *N) ack(who string) {
 
 	n.p.IsActive = false
 	delete(actives, n.p.IdNo)
+	NActive.Set(int64(len(actives)))
 	n.Save()
 	n.log(who, "acked")
 

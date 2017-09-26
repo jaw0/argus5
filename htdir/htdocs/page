@@ -1,6 +1,7 @@
 {[define "content"]}
 
 <div id="arguspage">
+
 {[ template "_notes" . ]}
 {[ template "_info" . ]}
 {[ template "_darp" . ]}

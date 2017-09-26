@@ -28,6 +28,7 @@ const (
 type Context struct {
 	User      *users.User
 	XSRFToken string
+	Hush      int64
 	W         http.ResponseWriter
 	R         *http.Request
 	// user pers, home, ...

@@ -33,7 +33,7 @@ func webCheckNow(ctx *web.Context) {
 
 	m.checkNow()
 
-	d := m.newWebMetaResponse()
+	d := m.newWebMetaResponse(ctx)
 	js, _ := json.MarshalIndent(d, "", "  ")
 	ctx.W.Header().Set("Content-Type", "application/json; charset=utf-8")
 	ctx.W.Write(js)

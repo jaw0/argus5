@@ -1,5 +1,5 @@
 
-<table id=stats>
+<table id=stats cellspacing=0>
   <tr><td></td><th>Start</th><th>Elapsed</th><th>% Up</th><th>% Dn</th><th># Dn</th></tr>
   <template v-for="s in mon.stats">
         <tr v-bind:class="{hilite: s.HiLite}"><td>{{ s.Label }}</td>

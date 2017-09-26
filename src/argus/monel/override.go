@@ -128,7 +128,7 @@ func webOverride(ctx *web.Context) {
 		expires += clock.Unix()
 	}
 
-	d := m.newWebMetaResponse()
+	d := m.newWebMetaResponse(ctx)
 
 	if remove != "" {
 		m.DelOverride(ctx.User.Name, "")

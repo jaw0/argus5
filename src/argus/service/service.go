@@ -6,6 +6,7 @@
 package service
 
 import (
+	"expvar"
 	"math"
 	"sync"
 	"time"
@@ -108,6 +109,7 @@ type Service struct {
 var dl = diag.Logger("service")
 var lock sync.RWMutex
 var allService = make(map[string]*Service)
+var NService = expvar.NewInt("services")
 
 /*
 typical use:

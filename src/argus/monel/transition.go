@@ -87,6 +87,7 @@ func (m *M) commonUpdateNoChange() {
 	m.WebTime = clock.Nano()
 	m.statsTransition()
 	m.determineSummary()
+	m.setAlarm()
 	m.andUpwards()
 }
 
