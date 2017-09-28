@@ -72,8 +72,8 @@ function build_page_force(){
     build_page()
 }
 
-function ajax_fail(r, err){
-    argus.log("error loading data " + err)
+function ajax_fail(r, err, reason){
+    argus.log("error loading data " + reason)
     spinner_off()
 
     if( r.status == 403 ){
@@ -81,7 +81,11 @@ function ajax_fail(r, err){
         return
     }
 
-    $('#errormsg').text("ERROR: " + err)
+    if( !reason ){
+        reason = "cannot connect to argus: " + err
+    }
+
+    $('#errormsg').text("ERROR: " + reason)
     $('#errormsg').show()
 }
 

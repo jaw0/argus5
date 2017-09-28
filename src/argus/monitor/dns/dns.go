@@ -142,6 +142,14 @@ func configDNS(d *Conf, conf *configure.CF) error {
 	d.Proto = proto
 
 	conf.InitFromConfig(d, "DNS", "")
+
+	if d.Zone == "" {
+		d.Zone = "."
+	}
+	if d.Zone[len(d.Zone)-1] != '.' {
+		d.Zone += "."
+	}
+
 	dl.Debug("config: %#v", d)
 	return nil
 }
@@ -182,10 +190,6 @@ func (d *DNS) buildPacket() {
 
 	qtype := dns.StringToType[d.Cf.Query]
 	class := dns.StringToClass[d.Cf.Class]
-
-	if d.Cf.Zone[len(d.Cf.Zone)-1] != '.' {
-		d.Cf.Zone += "."
-	}
 
 	req := dns.Msg{
 		Question: []dns.Question{dns.Question{d.Cf.Zone, qtype, class}},
@@ -251,9 +255,10 @@ func (d *DNS) Start(s *service.Service) {
 	}
 
 	resp, _, err := client.Exchange(d.msg, addrport)
-	if err != nil {
+	if err != nil || resp == nil {
 		s.Debug("error: %v", err)
 		s.Fail("dns query failed")
+		return
 	}
 
 	s.Debug("dns resp %s", resp.String())

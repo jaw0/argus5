@@ -12,11 +12,11 @@ import (
 	"regexp"
 
 	"github.com/uknth/jsonpath"
-	"github.com/zdebeer99/goexpression"
 
 	"argus/argus"
 	"argus/clock"
 	"argus/diag"
+	"argus/expr"
 )
 
 const (
@@ -206,11 +206,11 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 		fval *= 8
 	}
 
-	if s.Cf.Expr != "" {
+	if len(s.expr) != 0 {
 		var err error
-		fval, err = doExpr(s.Cf.Expr, fval)
+		fval, err = doExpr(s.expr, fval)
 		if err != nil {
-			diag.Problem("invalid expr '%s': %v", s.Cf.Expr, err)
+			s.Debug("invalid expr '%s': %v", s.Cf.Expr, err)
 		}
 	}
 
@@ -323,27 +323,16 @@ func jsonPath(path string, val string) (string, error) {
 	return fmt.Sprintf("%v", res), nil
 }
 
-func doExpr(expr string, fval float64) (ret float64, rer error) {
+func doExpr(exp []string, fval float64) (ret float64, rer error) {
 
-	dat := map[string]interface{}{
-		"x": fval,
+	sv := fmt.Sprintf("%f", fval)
+
+	dat := map[string]string{
+		"x":  sv,
+		"$x": sv, // backwards compat(ish)
 	}
 
-	defer func() {
-		if err := recover(); err != nil {
-			rer = fmt.Errorf("%v", err)
-			ret = 0
-		}
-	}()
+	res, err := expr.RunExprF(exp, dat)
 
-	// NB - this does not return an error, it panics!
-	r := goexpression.Eval(expr, dat)
-
-	return r, nil
+	return res, err
 }
-
-/*
-https://github.com/zdebeer99/goexpression
-
-
-*/

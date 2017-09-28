@@ -12,6 +12,8 @@ import (
 
 	"argus/argus"
 	"argus/configure"
+	"argus/darp"
+	"argus/expr"
 	"argus/monel"
 	"argus/sched"
 )
@@ -49,6 +51,15 @@ func (s *Service) Config(conf *configure.CF) error {
 
 	conf.InitFromConfig(&s.Cf, "service", "")
 
+	// precompile expr
+	if s.Cf.Expr != "" {
+		expr, _, err := expr.Parse(s.Cf.Expr)
+		if err != nil {
+			return fmt.Errorf("invalid expr: %v", err)
+		}
+		s.expr = expr
+	}
+
 	s.Cf.DARP_Tags = strings.ToLower(s.Cf.DARP_Tags)
 
 	hwab := false
@@ -84,6 +95,14 @@ func (s *Service) Init() error {
 	err := s.check.Init()
 	if err != nil {
 		return err
+	}
+
+	// clean up any old/outdated darp entries
+	for n, _ := range s.p.Statuses {
+		if !darp.IsValid(n) {
+			delete(s.p.Statuses, n)
+			delete(s.p.Results, n)
+		}
 	}
 
 	lock.Lock()

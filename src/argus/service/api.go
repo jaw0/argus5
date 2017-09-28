@@ -107,7 +107,6 @@ func (s *Service) Dump(ctx *api.Context) {
 
 	cm := s.check.DumpInfo()
 	for pre, d := range cm {
-		dl.Verbose("pre: %s; %v", pre, d)
 		ctx.DumpStruct(d, pre)
 	}
 }

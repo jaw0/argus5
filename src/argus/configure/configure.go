@@ -14,13 +14,6 @@ import (
 	"argus/diag"
 )
 
-/*
-XXX
-cache - *CFV
-errors
-
-*/
-
 type CFV struct {
 	Value   interface{} // string | *Schedule
 	Line    int

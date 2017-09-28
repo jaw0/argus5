@@ -102,8 +102,9 @@ type Service struct {
 	Lasttest int64
 	Tries    int
 	Started  int64
-	AlsoRun  []*Service
+	alsoRun  []*Service
 	graph    bool
+	expr     []string
 }
 
 var dl = diag.Logger("service")
@@ -124,6 +125,10 @@ func (s *Service) Debug(fmt string, args ...interface{}) {
 	s.mon.Debug(fmt, args...)
 }
 
+func (s *Service) CFError(fmt string, args ...interface{}) {
+	s.mon.ConfCF.Error(fmt, args...)
+}
+
 func (s *Service) SetNames(uname string, label string, friendly string) {
 	s.mon.SetNames(uname, label, friendly)
 }
@@ -139,6 +144,17 @@ func Find(id string) *Service {
 
 func (s *Service) CheckNow() {
 	s.Start()
+}
+
+func (s *Service) IsReady() bool {
+
+	s.mon.Lock.RLock()
+	defer s.mon.Lock.RUnlock()
+	return s.p.Result != ""
+}
+
+func (s *Service) Unique() string {
+	return s.mon.Cf.Unique
 }
 
 func (s *Service) Start() {
@@ -180,7 +196,7 @@ func (s *Service) Done() {
 	s.Lasttest = clock.Nano()
 
 	s.mon.Debug("done")
-	for _, also := range s.AlsoRun {
+	for _, also := range s.alsoRun {
 		also.Start()
 	}
 }
@@ -194,6 +210,33 @@ func (s *Service) Fail(reason string) {
 
 func (s *Service) Children() []*monel.M {
 	return nil
+}
+
+func (s *Service) AddAlsoRun(c *Service) {
+	s.mon.Lock.Lock()
+	s.alsoRun = append(s.alsoRun, c)
+	s.mon.Lock.Unlock()
+}
+
+func (s *Service) RemoveAlsoRun(c *Service) {
+
+	s.mon.Lock.Lock()
+	defer s.mon.Lock.Unlock()
+	i := -1
+
+	for n, cs := range s.alsoRun {
+		if cs == c {
+			i = n
+			break
+		}
+	}
+
+	if i == -1 {
+		return
+	}
+
+	copy(s.alsoRun[i:], s.alsoRun[i+1:])
+	s.alsoRun = s.alsoRun[:len(s.alsoRun)-1]
 }
 
 // ################################################################

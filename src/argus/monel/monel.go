@@ -281,6 +281,7 @@ func (m *M) DoneConfig() {
 
 	m.Me.DoneConfig()
 	m.determineStatus()
+	m.determineSummary()
 }
 
 func (m *M) sortChildren() {

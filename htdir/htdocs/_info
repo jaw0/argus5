@@ -12,7 +12,7 @@
     <tr><th>status</th><td v-bind:class="[mon.ovstatus_sev]">{{ mon.ovstatus_fmt  }}</td>
                 <th>since</th><td>{{ mon.transtime_fmt }}</td></tr>
     <tr v-if="!mon.childsum && mon.reason"><th>...because</th><td>{{ mon.reason }}</td></tr>
-    <tr v-if="mon.Hostname"><th>hostname</th><td>{{ mon.Hostname }}</td></tr>
+    <tr v-if="mon.hostname"><th>hostname</th><td>{{ mon.hostname }}</td></tr>
     <tr v-if="deco.note"><th>note</th><td>{{ deco.note }}</td></tr>
     <tr v-if="deco.info"><th>info</th><td>{{ deco.info }}</td></tr>
     <tr v-if="deco.details"><th>details</th><td>{{ deco.details }}</td></tr>

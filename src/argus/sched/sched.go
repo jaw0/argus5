@@ -139,7 +139,7 @@ func Init() {
 
 	for i := 0; i < nwork; i++ {
 		done.Add(1)
-		go worker()
+		go worker(cf.DevMode)
 	}
 }
 
@@ -186,7 +186,7 @@ func mainloop() {
 	}
 }
 
-func worker() {
+func worker(devmode bool) {
 
 	defer done.Done()
 
@@ -195,7 +195,7 @@ func worker() {
 		case <-stopchan:
 			return
 		case d := <-workchan:
-			d.run()
+			d.run(devmode)
 
 			if d.auto {
 				d.ReSchedule(0)
@@ -204,14 +204,16 @@ func worker() {
 	}
 }
 
-func (d *D) run() {
+func (d *D) run(devmode bool) {
 
-	// RSN - recover
-	//defer func() {
-	//	if err := recover(); err != nil {
-	//		dl.Bug("CRASH RECOVERY - '%s'", d.text)
-	//	}
-	//}()
+	if !devmode {
+		// if we are not in dev mode, try to recover from crashes
+		defer func() {
+			if err := recover(); err != nil {
+				dl.Bug("CRASH RECOVERY - '%s'", d.text)
+			}
+		}()
+	}
 
 	NRun.Add(1)
 	d.obj.Start()

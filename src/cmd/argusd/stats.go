@@ -11,20 +11,29 @@ import (
 	"time"
 )
 
+const LAMBDA = 10
+const DELAY = 30 * time.Second
+
 var monrate = expvar.NewFloat("monrate")
 var idlerate = expvar.NewFloat("idlerate")
 
 func statsCollector() {
 
 	runs := expvar.Get("runs").(*expvar.Int)
+	lambda := 0.0
 	var prun int64
 	var mr float64
-	var idle float64
+	idle := 1.0
 	var pusage syscall.Rusage
 	syscall.Getrusage(0, &pusage)
 
 	for {
-		time.Sleep(30 * time.Second)
+		time.Sleep(DELAY)
+
+		lambda++
+		if lambda > LAMBDA {
+			lambda = LAMBDA
+		}
 
 		// monitoring per second
 		crun := runs.Value()
@@ -36,18 +45,26 @@ func statsCollector() {
 			mr = cmr
 		}
 
-		mr = (10*mr + cmr) / 11
+		mr = (lambda*mr + cmr) / (lambda + 1)
 		monrate.Set(mr)
 
 		// cpu/idle
 		var usage syscall.Rusage
 		syscall.Getrusage(0, &usage)
-		dutime := usage.Utime.Sec - pusage.Utime.Sec
-		dstime := usage.Stime.Sec - pusage.Stime.Sec
+		dutime := usage.Utime.Nano() - pusage.Utime.Nano()
+		dstime := usage.Stime.Nano() - pusage.Stime.Nano()
 		pusage = usage
 
-		cidle := float64(30-dutime-dstime) / 30
-		idle = (10*idle + cidle) / 11
+		dl.Debug("usage: u %d, s %d", dutime, dstime)
+		cidle := float64(int64(DELAY)-dutime-dstime) / float64(DELAY)
+		if cidle < 0 {
+			cidle = 0
+		}
+		if cidle > 1 {
+			cidle = 1
+		}
+
+		idle = (lambda*idle + cidle) / (lambda + 1)
 		idlerate.Set(idle)
 
 	}

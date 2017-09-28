@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"expvar"
 	"fmt"
 	"io"
 	"os/exec"
@@ -43,9 +44,16 @@ const (
 	TIMEOUT = 60 * time.Second
 )
 
+const QUEUESIZE = 16
+
 var dl = diag.Logger("ping")
-var pingChan = make(chan pingWork, 4)
+var pingChan = make(chan pingWork, QUEUESIZE)
+var PingQueue = expvar.NewInt("pingqueue")
+var PingIdle = expvar.NewInt("pingidle")
+var justOne sync.Mutex // only one worker collects work at a time
+
 var lock sync.Mutex
+var nIdle = 0
 
 func init() {
 	// register with service factory
@@ -117,17 +125,30 @@ func (p *Ping) Start(s *service.Service) {
 		return
 	}
 
+	PingQueue.Set(int64(len(pingChan)))
+	PingIdle.Set(int64(numIdle()))
+	// RSN - more workers?
+
 	// send it off to worker
 	pingChan <- pingWork{addr, s}
 }
 
+/*
+  queue full(ish):
+    idle workers -> problem? overloaded?
+    no idle workers && idle-enough -> start more
+*/
+
 func worker() {
 
 	for {
+		amIdle(true)
+
 		// only one worker gathers work at a time
-		lock.Lock()
+		justOne.Lock()
 		// lock is released in ping(), below
 
+		amIdle(false)
 		select {
 		case pw := <-pingChan:
 			ping(pw)
@@ -171,7 +192,7 @@ func ping(pw pingWork) {
 	nping++
 
 	nping += addMore(stdin, underway)
-	lock.Unlock() // allow another worker to proceed
+	justOne.Unlock() // allow another worker to proceed
 	stdin.Close()
 
 	bfd := bufio.NewReader(stdout)
@@ -257,4 +278,20 @@ func (p *Ping) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
 		"service/ping/CF/": p.Cf,
 	}
+}
+
+func amIdle(y bool) {
+
+	lock.Lock()
+	defer lock.Unlock()
+	if y {
+		nIdle++
+	} else {
+		nIdle--
+	}
+}
+func numIdle() int {
+	lock.Lock()
+	defer lock.Unlock()
+	return nIdle
 }

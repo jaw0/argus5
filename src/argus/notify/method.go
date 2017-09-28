@@ -39,7 +39,7 @@ var methods = map[string]*Method{
 func NewMethod(conf *configure.CF) error {
 
 	m := &Method{}
-	conf.InitFromConfig(&m, "method", "")
+	conf.InitFromConfig(m, "method", "")
 
 	if m.Command == "" {
 		return fmt.Errorf("Invalid Notification Method - command not specified")

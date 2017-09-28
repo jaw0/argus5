@@ -34,6 +34,7 @@ var shutdown = make(chan int)
 var sigchan = make(chan os.Signal, 5)
 var exitvalue = 0
 var starttime = clock.Unix()
+var status = "starting"
 
 func init() {
 	api.Add(true, "hup", apiHup)
@@ -91,11 +92,13 @@ func main() {
 	go statsCollector()
 
 	argus.Loggit("", "Argus running")
+	status = "running"
 	// block + wait
 	sched.Wait()
 
 	// finish
 	diag.Verbose("shutting down...")
+	status = "shutting down"
 	notify.Stop()
 	monel.Stop()
 	diag.Verbose("stopped")
@@ -154,7 +157,7 @@ func apiStop(ctx *api.Context) {
 func apiStatus(ctx *api.Context) {
 
 	ctx.SendOK()
-	ctx.SendKVP("status", "running")
+	ctx.SendKVP("status", status)
 	ctx.SendKVP("version", argus.Version)
 	ctx.SendKVP("objects", monel.NMonel.String())
 	ctx.SendKVP("services", service.NService.String())

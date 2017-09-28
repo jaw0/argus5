@@ -533,7 +533,7 @@ func encode(zone string, qtype uint16, qid int) []byte {
 
 	buf, err := req.Pack()
 	if err != nil {
-		diag.Problem("dns error: %v", err)
+		diag.Verbose("dns error: %#v -> %v", &req, err)
 		return nil
 	}
 

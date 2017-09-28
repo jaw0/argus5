@@ -1,5 +1,5 @@
 
-<table class=childtop v-if="mon.childsum">
+<table class=childsum v-if="mon.childsum">
   <tr><th>Name</th><th>Up</th><th>Down</th><th>Override</th></tr>
   <template v-for="c in mon.childsum">
     <tr><td><a v-bind:href="c.Desc.PageUrl">{{ c.Desc.Label }}</a></td>

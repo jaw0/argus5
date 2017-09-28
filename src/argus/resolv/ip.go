@@ -35,9 +35,13 @@ func New(name string) *IP {
 
 	// parse out ipv spec: eg. hostname._ipv6
 
+	dl.Debug("New: %s", name)
+
 	ipv := 0
-	ldot := strings.LastIndexByte(name, '.')
-	if ldot != -1 && name[ldot+1:len(name)-2] == "_ipv" {
+	ldot := strings.LastIndex(name, "._ipv")
+	dl.Debug("ldot %d; len %d", ldot, len(name))
+
+	if ldot != -1 && ldot <= len(name)-6 {
 
 		if ipv == 0 {
 			switch name[len(name)-1] {
@@ -48,6 +52,7 @@ func New(name string) *IP {
 			}
 		}
 		name = name[:ldot]
+		dl.Debug("ipv %d => %s", ipv, name)
 	}
 
 	name = strings.ToLower(name)

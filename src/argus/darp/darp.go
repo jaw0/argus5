@@ -213,6 +213,18 @@ func GetStatuses() map[string]bool {
 	return st
 }
 
+func IsValid(name string) bool {
+	if name == MyId {
+		return true
+	}
+
+	lock.RLock()
+	defer lock.RUnlock()
+
+	_, ok := allDarp[name]
+	return ok
+}
+
 // ################################################################
 
 func IncludesTag(tags string, tag string) bool {
