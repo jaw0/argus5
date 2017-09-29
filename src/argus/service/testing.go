@@ -221,6 +221,12 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 	return val, fval, valtype
 }
 
+// if we detect the device has reset
+func (s *Service) ResetRateCalc() {
+	s.p.Calc.Lastt = 0
+	s.p.Calc.Lastv = 0
+}
+
 func (s *Service) rateCalc(calcmask uint32, fval float64) (float64, bool) {
 
 	now := clock.Nano()

@@ -67,6 +67,10 @@ func (t *UDP) InitNew(conf *configure.CF, s *service.Service) {
 	s.Cf.Scale = pdat.Scale
 }
 
+func (t *UDP) PreConfig(conf *configure.CF, s *service.Service) error {
+	return nil
+}
+
 func (t *UDP) Config(conf *configure.CF, s *service.Service) error {
 
 	conf.InitFromConfig(&t.Cf, "udp", "")

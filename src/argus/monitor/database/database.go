@@ -40,6 +40,9 @@ func New(conf *configure.CF, s *service.Service) service.Monitor {
 	return p
 }
 
+func (d *DB) PreConfig(conf *configure.CF, s *service.Service) error {
+	return nil
+}
 func (d *DB) Config(conf *configure.CF, s *service.Service) error {
 
 	conf.InitFromConfig(&d.Cf, "db", "")

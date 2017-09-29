@@ -49,6 +49,11 @@ func New(conf *configure.CF, parent *monel.M) (*monel.M, error) {
 
 func (s *Service) Config(conf *configure.CF) error {
 
+	err := s.check.PreConfig(conf, s)
+	if err != nil {
+		return err
+	}
+
 	conf.InitFromConfig(&s.Cf, "service", "")
 
 	// precompile expr
@@ -72,7 +77,7 @@ func (s *Service) Config(conf *configure.CF) error {
 		s.HwabConfig(conf)
 	}
 
-	err := s.check.Config(conf, s)
+	err = s.check.Config(conf, s)
 	if err != nil {
 		return err
 	}

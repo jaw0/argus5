@@ -67,6 +67,9 @@ func New(conf *configure.CF, s *service.Service) service.Monitor {
 	return d
 }
 
+func (d *DNS) PreConfig(conf *configure.CF, s *service.Service) error {
+	return nil
+}
 func (d *DNS) Config(conf *configure.CF, s *service.Service) error {
 
 	if err := configDNS(&d.Cf, conf); err != nil {

@@ -21,6 +21,7 @@ import (
 )
 
 type Monitor interface {
+	PreConfig(*configure.CF, *Service) error
 	Config(*configure.CF, *Service) error
 	Init() error
 	Recycle()
@@ -123,6 +124,9 @@ typical use:
 
 func (s *Service) Debug(fmt string, args ...interface{}) {
 	s.mon.Debug(fmt, args...)
+}
+func (s *Service) Loggit(tag, msg string) {
+	s.mon.Loggit(tag, msg)
 }
 
 func (s *Service) CFError(fmt string, args ...interface{}) {

@@ -66,6 +66,9 @@ func (t *TCP) InitNew(conf *configure.CF, s *service.Service) {
 
 }
 
+func (t *TCP) PreConfig(conf *configure.CF, s *service.Service) error {
+	return nil
+}
 func (t *TCP) Config(conf *configure.CF, s *service.Service) error {
 
 	conf.InitFromConfig(&t.Cf, "tcp", "")

@@ -266,6 +266,12 @@ func (m *M) Status() (argus.Status, argus.Status) {
 	return m.P.Status, m.P.OvStatus
 }
 
+func (m *M) GetResult() string {
+	m.Lock.RLock()
+	defer m.Lock.RUnlock()
+	return m.P.Result
+}
+
 func (m *M) DoneConfig() {
 
 	for _, child := range m.Children {

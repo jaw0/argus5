@@ -21,10 +21,11 @@ type Conf struct {
 }
 
 type Compute struct {
-	S    *service.Service
-	Cf   Conf
-	objs map[string]bool
-	srvc []*service.Service
+	S     *service.Service
+	Cf    Conf
+	objs  map[string]bool
+	srvc  []*service.Service
+	valid bool
 }
 
 var dl = diag.Logger("compute")
@@ -39,6 +40,9 @@ func New(conf *configure.CF, s *service.Service) service.Monitor {
 	return p
 }
 
+func (c *Compute) PreConfig(conf *configure.CF, s *service.Service) error {
+	return nil
+}
 func (c *Compute) Config(conf *configure.CF, s *service.Service) error {
 
 	conf.InitFromConfig(&c.Cf, "compute", "")
@@ -67,6 +71,10 @@ func (c *Compute) Start(s *service.Service) {
 
 	s.Debug("compute start")
 	defer s.Done()
+
+	if !c.valid {
+		return
+	}
 
 	// all ready?
 	for _, cs := range c.srvc {
@@ -98,11 +106,14 @@ func (c *Compute) DoneConfig() {
 	// resolve depends
 	// add also runs
 
+	c.valid = true
+
 	for obj, _ := range c.objs {
 		m := monel.Find(obj)
 
 		if m == nil {
 			c.S.CFError("Cannot resolve compute dependency: '%s'", obj)
+			c.valid = false
 			continue
 		}
 

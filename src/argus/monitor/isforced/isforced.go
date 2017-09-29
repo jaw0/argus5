@@ -26,6 +26,9 @@ func New(conf *configure.CF, s *service.Service) service.Monitor {
 	return &D{Value: true}
 }
 
+func (d *D) PreConfig(conf *configure.CF, s *service.Service) error {
+	return nil
+}
 func (d *D) Config(conf *configure.CF, s *service.Service) error {
 
 	conf.InitFromConfig(d, "force", "")
