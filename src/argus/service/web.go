@@ -28,4 +28,8 @@ func (s *Service) WebJson(md map[string]interface{}) {
 		r := s.p.Results[k]
 		darp[k] = darpStatusResult{st, r}
 	}
+
+	testinfo := make(map[string]interface{})
+	s.check.WebJson(testinfo)
+	md["testinfo"] = testinfo
 }

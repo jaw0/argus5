@@ -372,3 +372,6 @@ func (t *DNS) DumpInfo() map[string]interface{} {
 		"service/dns/CF/": t.Cf,
 	}
 }
+func (t *DNS) WebJson(md map[string]interface{}) {
+	md["DNS Zone"] = t.Cf.Zone
+}

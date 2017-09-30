@@ -218,3 +218,7 @@ func contentType(ct string) string {
 	}
 	return ct
 }
+
+func (u *Url) WebJson(md map[string]interface{}) {
+	md["URL"] = u.UCf.URL
+}

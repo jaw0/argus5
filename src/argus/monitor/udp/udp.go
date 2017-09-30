@@ -272,3 +272,5 @@ func (u *UDP) DumpInfo() map[string]interface{} {
 		"service/udp/CF/": u.Cf,
 	}
 }
+func (u *UDP) WebJson(md map[string]interface{}) {
+}

@@ -126,3 +126,6 @@ func (p *Prog) DumpInfo() map[string]interface{} {
 		"service/prog/CF/": p.Cf,
 	}
 }
+func (p *Prog) WebJson(md map[string]interface{}) {
+	md["Command"] = p.Cf.Command
+}

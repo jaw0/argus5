@@ -6,6 +6,7 @@
 package resolv
 
 import (
+	"expvar"
 	"net"
 	"sync"
 	"time"
@@ -57,6 +58,11 @@ var todo = make(chan string, 1000)
 var stop = make(chan struct{})
 var done sync.WaitGroup
 var dl = diag.Logger("resolv")
+
+var ResolvQueue = expvar.NewInt("resolvqueue")
+var ResolvIdle = expvar.NewInt("resolvidle")
+var idlelock sync.Mutex
+var nIdle = 0
 
 func Lookup(name string, ipv int) (string, int, bool) {
 
@@ -136,6 +142,7 @@ func Stop() {
 // ################################################################
 
 func lookup(name string) {
+
 	select {
 	case todo <- name:
 		break
@@ -156,6 +163,8 @@ func janitor() {
 			return
 		case <-tock.C:
 			prefetch()
+			ResolvQueue.Set(int64(len(todo)))
+			ResolvIdle.Set(int64(numIdle()))
 		}
 	}
 }
@@ -186,6 +195,7 @@ func proceedWith(name string) (bool, string, map[int]bool) {
 
 	if e == nil {
 		e = &cacheE{name: name, pend: make(map[int]bool), created: now}
+		dl.Debug("new entry: %#v", e)
 		setCache(name, e)
 	}
 
@@ -343,18 +353,23 @@ func worker() {
 	go receiver(sock, reschan)
 
 	for {
+		amIdle(true)
+
 		if w.nqueries < MAXQUERIES {
 			select {
 			case <-stop:
 				return
 			case res := <-reschan:
+				amIdle(false)
 				w.processResult(res)
 			case name := <-todo:
+				amIdle(false)
 				can, fqdn, m := proceedWith(name)
 				if can {
 					w.sendQuery(name, fqdn, m)
 				}
 			case <-tock.C:
+				amIdle(false)
 				w.timeouts()
 			}
 		} else {
@@ -363,8 +378,10 @@ func worker() {
 			case <-stop:
 				return
 			case res := <-reschan:
+				amIdle(false)
 				w.processResult(res)
 			case <-tock.C:
+				amIdle(false)
 				w.timeouts()
 			}
 		}
@@ -373,15 +390,17 @@ func worker() {
 
 func (w *workstate) sendQuery(name string, qname string, pend map[int]bool) {
 
-	dl.Debug("query: %s", qname)
+	dl.Debug("query: name %s fqdn %s", name, qname)
 
 	now := clock.Nano()
 
 	search := []string{""}
 
 	if qname == "" {
-		search = w.search
 		qname = name
+		if name[len(name)-1] != '.' {
+			search = w.search
+		}
 	} else if qname[len(qname)-1] != '.' {
 		qname = qname + "."
 	}
@@ -469,7 +488,7 @@ func receiver(sock *net.UDPConn, rc chan *result) {
 		size, addr, err := sock.ReadFromUDP(buf)
 
 		if err != nil {
-			dl.Debug("recv err %v")
+			dl.Debug("recv err %v", err)
 			return // XXX
 		}
 
@@ -549,4 +568,20 @@ func setCache(name string, e *cacheE) {
 	lock.Lock()
 	defer lock.Unlock()
 	cache[name] = e
+}
+
+func amIdle(y bool) {
+
+	idlelock.Lock()
+	defer idlelock.Unlock()
+	if y {
+		nIdle++
+	} else {
+		nIdle--
+	}
+}
+func numIdle() int {
+	idlelock.Lock()
+	defer idlelock.Unlock()
+	return nIdle
 }

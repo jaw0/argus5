@@ -31,7 +31,6 @@ type Context struct {
 	Hush      int64
 	W         http.ResponseWriter
 	R         *http.Request
-	// user pers, home, ...
 }
 
 type Server struct {
@@ -43,6 +42,7 @@ type WebHandlerFunc func(*Context)
 
 var dl = diag.Logger("web")
 var server *Server
+var Mux = http.NewServeMux()
 
 func Init() {
 	load() // load sessions
@@ -56,8 +56,10 @@ func Start() *Server {
 
 	cf := config.Cf()
 	s := &Server{}
+	doWeb := false
 
 	if cf.Port_http != 0 {
+		doWeb = true
 		dl.Verbose("starting http on :%d", cf.Port_http)
 		www := s.httpServer(cf.Port_http)
 		go func() {
@@ -67,6 +69,7 @@ func Start() *Server {
 	}
 
 	if cf.Port_https != 0 && cf.TLS_cert != "" && cf.TLS_key != "" {
+		doWeb = true
 		dl.Verbose("starting https on :%d", cf.Port_https)
 		www := s.httpServer(cf.Port_https)
 		go func() {
@@ -75,11 +78,11 @@ func Start() *Server {
 		}()
 	}
 
-	if cf.Htdir != "" {
+	if cf.Htdir != "" && doWeb {
 		// server static assets
 		dir := cf.Htdir + "/static"
 		dl.Debug("serving static on %s", dir)
-		http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
+		Mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
 
 	}
 
@@ -88,7 +91,8 @@ func Start() *Server {
 
 func (s *Server) httpServer(port int) *http.Server {
 	www := &http.Server{
-		Addr: fmt.Sprintf(":%d", port),
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: Mux,
 	}
 	s.services = append(s.services, www)
 	s.done.Add(1)
@@ -118,7 +122,7 @@ func (s *Server) Shutdown() {
 // add routes
 func Add(authreq int, path string, f WebHandlerFunc) {
 
-	http.HandleFunc(path, httpAdapt(authreq, f))
+	Mux.HandleFunc(path, httpAdapt(authreq, f))
 }
 
 // ################################################################
@@ -209,7 +213,7 @@ func webLog(ctx *Context) {
 // ################################################################
 
 func init() {
-	http.Handle("/robots.txt", http.RedirectHandler("/static/robots.txt", 302))
-	http.Handle("/favicon.ico", http.RedirectHandler("/static/favicon.ico", 302))
+	Mux.Handle("/robots.txt", http.RedirectHandler("/static/robots.txt", 302))
+	Mux.Handle("/favicon.ico", http.RedirectHandler("/static/favicon.ico", 302))
 	Add(PRIVATE, "/api/lofgile", webLog)
 }

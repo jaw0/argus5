@@ -241,7 +241,8 @@ func (m *M) webDecor(creds []string, md map[string]interface{}) {
 	m.Lock.RLock()
 	defer m.Lock.RUnlock()
 
-	md["name"] = m.Cf.Uname
+	md["name"] = m.Name
+	md["uname"] = m.Cf.Uname
 	md["unique"] = m.Cf.Unique
 	md["label"] = m.Cf.Label
 	md["friendly"] = m.Cf.Friendlyname

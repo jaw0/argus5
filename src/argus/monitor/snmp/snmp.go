@@ -31,19 +31,20 @@ type Conf struct {
 	SNMPPass     string
 	SNMPPrivPass string
 	SNMPAuth     string // none, md5, sha1
-	SNMPPriv     string // none, des, 3des, aes, aes128, aes192, aes256
+	SNMPPriv     string // none, des, aes, [RSN: 3des, aes128, aes192, aes256]
 }
 
 type SNMP struct {
 	S       *service.Service
 	Cf      Conf
 	IpAddr  *resolv.IP
-	oid     string   // full oid to monitor
-	baseOid string   // oid of table
+	oid     string   // actual oid to monitor
+	baseOid string   // oid of table (ifInOctets)
 	idxDesc string   // description "Serial1/0"
-	idxOids []string // list of oids to search
+	idxOids []string // list of tables to search
 	descOid string   // discovered oid to verify desc - Get(descOid) == idxDesc
 	uptime  int64    // to detect reboot
+	v3sec   *gosnmp.UsmSecurityParameters
 }
 
 type snmpResult struct {
@@ -127,8 +128,6 @@ func (t *SNMP) PreConfig(conf *configure.CF, s *service.Service) error {
 
 func (t *SNMP) Config(conf *configure.CF, s *service.Service) error {
 
-	dl.Debug("snmp config")
-
 	// validate
 	if t.Cf.Hostname == "" {
 		return errors.New("hostname not specified")
@@ -139,6 +138,10 @@ func (t *SNMP) Config(conf *configure.CF, s *service.Service) error {
 	if t.Cf.Oid == "" {
 		return errors.New("oid not specified")
 	}
+
+	t.Cf.SNMPAuth = strings.ToLower(t.Cf.SNMPAuth)
+	t.Cf.SNMPPriv = strings.ToLower(t.Cf.SNMPPriv)
+	t.v3sec = t.snmpV3Security()
 
 	t.IpAddr = resolv.New(t.Cf.Hostname)
 
@@ -183,6 +186,9 @@ func (t *SNMP) DumpInfo() map[string]interface{} {
 		}{t.oid, t.baseOid, t.idxDesc, t.idxOids, t.descOid, t.uptime},
 	}
 }
+func (t *SNMP) WebJson(md map[string]interface{}) {
+	md["SNMP oid"] = t.Cf.Oid
+}
 
 // ################################################################
 
@@ -196,6 +202,13 @@ func (t *SNMP) Start(s *service.Service) {
 		return
 	}
 
+	err := client.Connect()
+	if err != nil {
+		s.Debug("connect failed: %v", err)
+		s.Fail("connect failed")
+		return
+	}
+
 	if t.oid == "" {
 		if !t.autoDiscover(client) {
 			return
@@ -205,13 +218,6 @@ func (t *SNMP) Start(s *service.Service) {
 	oids := []string{t.oid, sysUptime0}
 	if t.descOid != "" {
 		oids = append(oids, t.descOid)
-	}
-
-	err := client.Connect()
-	if err != nil {
-		s.Debug("connect failed: %v", err)
-		s.Fail("connect failed")
-		return
 	}
 
 	resp, err := client.Get(oids)
@@ -242,6 +248,7 @@ func (t *SNMP) Start(s *service.Service) {
 func (t *SNMP) autoDiscover(client *gosnmp.GoSNMP) bool {
 
 	for _, oid := range t.idxOids {
+		dl.Debug("audodiscovery %s", oid)
 		resp, _ := getall(oid, client)
 		if t.searchDescr(resp) {
 			return true
@@ -256,16 +263,20 @@ func getall(oid string, client *gosnmp.GoSNMP) ([]gosnmp.SnmpPDU, error) {
 	// first try get bulk
 	resp, err := client.BulkWalkAll(oid)
 	if err != nil && len(resp) != 0 {
+		dl.Debug("bulkwalk: %v", err)
 		return resp, nil
 	}
 	// then try get next
 	resp, err = client.WalkAll(oid)
+	dl.Debug("walkall: %v", err)
 	return resp, err
 }
+
 func (t *SNMP) searchDescr(resp []gosnmp.SnmpPDU) bool {
 
 	for _, pdu := range resp {
-		val := fmt.Sprintf("%v", pdu.Value)
+		val := pduToString(&pdu)
+		dl.Debug("resp: %s = %s", pdu.Name, val)
 
 		if val == t.idxDesc {
 			t.descOid = pdu.Name
@@ -312,6 +323,7 @@ func (t *SNMP) verifyResults(rm map[string]*snmpResult) bool {
 		if dres.value != t.idxDesc {
 			if !logged {
 				t.S.Loggit("INFO", "device reconfigured")
+				t.S.ResetRateCalc()
 				logged = true
 			}
 
@@ -345,7 +357,24 @@ func (t *SNMP) snmpClient() *gosnmp.GoSNMP {
 		Retries:   0,
 		MaxOids:   gosnmp.MaxOids,
 		Logger:    newSnmpLogger(t.S),
-		// v3 ...
+	}
+
+	if t.Cf.SNMPVersion == "3" {
+		if t.Cf.SNMPPass != "" && t.Cf.SNMPPrivPass != "" {
+			client.MsgFlags = gosnmp.AuthPriv
+			client.SecurityModel = gosnmp.UserSecurityModel
+		} else if t.Cf.SNMPPass != "" {
+			client.MsgFlags = gosnmp.AuthNoPriv
+			client.SecurityModel = gosnmp.UserSecurityModel
+		} else {
+			client.MsgFlags = gosnmp.NoAuthNoPriv
+			client.SecurityModel = gosnmp.UserSecurityModel
+		}
+		// NB - NoAuthPriv is not a thing
+
+		if client.SecurityModel == gosnmp.UserSecurityModel {
+			client.SecurityParameters = t.v3sec
+		}
 	}
 
 	t.S.Debug("connecting to udp/%s/%d", addr, t.Cf.Port)
@@ -353,18 +382,62 @@ func (t *SNMP) snmpClient() *gosnmp.GoSNMP {
 	return client
 }
 
+func (t *SNMP) snmpV3Security() *gosnmp.UsmSecurityParameters {
+
+	auth := gosnmp.NoAuth
+	switch t.Cf.SNMPAuth {
+	case "md5":
+		auth = gosnmp.MD5
+	case "sha1":
+		auth = gosnmp.SHA
+	}
+
+	priv := gosnmp.NoPriv
+	switch t.Cf.SNMPPriv {
+	case "des":
+		priv = gosnmp.DES
+	case "aes", "aes128":
+		priv = gosnmp.AES
+	}
+	//case "3des":
+	//	priv = gosnmp.3DES
+	//case "aes192":
+	//	priv = gosnmp.AES192
+	//case "aes256":
+	//	priv = gosnmp.AES256
+
+	return &gosnmp.UsmSecurityParameters{
+		UserName:                 t.Cf.SNMPUser,
+		AuthenticationProtocol:   auth,
+		AuthenticationPassphrase: t.Cf.SNMPPass,
+		PrivacyProtocol:          priv,
+		PrivacyPassphrase:        t.Cf.SNMPPrivPass,
+	}
+}
+
 func (t *SNMP) getResults(res *gosnmp.SnmpPacket) map[string]*snmpResult {
 
 	rm := make(map[string]*snmpResult)
+
 	for _, pdu := range res.Variables {
 		name := pdu.Name
-		value := fmt.Sprintf("%v", pdu.Value)
+		value := pduToString(&pdu)
 		t.S.Debug("got result: %s -> %s", name, value)
 
 		rm[name] = &snmpResult{pdu.Type, value}
 	}
 
 	return rm
+}
+
+func pduToString(pdu *gosnmp.SnmpPDU) string {
+
+	switch pdu.Type {
+	case gosnmp.OctetString:
+		return string(pdu.Value.([]byte))
+	default:
+		return fmt.Sprintf("%v", pdu.Value)
+	}
 }
 
 func (t *SNMP) snmpVersion() gosnmp.SnmpVersion {

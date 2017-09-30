@@ -63,7 +63,8 @@ type Conf struct {
 	ACL_Annotate string
 	ACL_CheckNow string
 	ACL_About    string
-	//  graph
+	Graph        bool
+	// ...
 }
 
 var defaults = Conf{
@@ -96,6 +97,7 @@ type Persist struct {
 }
 
 type M struct {
+	Name         string
 	Me           Moneler
 	Lock         sync.RWMutex
 	Parent       []*M
@@ -150,6 +152,8 @@ func (m *M) SetNames(uname string, label string, friendly string) {
 func (m *M) Config(conf *configure.CF) error {
 
 	m.ConfCF = conf
+	m.Name = conf.Name
+
 	conf.InitFromConfig(&m.Cf, "monel", "")
 	m.configureNotify(conf)
 

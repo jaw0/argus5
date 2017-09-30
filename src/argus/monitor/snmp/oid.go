@@ -78,8 +78,12 @@ func parseOid(spec string) (*OidConf, string, string) {
 
 	if spec[0] >= 'a' && spec[0] <= 'z' || spec[0] >= 'A' && spec[0] <= 'Z' {
 		dot := strings.IndexByte(spec, '.')
-		word = spec[:dot] // ifThing
-		numb = spec[dot:] // .4
+		if dot == -1 {
+			word = spec // ifThing (had no numbers)
+		} else {
+			word = spec[:dot] // ifThing
+			numb = spec[dot:] // .4
+		}
 	} else {
 		numb = spec
 		return nil, numb, desc

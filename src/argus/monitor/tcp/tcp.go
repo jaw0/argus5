@@ -290,3 +290,5 @@ func (t *TCP) DumpInfo() map[string]interface{} {
 		"service/tcp/CF/": t.Cf,
 	}
 }
+func (t *TCP) WebJson(md map[string]interface{}) {
+}

@@ -36,7 +36,7 @@ func init() {
 }
 
 func New(conf *configure.CF, s *service.Service) service.Monitor {
-	p := &Compute{S: s} // vars: make(map[string]*exprParam), objs: make(map[string]bool)}
+	p := &Compute{S: s}
 	return p
 }
 
@@ -142,6 +142,10 @@ func (c *Compute) DumpInfo() map[string]interface{} {
 		"service/compute/CF/": c.Cf,
 	}
 }
+func (c *Compute) WebJson(md map[string]interface{}) {
+	md["expr"] = c.Cf.Expr
+}
+
 func (c *Compute) Hostname() string {
 	return ""
 }

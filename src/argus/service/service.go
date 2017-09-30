@@ -29,6 +29,7 @@ type Monitor interface {
 	Abort()
 	DoneConfig()
 	DumpInfo() map[string]interface{}
+	WebJson(map[string]interface{})
 	Hostname() string
 }
 
@@ -59,7 +60,7 @@ type Conf struct {
 	Eqvalue      [argus.CRITICAL + 1]float64 `cfconv:"dotsev"`
 	Nevalue      [argus.CRITICAL + 1]float64 `cfconv:"dotsev"`
 	Maxdeviation [argus.CRITICAL + 1]float64 `cfconv:"dotsev"`
-	// calc, testing, schedule, graph,
+	// graph,
 
 }
 
@@ -104,7 +105,6 @@ type Service struct {
 	Tries    int
 	Started  int64
 	alsoRun  []*Service
-	graph    bool
 	expr     []string
 }
 
@@ -331,8 +331,15 @@ func (s *Service) tasRunning() bool {
 	return true
 }
 
-func (s *Service) recordGraphData(val float64) {
+func (s *Service) recordMyGraphData(val float64) {
 
-	// RSN - send to graphing channel
-	// T, id, status, value, yn, dn, nmax{s,h.d}
+	if s.mon.Cf.Graph {
+		// T, id, status, value, yn, dn, nmax{s,h.d}
+		s.recordGraphData(clock.Unix(), darp.MyId, s.mon.P.OvStatus, val, 0, 0)
+	}
+}
+
+func (s *Service) recordGraphData(when int64, id string, status argus.Status, val, yn, dn float64) {
+	// RSN - send to graphing jawn
+
 }

@@ -104,8 +104,8 @@ a.topnav {
 
 #stats td, #logs td {
     font-size:		85%;
-    padding-left	20px;
-    padding-right:	20px;
+    padding-left:	10px;
+    padding-right:	10px;
 }
 
 table#stats, table#logs, table#notifies, table#darpinfo, table#loginform {
@@ -153,6 +153,7 @@ table#loginform {
         #fff0e0 50px
     );
 }
+
 .overridediv .heading {
     background-color: #eee;
 }
@@ -164,7 +165,7 @@ table#loginform {
 	font-size:		12px;
 }
 
-#overridediv, #notifydetailouter, #lofgileouter {
+#overridedivouter, #notifydetailouter, #lofgileouter {
     background-color: 	rgba(0, 0, 0, 0.5);
     width:		100%;
     height:		100%;

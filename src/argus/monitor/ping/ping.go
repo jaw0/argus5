@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"argus/config"
 	"argus/configure"
 	"argus/diag"
 	"argus/resolv"
@@ -62,8 +63,14 @@ func init() {
 
 func Init() {
 
+	cf := config.Cf()
+	nwork := cf.Ping_maxrun
+	if nwork < 1 {
+		nwork = WORKERS
+	}
+
 	// start workers
-	for i := 0; i < WORKERS; i++ {
+	for i := 0; i < nwork; i++ {
 		go worker()
 	}
 }
@@ -282,6 +289,8 @@ func (p *Ping) DumpInfo() map[string]interface{} {
 		"service/ping/CF/": p.Cf,
 	}
 }
+func (p *Ping) WebJson(md map[string]interface{}) {
+}
 
 func amIdle(y bool) {
 
@@ -292,6 +301,7 @@ func amIdle(y bool) {
 	} else {
 		nIdle--
 	}
+	PingIdle.Set(int64(nIdle))
 }
 func numIdle() int {
 	lock.Lock()

@@ -55,9 +55,7 @@ func (s *Service) CheckValue(val string, valtype string) {
 	if valtype == "" {
 		val = fmt.Sprintf("%f", fval)
 
-		if s.graph { // XXX
-			s.recordGraphData(fval)
-		}
+		s.recordMyGraphData(fval)
 	}
 
 	s.mon.Debug("value '%s' -> status %s (%s)", limitString(val, 16), status, reason)

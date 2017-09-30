@@ -21,6 +21,7 @@ type Config struct {
 	Syslog          string // syslog facility (eg. local4)
 	Mon_maxrun      int
 	Resolv_maxrun   int
+	Ping_maxrun     int
 	Port_http       int
 	Port_https      int
 	Port_test       int

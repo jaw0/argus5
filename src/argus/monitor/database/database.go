@@ -117,3 +117,7 @@ func (d *DB) DumpInfo() map[string]interface{} {
 		"service/database/CF/": d.Cf,
 	}
 }
+func (d *DB) WebJson(md map[string]interface{}) {
+	md["DSN"] = d.Cf.Dsn
+	md["SQL"] = d.Cf.Sql
+}

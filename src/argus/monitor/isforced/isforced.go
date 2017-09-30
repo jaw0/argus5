@@ -76,3 +76,5 @@ func (d *D) Abort() {
 func (d *D) DumpInfo() map[string]interface{} {
 	return nil
 }
+func (d *D) WebJson(md map[string]interface{}) {
+}

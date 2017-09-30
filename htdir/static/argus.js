@@ -141,23 +141,23 @@ function override_show(){
     override_init()
 
     // reset form
-    $('.overridedivinner input[name=text]').val( "" );
+    $('#overridedivinner input[name=text]').val( "" );
 
-    $('.overridedivinner').hide();
-    $('#overridediv').fadeIn();
-    $('.overridedivinner').slideDown();
+    $('#overridedivinner').hide();
+    $('#overridedivouter').fadeIn();
+    $('#overridedivinner').slideDown();
 }
 function override_dismiss(){
-    $('.overridedivinner').slideUp();
-    $('#overridediv').fadeOut();
+    $('#overridedivinner').slideUp();
+    $('#overridedivouter').fadeOut();
 }
 function override_save(){
 
     var args = { obj: objname }
 
-    args.text    = $('.overridedivinner input[name=text]').val();
-    args.mode    = $('.overridedivinner select[name=mode]').val();
-    args.expires = $('.overridedivinner select[name=expires]').val();
+    args.text    = $('#overridedivinner input[name=text]').val();
+    args.mode    = $('#overridedivinner select[name=mode]').val();
+    args.expires = $('#overridedivinner select[name=expires]').val();
     args.xtok    = token
     argus.log("save override " + args )
 

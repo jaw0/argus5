@@ -19,6 +19,7 @@ import (
 func init() {
 	api.Add(true, "darp_list", apiDarpList)
 	api.Add(true, "update", apiSetResultFor)
+	api.Add(true, "graphdata", apiAddGraphData)
 }
 
 // so slave can configure itself
@@ -73,6 +74,27 @@ func apiSetResultFor(ctx *api.Context) {
 		return
 	}
 	obj.SetResultFor(ctx.User, status, result, reason)
+	ctx.SendOKFinal()
+}
+
+func apiAddGraphData(ctx *api.Context) {
+
+	uid := ctx.Args["obj"]
+
+	obj := Find(uid)
+	if obj == nil {
+		ctx.Send404()
+		return
+	}
+
+	sts, _ := strconv.Atoi(ctx.Args["status"])
+	status := argus.Status(sts)
+	when, _ := strconv.ParseInt(ctx.Args["when"], 10, 64)
+	value, _ := strconv.ParseFloat(ctx.Args["value"], 32)
+	yn, _ := strconv.ParseFloat(ctx.Args["yn"], 32)
+	dn, _ := strconv.ParseFloat(ctx.Args["dn"], 32)
+
+	obj.recordGraphData(when, ctx.User, status, value, yn, dn)
 	ctx.SendOKFinal()
 }
 

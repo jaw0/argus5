@@ -20,6 +20,7 @@ type IP struct {
 	asis  bool
 }
 
+// RSN - (name, ipv)
 func New(name string) *IP {
 
 	// check for dotted quad / cologned octopus
