@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"strings"
 
 	"github.com/uknth/jsonpath"
 
@@ -54,11 +55,13 @@ func (s *Service) CheckValue(val string, valtype string) {
 
 	if valtype == "" {
 		val = fmt.Sprintf("%f", fval)
-
-		s.recordMyGraphData(fval)
+	} else {
+		fmt.Sscan(val, &fval)
 	}
 
-	s.mon.Debug("value '%s' -> status %s (%s)", limitString(val, 16), status, reason)
+	s.recordMyGraphData(fval)
+
+	s.mon.Debug("value '%s' (%s) -> status %s (%s)", limitString(val, 16), valtype, status, reason)
 	s.SetResult(status, val, reason)
 }
 
@@ -158,7 +161,7 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 		valtype = ""
 	}
 
-	if s.Cf.Scale != 0 || s.Cf.calcmask != 0 || s.Cf.Expr != "" || s.p.Hwab != nil {
+	if s.Cf.Scale != 0 || s.calcmask != 0 || s.Cf.Expr != "" || s.p.Hwab != nil {
 		if valtype != "" {
 			// convert string -> float
 			fmt.Sscan(val, &fval)
@@ -170,20 +173,20 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 		fval /= s.Cf.Scale
 	}
 
-	if s.Cf.calcmask&CALC_ONE != 0 {
+	if s.calcmask&CALC_ONE != 0 {
 		fval = 1
 	}
-	if s.Cf.calcmask&CALC_ELAPSED != 0 {
+	if s.calcmask&CALC_ELAPSED != 0 {
 		fval = float64(now-s.Started) / 1e9
 	}
-	if s.Cf.calcmask&(CALC_RATE|CALC_DELTA) != 0 {
+	if s.calcmask&(CALC_RATE|CALC_DELTA) != 0 {
 		var ok bool
-		fval, ok = s.rateCalc(s.Cf.calcmask, fval)
+		fval, ok = s.rateCalc(s.calcmask, fval)
 		if !ok {
 			return "", 0, "skip"
 		}
 	}
-	if s.Cf.calcmask&(CALC_AVE|CALC_JITTER) != 0 {
+	if s.calcmask&(CALC_AVE|CALC_JITTER) != 0 {
 		dt := float64(now-s.p.Calc.Lastta) / 1e9
 
 		if s.p.Calc.Lastta == 0 || dt > float64(s.Cf.Frequency)*s.Cf.Alpha*3 {
@@ -195,12 +198,12 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 		pave := s.p.Calc.Ave
 		s.p.Calc.Ave = fval
 
-		if s.Cf.calcmask&CALC_JITTER != 0 {
+		if s.calcmask&CALC_JITTER != 0 {
 			fval = math.Abs(pave - fval)
 		}
 		s.p.Calc.Lastta = now
 	}
-	if s.Cf.calcmask&CALC_BITS != 0 {
+	if s.calcmask&CALC_BITS != 0 {
 		fval *= 8
 	}
 
@@ -339,4 +342,30 @@ func doExpr(exp []string, fval float64) (ret float64, rer error) {
 	res, err := expr.RunExprF(exp, dat)
 
 	return res, err
+}
+
+func calcMask(calc string) uint32 {
+
+	f := strings.Fields(strings.Replace(strings.ToLower(calc), "-", " ", -1))
+	var mask uint32
+
+	for _, c := range f {
+		switch c {
+		case "elapsed":
+			mask |= CALC_ELAPSED
+		case "rate":
+			mask |= CALC_RATE
+		case "delta":
+			mask |= CALC_DELTA
+		case "ave":
+			mask |= CALC_AVE
+		case "JITTER":
+			mask |= CALC_JITTER
+		case "bits":
+			mask |= CALC_BITS
+		case "one":
+			mask |= CALC_ONE
+		}
+	}
+	return mask
 }

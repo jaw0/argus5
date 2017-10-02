@@ -44,7 +44,6 @@ type Conf struct {
 	Severity     argus.Status
 	DARP_Tags    string
 	Calc         string
-	calcmask     uint32
 	Alpha        float64
 	Scale        float64
 	Pluck        string
@@ -105,6 +104,7 @@ type Service struct {
 	Tries    int
 	Started  int64
 	alsoRun  []*Service
+	calcmask uint32
 	expr     []string
 }
 
@@ -329,17 +329,4 @@ func (s *Service) tasRunning() bool {
 	s.running = true
 
 	return true
-}
-
-func (s *Service) recordMyGraphData(val float64) {
-
-	if s.mon.Cf.Graph {
-		// T, id, status, value, yn, dn, nmax{s,h.d}
-		s.recordGraphData(clock.Unix(), darp.MyId, s.mon.P.OvStatus, val, 0, 0)
-	}
-}
-
-func (s *Service) recordGraphData(when int64, id string, status argus.Status, val, yn, dn float64) {
-	// RSN - send to graphing jawn
-
 }

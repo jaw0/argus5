@@ -102,6 +102,10 @@ a.topnav {
     padding-left: 25px;
 }
 
+#statusinfo, #darpinfo {
+    font-size:		90%;
+}
+
 #stats td, #logs td {
     font-size:		85%;
     padding-left:	10px;

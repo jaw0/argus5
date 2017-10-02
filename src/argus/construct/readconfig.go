@@ -13,6 +13,7 @@ import (
 	"argus/diag"
 	"argus/monel"
 	"argus/notify"
+	"argus/service"
 	"argus/web"
 )
 
@@ -52,6 +53,7 @@ func ReadConfig(file string) {
 
 	notify.Configure(cf)
 	web.Configure(cf)
+	service.GraphConfig(cf)
 	// other.Configure(cf)
 	top.DoneConfig()
 }

@@ -54,6 +54,8 @@ const (
 
 func (s *Service) HwabConfig(conf *configure.CF) error {
 
+	dl.Debug("hwab config")
+
 	h := &HWAB{
 		Created: clock.Unix(),
 		mon:     s.mon,

@@ -8,7 +8,7 @@
 {[ template "_override" . ]}
 <hr>
 {[ template "_child" . ]}
-{ [ template "_graphs" . ]}
+{[ template "_graphs" . ]}
 {[ template "_notifies" . ]}
 {[ template "_stats" . ]}
 {[ template "_logs" . ]}

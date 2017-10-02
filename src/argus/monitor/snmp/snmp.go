@@ -109,6 +109,7 @@ func (t *SNMP) PreConfig(conf *configure.CF, s *service.Service) error {
 	}
 
 	if ocf != nil {
+		dl.Debug("setting defaults %s", ocf.Calc)
 		if ocf.UpValue != 0 {
 			s.Cf.Eqvalue[int(argus.UNKNOWN)] = float64(ocf.UpValue)
 		}

@@ -65,6 +65,7 @@ func (s *Service) Config(conf *configure.CF) error {
 		s.expr = expr
 	}
 
+	s.calcmask = calcMask(s.Cf.Calc)
 	s.Cf.DARP_Tags = strings.ToLower(s.Cf.DARP_Tags)
 
 	hwab := false

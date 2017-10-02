@@ -19,6 +19,7 @@ import (
 	"argus/construct"
 	"argus/darp"
 	"argus/diag"
+	"argus/graph/graphd"
 	"argus/monel"
 	_ "argus/monitor"
 	"argus/monitor/ping"
@@ -72,6 +73,7 @@ func main() {
 	sched.Init()
 	resolv.Init()
 	notify.Init()
+	graphd.Init()
 
 	// start, http, test servers
 	web.Init()
@@ -80,6 +82,7 @@ func main() {
 
 	// init stats dir, etal
 	createStatsDirs()
+	createGdataDirs()
 
 	// read large config
 	cf := config.Cf()
@@ -122,6 +125,14 @@ func sigHandle() {
 }
 
 func createStatsDirs() {
+	createDirs("stats")
+}
+
+func createGdataDirs() {
+	createDirs("gdata")
+}
+
+func createDirs(dir string) {
 
 	cf := config.Cf()
 
@@ -129,13 +140,15 @@ func createStatsDirs() {
 		return
 	}
 
-	os.Mkdir(cf.Datadir+"/stats", 0777)
+	fdir := cf.Datadir + "/" + dir
+
+	os.Mkdir(fdir, 0777)
 
 	for a := 'A'; a <= 'Z'; a++ {
-		dir := fmt.Sprintf("%s/stats/%c", cf.Datadir, a)
+		dir := fmt.Sprintf("%s/%c", fdir, a)
 		os.Mkdir(dir, 0777)
 		for b := 'A'; b <= 'Z'; b++ {
-			dir := fmt.Sprintf("%s/stats/%c/%c", cf.Datadir, a, b)
+			dir := fmt.Sprintf("%s/%c/%c", fdir, a, b)
 			os.Mkdir(dir, 0777)
 		}
 	}
