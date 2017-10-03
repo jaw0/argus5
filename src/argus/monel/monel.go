@@ -64,6 +64,9 @@ type Conf struct {
 	ACL_CheckNow string
 	ACL_About    string
 	Graph        bool
+	XLabel       string
+	YLabel       string
+	Title        string
 	// ...
 }
 

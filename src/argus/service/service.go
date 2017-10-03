@@ -85,12 +85,13 @@ func init() {
 }
 
 type Persist struct {
-	Statuses map[string]argus.Status
-	Result   string
-	Results  map[string]string
-	Reason   string
-	Calc     calc
-	Hwab     *HWAB
+	Lastgraph int64
+	Statuses  map[string]argus.Status
+	Result    string
+	Results   map[string]string
+	Reason    string
+	Calc      calc
+	Hwab      *HWAB
 }
 
 type Service struct {

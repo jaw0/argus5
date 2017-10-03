@@ -6,8 +6,8 @@
 package service
 
 import (
+	"expvar"
 	"fmt"
-	"strconv"
 
 	"argus/api"
 	"argus/argus"
@@ -15,13 +15,22 @@ import (
 	"argus/configure"
 	"argus/darp"
 	"argus/graph"
+	"argus/web"
+)
+
+const (
+	graphMinTime = 120
+	graphMaxSend = 128
 )
 
 var graphIsLocal = true
 var darpGraphChan = make(chan string, 1024)
+var darpGraphQueueLen = expvar.NewInt("darpgraphqueue")
+var darpGraphQueueDrop = expvar.NewInt("darpgraphdrops")
 
 func init() {
 	api.Add(true, "graphdata", apiAddGraphData)
+	web.Add(web.PRIVATE, "/api/graphd", webGraphJson)
 }
 
 func GraphConfig(cf *configure.CF) {
@@ -39,6 +48,12 @@ func (s *Service) recordMyGraphData(val float64) {
 
 	dl.Verbose("record graph")
 
+	now := clock.Unix()
+	if s.p.Lastgraph+graphMinTime > now {
+		return
+	}
+	s.p.Lastgraph = now
+
 	var yn, dn float64
 
 	if s.p.Hwab != nil {
@@ -51,9 +66,9 @@ func (s *Service) recordMyGraphData(val float64) {
 		s.Debug("graph")
 
 		if graphIsLocal {
-			graph.Add(s.mon.Pathname("", ""), clock.Unix(), s.mon.P.OvStatus, val, yn, dn)
+			graph.Add(s.mon.Pathname("", ""), now, s.mon.P.OvStatus, val, yn, dn)
 		} else {
-			darpGraphAdd(s.mon.Pathname("", ""), clock.Unix(), s.mon.P.OvStatus, val, yn, dn)
+			darpGraphAdd(s.mon.Pathname("", ""), now, s.mon.P.OvStatus, val, yn, dn)
 		}
 	}
 }
@@ -64,40 +79,77 @@ func darpGraphAdd(file string, when int64, status argus.Status, val, yn, dn floa
 
 	l := fmt.Sprintf("%s %d %d %f %f %f", file, when, status, val, yn, dn)
 
+	darpGraphQueueLen.Set(int64(len(darpGraphChan)))
+
 	// drop if queue full
 	select {
 	case darpGraphChan <- l:
 	default:
-		break
+		darpGraphQueueDrop.Add(1)
 	}
 }
 
 func darpGraphWorker() {
 
-	// XXX
-	return
 	for {
-		darp.TellMyMasters("graphdata", nil)
+		select {
+		case l := <-darpGraphChan:
+			darpGraphGather(l)
+		}
 	}
 }
 
-func apiAddGraphData(ctx *api.Context) {
+// bundle up a whole batch and send together
+func darpGraphGather(l string) {
 
-	uid := ctx.Args["obj"]
-	obj := Find(uid)
-	if obj == nil {
-		ctx.Send404()
-		return
+	m := make(map[string]string)
+	m["g0"] = l
+	n := 1
+
+	for {
+		select {
+		case l := <-darpGraphChan:
+			m[fmt.Sprintf("g%d", n)] = l
+			n++
+		default:
+			break
+		}
+		if n >= graphMaxSend {
+			break
+		}
 	}
 
-	// XXX
-	sts, _ := strconv.Atoi(ctx.Args["status"])
-	status := argus.Status(sts)
-	when, _ := strconv.ParseInt(ctx.Args["when"], 10, 64)
-	value, _ := strconv.ParseFloat(ctx.Args["value"], 32)
-	yn, _ := strconv.ParseFloat(ctx.Args["yn"], 32)
-	dn, _ := strconv.ParseFloat(ctx.Args["dn"], 32)
+	darp.TellMyMasters("graphdata", m)
+}
 
-	graph.Add(obj.mon.Pathname(ctx.User+":", ""), when, status, value, yn, dn)
+// ################################################################
+
+func apiAddGraphData(ctx *api.Context) {
+
+	n := 0
+
+	for {
+		l := ctx.Args[fmt.Sprintf("g%d", n)]
+		if l == "" {
+			break
+		}
+
+		var file string
+		var when int64
+		var status int
+		var val, yn, dn float64
+		fmt.Sscan(l, &file, &when, &status, &val, &yn, &dn)
+
+		graph.Add(file, when, argus.Status(status), val, yn, dn)
+	}
+
 	ctx.SendOKFinal()
+}
+
+// ################################################################
+
+func webGraphJson(ctx *web.Context) {
+
+	// obj, since, which, width
+
 }

@@ -231,8 +231,8 @@ func (s *Service) ResetRateCalc() {
 func (s *Service) rateCalc(calcmask uint32, fval float64) (float64, bool) {
 
 	now := clock.Nano()
-	dt := float64(now-s.p.Calc.Lastt) / 1e9
 	c := &s.p.Calc
+	dt := float64(now-c.Lastt) / 1e9
 
 	if c.Lastt == 0 {
 		// startup transient - skip
@@ -247,23 +247,25 @@ func (s *Service) rateCalc(calcmask uint32, fval float64) (float64, bool) {
 		return 0, false
 	}
 
+	lastv := c.Lastv
 	c.Lastv = fval
 	c.Lastt = now
 
 	var dv float64
-	if fval < c.Lastv {
+
+	if fval < lastv {
 		// handle counter issues
-		if c.Lastv < float64(0x7fffffff) {
+		if lastv < float64(0x7fffffff) {
 			// assume reboot/reset
 			s.mon.Debug("TEST possible reboot detected")
 			return 0, false
 		} else {
 			// overflow/wraparound
-			dv = float64(0xFFFFFFFF) - c.Lastv + 1
+			dv = float64(0xFFFFFFFF) - lastv + 1
 			s.mon.Debug("TEST counter rollover detected")
 		}
 	} else {
-		dv = fval - c.Lastv
+		dv = fval - lastv
 	}
 
 	c.Lastdv = dv
@@ -281,7 +283,6 @@ func (s *Service) rateCalc(calcmask uint32, fval float64) (float64, bool) {
 	}
 
 	return fval, true
-
 }
 
 func testMatch(regex string, val string) bool {
