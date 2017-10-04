@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"argus/argus"
+	"argus/clock"
 	"argus/config"
 	"argus/diag"
 )
@@ -39,6 +40,7 @@ const (
 type HeaderSect struct {
 	Idx    int32
 	NMax   int32
+	Count  int32
 	NSamp  int32
 	Min    float32
 	Max    float32
@@ -47,7 +49,7 @@ type HeaderSect struct {
 	Exp    float32
 	Delt   float32
 	Status int32
-	Pad    [88]byte // total size = 128
+	Pad    [84]byte // total size = 128
 }
 
 type Header struct {
@@ -94,7 +96,7 @@ const NLOCK = 251 // prime
 var datadir = ""
 var dl = diag.Logger("graphd")
 
-var locks [137]sync.RWMutex
+var locks = make([]sync.RWMutex, NLOCK)
 
 func init() {
 
@@ -122,6 +124,10 @@ func Add(file string, when int64, status argus.Status, val float64, yn float64, 
 	if datadir == "" {
 		dl.Debug("no datadir")
 		return
+	}
+
+	if status == argus.DEPENDS || status == argus.UNKNOWN {
+		status = argus.CLEAR
 	}
 
 	lno := lockno(file)
@@ -158,6 +164,10 @@ func (g *graphData) add(when int64, status argus.Status, val float64, yn float64
 		Delt:   float32(dn),
 	})
 	g.h.Samp.Idx = (g.h.Samp.Idx + 1) % g.h.Samp.NMax
+	g.h.Samp.Count++
+	if g.h.Samp.Count > g.h.Samp.NMax {
+		g.h.Samp.Count = g.h.Samp.NMax
+	}
 
 	// roll?
 	lt := time.Unix(toSeconds(g.h.Lastt), 0).Local()
@@ -200,30 +210,30 @@ func (hs *HeaderSect) add(status argus.Status, val, exp, delt float32) {
 
 func (g *graphData) rollHour(val float32) {
 
-	if g.h.Hour.NSamp == 0 {
-		return
-	}
-
-	dl.Debug("roll hours")
-	sum := g.h.Hour.summarize(g.h.Lastt)
-	g.seek(g.hourStart + SummySize*int64(g.h.Hour.Idx))
-	binary.Write(g.f, binary.BigEndian, sum)
-	g.h.Hour.Idx = (g.h.Hour.Idx + 1) % g.h.Hour.NMax
-	g.h.Hour.reset(val)
+	g.roll(&g.h.Hour, g.hourStart, val)
 }
 
 func (g *graphData) rollDay(val float32) {
 
-	if g.h.Day.NSamp == 0 {
+	g.roll(&g.h.Day, g.dayStart, val)
+}
+
+func (g *graphData) roll(h *HeaderSect, start int64, val float32) {
+
+	if h.NSamp == 0 {
 		return
 	}
 
-	dl.Debug("roll days")
-	sum := g.h.Day.summarize(g.h.Lastt)
-	g.seek(g.dayStart + SummySize*int64(g.h.Day.Idx))
+	dl.Debug("roll")
+	sum := h.summarize(g.h.Lastt)
+	g.seek(start + SummySize*int64(h.Idx))
 	binary.Write(g.f, binary.BigEndian, sum)
-	g.h.Day.Idx = (g.h.Day.Idx + 1) % g.h.Day.NMax
-	g.h.Day.reset(val)
+	h.Idx = (h.Idx + 1) % h.NMax
+	h.Count++
+	if h.Count > h.NMax {
+		h.Count = h.NMax
+	}
+	h.reset(val)
 }
 
 func (hs *HeaderSect) summarize(lastt uint32) *SummyData {
@@ -266,6 +276,12 @@ func (hs *HeaderSect) reset(val float32) {
 
 func Get(file string, which string, since int64) []*Export {
 
+	if datadir == "" {
+		dl.Debug("no datadir")
+		return nil
+	}
+	file = filename(file)
+
 	lno := lockno(file)
 	locks[lno].RLock()
 	defer locks[lno].RUnlock()
@@ -290,20 +306,84 @@ func Get(file string, which string, since int64) []*Export {
 
 func (g *graphData) getSamples(since int64) []*Export {
 
+	startRec := int(g.h.Samp.Idx)
+	if g.h.Samp.Count < g.h.Samp.NMax {
+		startRec = 0
+	}
+	numRec := int(g.h.Samp.Count)
+
 	// estimate start pos from since
-	// seek, read: idx - nmax
-	// seek, read: 0 - idx-1
+	if since > 0 {
+		minago := int((clock.Unix() - since + 59) / 60)
+		startRec += int(g.h.Samp.NMax) - minago
+		numRec = minago
+	}
 
-	// r := NewRecReader(g.f, g.sampStart, SampSize, g.h.Samp.Idx, g.h.Samp.NMax)
+	r := NewCbufReader(g.f, g.sampStart, int64(g.h.Samp.NMax*SampSize))
+	r.Seek(int64(startRec * SampSize))
 
-	return nil
+	var res []*Export
+	for i := 0; i < numRec; i++ {
+		s := &SampleData{}
+		binary.Read(r, binary.BigEndian, s)
+
+		e := &Export{
+			When:   toSeconds(s.When),
+			Status: argus.Status(s.Status),
+			Value:  s.Value,
+			Exp:    s.Exp,
+			Delt:   s.Delt,
+		}
+		res = append(res, e)
+	}
+
+	return res
 }
 
 func (g *graphData) getHourSummy(since int64) []*Export {
-	return nil
+	return g.getSummy(&g.h.Hour, g.hourStart, since, 3600)
 }
 func (g *graphData) getDaySummy(since int64) []*Export {
-	return nil
+	return g.getSummy(&g.h.Day, g.dayStart, since, 24*3600)
+}
+
+func (g *graphData) getSummy(hs *HeaderSect, start int64, since int64, spu int) []*Export {
+
+	startRec := int(hs.Idx)
+	if hs.Count < hs.NMax {
+		startRec = 0
+	}
+	numRec := int(hs.Count)
+
+	// estimate start pos from since
+	if since > 0 {
+		uago := (int(clock.Unix()-since) + spu - 1) / spu
+		startRec += int(hs.NMax) - uago
+		numRec = uago
+	}
+
+	r := NewCbufReader(g.f, start, int64(hs.NMax*SummySize))
+	r.Seek(int64(startRec * SummySize))
+
+	var res []*Export
+	for i := 0; i < numRec; i++ {
+		s := &SummyData{}
+		binary.Read(r, binary.BigEndian, s)
+
+		e := &Export{
+			When:   toSeconds(s.When),
+			Status: argus.Status(s.Status),
+			Value:  s.Ave,
+			Stdev:  s.Stdev,
+			Min:    s.Min,
+			Max:    s.Max,
+			Exp:    s.Exp,
+			Delt:   s.Delt,
+		}
+		res = append(res, e)
+	}
+
+	return res
 }
 
 // ################################################################

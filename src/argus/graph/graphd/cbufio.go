@@ -11,34 +11,28 @@ import (
 
 const BUFSIZE = 4096
 
-type RecReader struct {
+type CbufReader struct {
 	f        *os.File
 	buf      [BUFSIZE]byte
-	recsize  int
 	sectoff  int64
 	sectsize int64
-	idx      int64
-	idxno    int32
 	sectpos  int64
 	bpos     int
 	bend     int
 }
 
-func NewRecReader(f *os.File, start int64, size int, idx int32, nmax int32) *RecReader {
+func NewCbufReader(f *os.File, start int64, size int64) *CbufReader {
 
-	rr := &RecReader{
+	rr := &CbufReader{
 		f:        f,
-		recsize:  size,
 		sectoff:  start,
-		sectsize: int64(size) * int64(nmax),
-		idx:      int64(idx) * int64(size),
-		idxno:    idx,
+		sectsize: size,
 	}
 
 	return rr
 }
 
-func (rr *RecReader) Read(p []byte) (int, error) {
+func (rr *CbufReader) Read(p []byte) (int, error) {
 	n := len(p)
 	nr := 0
 
@@ -73,13 +67,13 @@ func (rr *RecReader) Read(p []byte) (int, error) {
 		rr.bend = r
 		if rr.sectpos+int64(r) >= rr.sectsize {
 			// wrap back around
-			rr.Seek(-rr.idxno)
+			rr.Seek(0)
 		}
 	}
 }
 
-func (rr *RecReader) Seek(recno int32) {
-	rr.sectpos = (int64(recno)*int64(rr.recsize) + rr.idx + rr.sectsize) % rr.sectsize
+func (rr *CbufReader) Seek(pos int64) {
+	rr.sectpos = pos
 	rr.bpos = 0
 	rr.bend = 0
 	rr.f.Seek(rr.sectpos+rr.sectoff, 0)

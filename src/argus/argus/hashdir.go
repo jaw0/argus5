@@ -15,7 +15,7 @@ func HashDjb2(s string) int {
 	for i := 0; i < len(s); i++ {
 		h = 33*h + int(s[i])
 	}
-	return h
+	return h & 0x7fffffff
 }
 
 func HashedDirectory(file string) string {

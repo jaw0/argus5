@@ -15,7 +15,6 @@ import (
 	"argus/configure"
 	"argus/darp"
 	"argus/graph"
-	"argus/web"
 )
 
 const (
@@ -30,7 +29,6 @@ var darpGraphQueueDrop = expvar.NewInt("darpgraphdrops")
 
 func init() {
 	api.Add(true, "graphdata", apiAddGraphData)
-	web.Add(web.PRIVATE, "/api/graphd", webGraphJson)
 }
 
 func GraphConfig(cf *configure.CF) {
@@ -68,7 +66,7 @@ func (s *Service) recordMyGraphData(val float64) {
 		if graphIsLocal {
 			graph.Add(s.mon.Pathname("", ""), now, s.mon.P.OvStatus, val, yn, dn)
 		} else {
-			darpGraphAdd(s.mon.Pathname("", ""), now, s.mon.P.OvStatus, val, yn, dn)
+			darpGraphAdd(s.mon.Pathname(darp.MyId+":", ""), now, s.mon.P.OvStatus, val, yn, dn)
 		}
 	}
 }
@@ -148,8 +146,35 @@ func apiAddGraphData(ctx *api.Context) {
 
 // ################################################################
 
-func webGraphJson(ctx *web.Context) {
+// obj, tags, label, ...
 
-	// obj, since, which, width
+func (s *Service) GraphList(label string, gl []interface{}) []interface{} {
 
+	var tags []string
+
+	s.mon.Lock.RLock()
+	defer s.mon.Lock.RUnlock()
+
+	for t, _ := range s.p.Statuses {
+		if t == "local" || t == darp.MyId {
+			t = ""
+		} else {
+			t = t + ":"
+		}
+		tags = append(tags, t)
+	}
+
+	info := struct {
+		Obj   string
+		Label string
+		Hwab  bool
+		Tags  []string
+	}{
+		Obj:   s.mon.Cf.Unique,
+		Label: label,
+		Tags:  tags,
+		Hwab:  s.p.Hwab != nil,
+	}
+
+	return append(gl, info)
 }

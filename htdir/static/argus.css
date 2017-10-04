@@ -118,6 +118,9 @@ table#stats, table#logs, table#notifies, table#darpinfo, table#loginform {
 table#loginform {
     padding-bottom:	50px;
 }
+#graphs {
+    padding-top:	25px;
+}
 
 .tophome {
     padding-top:	25px;
@@ -201,7 +204,6 @@ table#loginform {
     border:		3px solid #eca;
     opacity:		1.0;
     background-color:	#fffdfd;
-
 }
 
 .notifyhead {

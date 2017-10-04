@@ -74,3 +74,6 @@ func (g *Group) Dump(ctx *api.Context) {
 }
 func (g *Group) CheckNow() {
 }
+func (g *Group) GraphList(pfx string, gl []interface{}) []interface{} {
+	return gl
+}

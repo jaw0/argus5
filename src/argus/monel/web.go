@@ -12,6 +12,7 @@ import (
 
 	"argus/argus"
 	"argus/clock"
+	"argus/graph"
 	"argus/notify"
 	"argus/web"
 )
@@ -48,6 +49,8 @@ const (
 func init() {
 	web.Add(web.PRIVATE, "/api/page", webJson)
 	web.Add(web.WRITE, "/api/annotate", webAnnotate)
+	web.Add(web.PRIVATE, "/api/graph", webGraphInfo)
+	web.Add(web.PRIVATE, "/api/graphd", webGraphDJson)
 }
 
 func webJson(ctx *web.Context) {
@@ -250,6 +253,7 @@ func (m *M) webDecor(creds []string, md map[string]interface{}) {
 	md["info"] = m.Cf.Info
 	md["details"] = m.Cf.Details
 	md["comment"] = m.Cf.Comment
+	md["graph"] = m.Cf.Graph
 
 	md["canOverride"] = m.Cf.Overridable && argus.ACLPermitsUser(m.Cf.ACL_Override, creds)
 	md["canAnnotate"] = argus.ACLPermitsUser(m.Cf.ACL_Annotate, creds)
@@ -298,6 +302,87 @@ func webAnnotate(ctx *web.Context) {
 	js, _ := json.MarshalIndent(d, "", "  ")
 	ctx.W.Header().Set("Content-Type", "application/json; charset=utf-8")
 	ctx.W.Write(js)
+}
+
+// ################################################################
+
+func webGraphDJson(ctx *web.Context) {
+
+	// obj, tag, since, which, width
+
+	m, _ := webObjUserCheck(ctx)
+	if m == nil {
+		return
+	}
+
+	if !m.Cf.Graph {
+		ctx.W.WriteHeader(404)
+		return
+	}
+
+	d := m.newWebMetaResponse(ctx)
+
+	since, _ := strconv.ParseInt(ctx.Get("since"), 10, 64)
+	tag := ctx.Get("tag")
+	which := ctx.Get("which")
+	//width := ctx.Get("width")
+
+	d["data"] = graph.Get(m.Pathname(tag, ""), which, since)
+
+	js, _ := json.MarshalIndent(d, "", "  ")
+	ctx.W.Header().Set("Content-Type", "application/json; charset=utf-8")
+	ctx.W.Write(js)
+}
+
+func webGraphInfo(ctx *web.Context) {
+
+	m, _ := webObjUserCheck(ctx)
+	if m == nil {
+		return
+	}
+
+	d := m.newWebMetaResponse(ctx)
+
+	if !m.Cf.Graph {
+		ctx.W.WriteHeader(404)
+		return
+	}
+
+	gi := struct {
+		Title  string
+		YLabel string
+		List   []interface{}
+	}{m.Cf.Title, m.Cf.YLabel, nil}
+
+	gi.List = m.graphList("", gi.List)
+	d["graph"] = gi
+}
+
+func (m *M) graphList(label string, gl []interface{}) []interface{} {
+
+	m.Lock.RLock()
+	childs := m.Me.Children()
+	m.Lock.RUnlock()
+
+	gl = m.Me.GraphList(label, gl)
+
+	for _, c := range childs {
+		if c.Cf.Hidden {
+			continue
+		}
+
+		clabel := c.Cf.GraphLabel
+		if clabel == "" {
+			clabel = c.Cf.Label
+		}
+		if label != "" {
+			clabel = label + ":" + clabel
+		}
+
+		gl = c.graphList(clabel, gl)
+	}
+
+	return gl
 }
 
 // ################################################################

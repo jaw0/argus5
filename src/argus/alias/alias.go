@@ -112,3 +112,7 @@ func (a *Alias) Dump(ctx *api.Context) {
 
 func (a *Alias) CheckNow() {
 }
+
+func (a *Alias) GraphList(pfx string, gl []interface{}) []interface{} {
+	return gl
+}

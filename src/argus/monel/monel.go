@@ -36,6 +36,7 @@ type Moneler interface {
 	DoneConfig()
 	Recycle()
 	Children() []*M
+	GraphList(string, []interface{}) []interface{}
 }
 
 type Conf struct {
@@ -64,7 +65,7 @@ type Conf struct {
 	ACL_CheckNow string
 	ACL_About    string
 	Graph        bool
-	XLabel       string
+	GraphLabel   string
 	YLabel       string
 	Title        string
 	// ...

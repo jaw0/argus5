@@ -105,6 +105,7 @@ func (s *Service) Init() error {
 
 	// clean up any old/outdated darp entries
 	for n, _ := range s.p.Statuses {
+		// RSN - check - is it still monitored there?
 		if !darp.IsValid(n) {
 			delete(s.p.Statuses, n)
 			delete(s.p.Results, n)

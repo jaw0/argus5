@@ -143,6 +143,9 @@ func httpAdapt(authreq int, f WebHandlerFunc) func(http.ResponseWriter, *http.Re
 		ctx.GetSession()
 
 		defer func() {
+			if x := recover(); x != nil {
+				dl.Bug("http panic: %v", x)
+			}
 			user := "[nouser]"
 			if ctx.User != nil {
 				user = ctx.User.Name
