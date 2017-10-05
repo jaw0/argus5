@@ -105,7 +105,8 @@ func (a *Alias) Children() []*monel.M {
 
 func (a *Alias) WebJson(md map[string]interface{}) {
 }
-
+func (a *Alias) WebMeta(md map[string]interface{}) {
+}
 func (a *Alias) Dump(ctx *api.Context) {
 	ctx.SendKVP("alias/target", a.Target)
 }

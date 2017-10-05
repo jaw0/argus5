@@ -10,7 +10,8 @@
            <a class=topnav href="xxx" title="Overview"><i class="fa fa-tasks"></i></a>
            <a class=topnav href="xxx" title="Notifications"><i id=notifiesicon  class="fa fa-envelope-o"></i></A>
            <a class=topnav onclick="lofgile_show();" title="Startup Errors"><i id=haserrorsicon class="fa fa-warning"></i></a>
-           <a class=topnav onclick="hush_siren();"><i id=sirenicon class="fa fa-bell-o"></i></a>
+           <a class=topnav onclick="hush_siren();" title="Hush Siren"><i id=sirenicon class="fa fa-bell-o"></i></a>
+           <i id=sirenofficon class="fa fa-bell-slash-o" style="display:none;"></i>
            <span class=username>User: <tt>{[ .User ]}</tt></span>
            <a class=topnav href="/logout" title="Log Out"><i class="fa fa-user-o fa-sm"></i></a>
     </td></tr>

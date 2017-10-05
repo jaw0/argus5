@@ -427,7 +427,9 @@ function lofgile_dismiss(){
 
 function hush_siren(){
 
+    argus.log("hush siren")
     $('#sirensound').trigger('pause')
+    siren_icon(-1)
 
     $.ajax({
         type:	    'POST',
@@ -435,6 +437,23 @@ function hush_siren(){
         dataType:   'json',
         timeout:    5000
     });
+}
+
+function siren_icon(state){
+    // 0 off, -1 hushed, 1 ringing
+
+    if( state == 0 ){
+        $('#sirenicon').hide()
+        $('#sirenofficon').hide()
+    }
+    if( state == 1 ){
+        $('#sirenicon').show()
+        $('#sirenofficon').hide()
+    }
+    if( state == -1 ){
+        $('#sirenicon').hide()
+        $('#sirenofficon').show()
+    }
 }
 
 
@@ -455,15 +474,13 @@ function process_meta(d){
     if( d.alarm ){
 
         if( d.sirenhush ){
-            $('#sirenicon').removeClass('fa-bell-o').addClass('fa-bell-slash-o')
+            siren_icon(-1)
         }else{
-            $('#sirenicon').removeClass('fa-bell-slash-o').addClass('fa-bell-o')
+            siren_icon(1)
             $('#sirensound').trigger('play')
         }
-
-        $('#sirenicon').show()
     }else{
-        $('#sirenicon').hide()
+        siren_icon(0)
     }
 
     if( d.unacked ){
@@ -484,6 +501,12 @@ function process_meta(d){
         $('#haserrorsicon').removeClass('fa-warning').addClass('fa-info-circle')
         $('#haserrorsicon').removeClass('redbounce').removeClass('major-f')
         $('#haserrorsicon').hide()
+    }
+
+    // copy updated details
+    if( jsondata ){
+        if( "result" in d ) jsondata.result = d.result
+        if( ("lasttest" in d) && d.lasttest != 0 ) jsondata.lasttest_fmt = date_format(d.lasttest/1000000)
     }
 }
 

@@ -124,13 +124,14 @@ func (p *Ping) Start(s *service.Service) {
 	s.Debug("ping start")
 
 	addr, _, fail := p.IpAddr.Addr()
-	if addr == "" {
-		s.Debug("hostname still resolving")
+	s.Debug("addr: %s, %v", addr, fail)
+	if fail {
+		s.FailNow("cannot resolve hostname")
 		s.Done()
 		return
 	}
-	if fail {
-		s.Fail("cannot resolve hostname")
+	if addr == "" {
+		s.Debug("hostname still resolving")
 		s.Done()
 		return
 	}

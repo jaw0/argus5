@@ -15,10 +15,9 @@ import (
 )
 
 type CFV struct {
-	Value   interface{} // string | *Schedule
-	Line    int
-	Used    bool
-	Inherit bool
+	Value interface{} // string | *Schedule
+	Line  int
+	Used  bool
 }
 
 type CF struct {
@@ -166,15 +165,21 @@ func (cf *CF) Warning(e string, args ...interface{}) {
 func (cf *CF) Get(name string) *CFV {
 	return cf.iGet(name, true)
 }
-func (cf *CF) iGet(name string, ui bool) *CFV {
+func (cf *CF) iGet(name string, useInherit bool) *CFV {
 
-	cv := cf.Param[name]
-	if cv != nil {
-		if cv.Inherit || ui {
-			// 'param!: value' - only used where declared, will not be inherited by sub-blocks
+	if useInherit {
+		// 'param!: value' - only used where declared, will not be inherited by sub-blocks
+		cv := cf.Param[name+"!"]
+		if cv != nil {
 			cv.Used = true
 			return cv
 		}
+	}
+
+	cv := cf.Param[name]
+	if cv != nil {
+		cv.Used = true
+		return cv
 	}
 
 	cc, ok := cf.cache[name]

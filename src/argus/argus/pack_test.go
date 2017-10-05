@@ -22,6 +22,7 @@ func unpackExpect(t *testing.T, how string, data []byte, ex int32) {
 func TestUnpack(t *testing.T) {
 
 	unpackExpect(t, " c", []byte{254, 0, 0, 0}, -2)
+	unpackExpect(t, " x   C ", []byte{254, 17, 1, 2}, 17)
 	unpackExpect(t, " x1  C ", []byte{254, 17, 1, 2}, 17)
 	unpackExpect(t, " x2  n ", []byte{254, 17, 37, 77, 2, 3}, 9549)
 	unpackExpect(t, "x2  N ", []byte{254, 17, 37, 77, 2, 91, 1}, 625803867)

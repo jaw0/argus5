@@ -238,12 +238,12 @@ func (t *TCP) Read(conn net.Conn) ([]byte, bool) {
 func (t *TCP) Connect() (net.Conn, bool) {
 
 	addr, fail := t.IpAddr.AddrWB()
-	if addr == "" {
-		t.S.Debug("hostname still resolving")
+	if fail {
+		t.S.FailNow("cannot resolve hostname")
 		return nil, true
 	}
-	if fail {
-		t.S.Fail("cannot resolve hostname")
+	if addr == "" {
+		t.S.Debug("hostname still resolving")
 		return nil, true
 	}
 

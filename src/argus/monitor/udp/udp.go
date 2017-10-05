@@ -186,7 +186,7 @@ func (t *UDP) Read(conn *net.UDPConn) ([]byte, bool) {
 	t.S.Debug("reading...")
 	buf := make([]byte, 8192)
 	n, addr, err := conn.ReadFromUDP(buf)
-	t.S.Debug("read: %d %v", n, err)
+	t.S.Debug("read: %d %v [%X]", n, err, buf[:n])
 
 	// check response
 	fail := t.checkResponse(addr)
@@ -200,12 +200,14 @@ func (t *UDP) Read(conn *net.UDPConn) ([]byte, bool) {
 func (t *UDP) Connect() (*net.UDPConn, bool) {
 
 	addr, fail := t.IpAddr.AddrWB()
-	if addr == "" {
-		t.S.Debug("hostname still resolving")
+
+	if fail {
+		t.S.FailNow("cannot resolve hostname")
 		return nil, true
 	}
-	if fail {
-		t.S.Fail("cannot resolve hostname")
+
+	if addr == "" {
+		t.S.Debug("hostname still resolving")
 		return nil, true
 	}
 

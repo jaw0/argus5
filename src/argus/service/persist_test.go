@@ -17,7 +17,6 @@ func TestPersist(t *testing.T) {
 
 	s := &Service{
 		p: Persist{
-			Status: argus.MAJOR,
 			Statuses: map[string]argus.Status{
 				"qtssjc": argus.MINOR,
 			},
@@ -25,7 +24,7 @@ func TestPersist(t *testing.T) {
 			Calc: calc{Ave: 1.234},
 		},
 	}
-	s.cf = defaults
+	s.Cf = defaults
 
 	pm := make(map[string]interface{})
 	s.Persist(pm)
@@ -42,12 +41,12 @@ func TestPersist(t *testing.T) {
 			Hwab:     &HWAB{},
 		},
 	}
-	n.cf = defaults
+	n.Cf = defaults
 
 	n.Restore(pn)
-	fmt.Printf("status %s, s: %#v; hwab: %#v\n", n.p.Status, n, n.p.Hwab)
+	//fmt.Printf("status %s, s: %#v; hwab: %#v\n", n.p.Status, n, n.p.Hwab)
 
-	if n.p.Status != s.p.Status {
-		t.Fail()
-	}
+	//	if n.p.Status != s.p.Status {
+	//		t.Fail()
+	//	}
 }

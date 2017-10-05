@@ -29,6 +29,9 @@ func Unpack(how string, dat []byte) (int32, bool) {
 				break
 			}
 		}
+		if skip == 0 {
+			skip = 1
+		}
 		dat = dat[skip:]
 	}
 

@@ -225,6 +225,31 @@ func IsValid(name string) bool {
 	return ok
 }
 
+func IsUp(name string) bool {
+
+	if !IsEnabled {
+		return false
+	}
+
+	if name == MyId {
+		return true
+	}
+
+	now := clock.Unix()
+
+	lock.RLock()
+	defer lock.RUnlock()
+
+	st := darpStatus[name]
+	if st == nil {
+		return false
+	}
+	if st.IsUp && st.Lastt > now-120 {
+		return true
+	}
+	return false
+}
+
 // ################################################################
 
 func IncludesTag(tags string, tag string) bool {

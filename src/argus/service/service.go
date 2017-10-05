@@ -148,7 +148,7 @@ func Find(id string) *Service {
 }
 
 func (s *Service) CheckNow() {
-	s.Start()
+	s.sched.ASAP()
 }
 
 func (s *Service) IsReady() bool {
@@ -195,14 +195,16 @@ func (s *Service) JoinMulti() bool {
 func (s *Service) Done() {
 
 	s.mon.Lock.Lock()
-	defer s.mon.Lock.Unlock()
 	s.reschedule()
 	s.running = false
 	s.Lasttest = clock.Nano()
 
+	alsorun := s.alsoRun
+	s.mon.Lock.Unlock()
 	s.mon.Debug("done")
-	for _, also := range s.alsoRun {
-		also.Start()
+
+	for _, also := range alsorun {
+		also.CheckNow()
 	}
 }
 
@@ -212,7 +214,10 @@ func (s *Service) Pass() {
 func (s *Service) Fail(reason string) {
 	s.SetResult(s.Cf.Severity, "", reason)
 }
-
+func (s *Service) FailNow(reason string) {
+	s.Tries = s.Cf.Retries + 1
+	s.Fail(reason)
+}
 func (s *Service) Children() []*monel.M {
 	return nil
 }
@@ -260,7 +265,6 @@ func (s *Service) SetResult(status argus.Status, result string, reason string) {
 	} else {
 		if s.Tries <= s.Cf.Retries {
 			s.mon.Debug("retrying (%d)", s.Tries)
-			// status = s.p.Statuses[s.Cf.myid]
 			s.Tries++
 			return
 		}

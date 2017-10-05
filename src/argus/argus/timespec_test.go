@@ -12,7 +12,7 @@ import (
 
 func timespecExpect(t *testing.T, a string, b int64) {
 
-	e, _ := Timespec(a)
+	e, _ := Timespec(a, 1)
 	if e != b {
 		fmt.Printf("%s -> %d != %d\n", a, e, b)
 		t.Fail()

@@ -11,7 +11,7 @@ import (
 
 func encodeExpect(t *testing.T, a string, b string) {
 
-	e := Encode(a)
+	e := UrlEncode(a)
 	// fmt.Printf("%s -> %s = %s\n", a, e, b)
 	if e != b {
 		t.Fail()

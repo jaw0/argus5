@@ -12,6 +12,8 @@
     <tr><th>status</th><td v-bind:class="[mon.ovstatus_sev]">{{ mon.ovstatus_fmt  }}</td>
                 <th>since</th><td>{{ mon.transtime_fmt }}</td></tr>
     <tr v-if="!mon.childsum && mon.reason"><th>...because</th><td>{{ mon.reason }}</td></tr>
+    <tr v-if="!mon.childsum && result"><th>Result</th><td>{{ result }}</td></tr>
+    <tr v-if="!mon.childsum && lasttest_fmt"><th>Last Tested</th><td>{{ lasttest_fmt }}</td></tr>
     <tr v-if="mon.hostname"><th>hostname</th><td>{{ mon.hostname }}</td></tr>
 
     <tr v-for="ti,tn in mon.testinfo"><th>{{ tn }}</th><td>{{ ti }}</td></tr>

@@ -56,6 +56,7 @@ func init() {
 	service.Register("TCP/Domain", New)
 	service.Register("UDP/Domain", New)
 	service.Register("DNS", New)
+	service.Register("Domain", New)
 }
 
 func New(conf *configure.CF, s *service.Service) service.Monitor {
@@ -160,8 +161,8 @@ func configDNS(d *Conf, conf *configure.CF) error {
 func determineNames(d *Conf, conf *configure.CF, s *service.Service) {
 
 	label := conf.Name
-	label = strings.TrimPrefix("TCP/", label)
-	label = strings.TrimPrefix("UDP/", label)
+	label = strings.TrimPrefix(label, "TCP/")
+	label = strings.TrimPrefix(label, "UDP/")
 
 	if d.Zone != "" && d.Zone != "." {
 		label = d.Zone
@@ -236,12 +237,12 @@ func (d *DNS) Start(s *service.Service) {
 	defer s.Done()
 
 	addr, fail := d.IpAddr.AddrWB()
-	if addr == "" {
-		s.Debug("hostname still resolving")
+	if fail {
+		s.FailNow("cannot resolve hostname")
 		return
 	}
-	if fail {
-		s.Fail("cannot resolve hostname")
+	if addr == "" {
+		s.Debug("hostname still resolving")
 		return
 	}
 
@@ -258,10 +259,15 @@ func (d *DNS) Start(s *service.Service) {
 	}
 
 	resp, _, err := client.Exchange(d.msg, addrport)
-	if err != nil || resp == nil {
+	if resp == nil {
 		s.Debug("error: %v", err)
 		s.Fail("dns query failed")
 		return
+	}
+	if err != nil {
+		s.Debug("error: %v", err)
+		// STAT responses, truncated responses, etc return errTruncated
+		// as long as we have a resp, keep going...
 	}
 
 	s.Debug("dns resp %s", resp.String())

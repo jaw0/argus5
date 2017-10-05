@@ -247,22 +247,13 @@ func addParam(f *Files, cf *configure.CF, l string) bool {
 
 func setParam(f *Files, cf *configure.CF, key string, val interface{}) bool {
 
-	inh := true
-
-	// key!: value -> non-inherited
-	if key[len(key)-1] == '!' {
-		key = key[:len(key)-1]
-		inh = false
-	}
-
 	if _, have := cf.Param[key]; have {
 		argus.ConfigWarning(f.CurrFile(), f.CurrLine(), "redefinition of parameter '%s'", key)
 	}
 
 	cf.Param[key] = &configure.CFV{
-		Value:   val,
-		Line:    f.CurrLine(),
-		Inherit: inh,
+		Value: val,
+		Line:  f.CurrLine(),
 	}
 
 	return true

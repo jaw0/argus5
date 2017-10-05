@@ -223,7 +223,8 @@ func (m *M) checkOverride() {
 // lock should already be held
 func (m *M) determineAggrStatus() {
 
-	if len(m.Children) == 0 {
+	children := m.Me.Children()
+	if len(children) == 0 {
 		m.P.OvStatus = m.P.Status
 		return
 	}
@@ -232,7 +233,7 @@ func (m *M) determineAggrStatus() {
 	rsum := [argus.MAXSTATUS + 1]int{}
 	osum := [argus.MAXSTATUS + 1]int{}
 
-	for _, child := range m.Children {
+	for _, child := range children {
 		rs, os := child.Status()
 		rsum[rs]++
 		osum[os]++
@@ -244,7 +245,6 @@ func (m *M) determineAggrStatus() {
 
 	m.P.Status = rs
 	m.P.OvStatus = os
-
 }
 
 func calcAggrStatus(grav argus.Gravity, tot int, max argus.Status, statuses []int) argus.Status {
@@ -287,7 +287,9 @@ func (m *M) determineSummary() {
 		m.P.OvStatusSummary[i] = 0
 	}
 
-	if len(m.Children) == 0 || m.Cf.Countstop {
+	children := m.Me.Children()
+
+	if len(children) == 0 || m.Cf.Countstop {
 		m.P.OvStatusSummary[int(m.P.OvStatus)] = 1
 		return
 	}
@@ -298,7 +300,8 @@ func (m *M) determineSummary() {
 		return
 	}
 
-	for _, child := range m.Children {
+	for _, child := range children {
+
 		child.Lock.RLock()
 		for i := 0; i <= int(argus.MAXSTATUS); i++ {
 			if m.P.Override != nil && i >= int(argus.WARNING) && i <= int(argus.CRITICAL) {

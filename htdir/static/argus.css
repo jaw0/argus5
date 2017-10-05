@@ -88,6 +88,9 @@
 a.topnav {
     color:		#444;
 }
+a.topnav:hover {
+    cursor: 		pointer;
+}
 
 #errormsg {
     background-color:	#f66;
@@ -172,7 +175,15 @@ table#loginform {
 	font-size:		12px;
 }
 
-#overridedivouter, #notifydetailouter, #lofgileouter {
+#notifydetailouter, #lofgileouter {
+    background-color: 	rgba(0, 0, 0, 0.5);
+    width:		100%;
+    height:		100%;
+    position:		absolute;
+    top:		0;
+    left:		0;
+}
+#overridedivouter {
     background-color: 	rgba(0, 0, 0, 0.5);
     width:		100%;
     height:		100%;

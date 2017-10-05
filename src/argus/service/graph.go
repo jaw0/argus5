@@ -44,8 +44,6 @@ func GraphConfig(cf *configure.CF) {
 
 func (s *Service) recordMyGraphData(val float64) {
 
-	dl.Verbose("record graph")
-
 	now := clock.Unix()
 	if s.p.Lastgraph+graphMinTime > now {
 		return

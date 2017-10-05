@@ -24,6 +24,7 @@ func TestPluck(t *testing.T) {
 	pluckTest(t, ": (.*)", "key: value", "value")
 	pluckTest(t, "foo: (.*)", "key: value", "")
 	pluckTest(t, `(\d+)`, "key: 1234", "1234")
+	pluckTest(t, `(\d+)`, "key:\n 1234", "1234")
 
 }
 
@@ -47,17 +48,17 @@ func TestJson(t *testing.T) {
 
 // ################################################################
 
-func exprTest(t *testing.T, expr string, val float64, exp float64) {
-
-	got, _ := doExpr(expr, val)
-	if got != exp {
-		fmt.Printf("expr %s + %f -> %f != %f\n", expr, val, got, exp)
-		t.Fail()
-	}
-}
-
-func TestExpr(t *testing.T) {
-
-	exprTest(t, "x * 2 + 1", 1, 3)
-	exprTest(t, "7 * x + 2", 2, 16)
-}
+//func exprTest(t *testing.T, expr string, val float64, exp float64) {
+//
+//	got, _ := doExpr(expr, val)
+//	if got != exp {
+//		fmt.Printf("expr %s + %f -> %f != %f\n", expr, val, got, exp)
+//		t.Fail()
+//	}
+//}
+//
+//func TestExpr(t *testing.T) {
+//
+//	exprTest(t, "x * 2 + 1", 1, 3)
+//	exprTest(t, "7 * x + 2", 2, 16)
+//}

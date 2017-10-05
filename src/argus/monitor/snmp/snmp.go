@@ -341,7 +341,7 @@ func (t *SNMP) snmpClient() *gosnmp.GoSNMP {
 
 	addr, _, fail := t.IpAddr.Addr()
 	if fail {
-		t.S.Fail("cannot resolve hostname")
+		t.S.FailNow("cannot resolve hostname")
 		return nil
 	}
 	if addr == "" {

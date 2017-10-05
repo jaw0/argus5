@@ -125,6 +125,10 @@ func (d *D) Remove() {
 	schedchan <- d
 }
 
+func (d *D) ASAP() {
+	workchan <- d
+}
+
 func Init() {
 
 	done.Add(1)
@@ -144,7 +148,14 @@ func Init() {
 }
 
 func Stop() {
-	close(stopchan)
+
+	select {
+	case <-stopchan:
+		// already shutting down
+		break
+	default:
+		close(stopchan)
+	}
 }
 
 func Wait() {

@@ -176,4 +176,5 @@ func Hush(ctx *Context) {
 	}
 
 	sess.Hush = clock.Nano()
+	save()
 }

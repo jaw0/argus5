@@ -45,7 +45,7 @@ func (x *MakeIt) Make(m map[string]string) error {
 			continue
 		}
 
-		cfv := &configure.CFV{Inherit: true, Value: v}
+		cfv := &configure.CFV{Value: v}
 
 		if k[0] == '*' {
 			// unserialize schedule
@@ -53,15 +53,12 @@ func (x *MakeIt) Make(m map[string]string) error {
 			k = k[1:]
 		}
 
-		if k[0] != '_' && k[0] != '!' {
+		if k[0] != '_' {
 			continue
 		}
 
 		cf.Param[k[1:]] = cfv
 
-		if k[0] == '!' {
-			cfv.Inherit = false
-		}
 	}
 
 	// make it

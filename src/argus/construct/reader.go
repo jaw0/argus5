@@ -229,6 +229,8 @@ func cleanLine(l []byte) []byte {
 
 				// RSN - \xFF
 			default:
+				buf[j] = c
+				j++
 				buf[j] = l[i]
 			}
 			j++

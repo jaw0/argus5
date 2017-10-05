@@ -66,6 +66,8 @@ func (g *Group) Restore(pm map[string]interface{}) {
 }
 func (g *Group) WebJson(md map[string]interface{}) {
 }
+func (g *Group) WebMeta(md map[string]interface{}) {
+}
 func (g *Group) Children() []*monel.M {
 
 	return g.mon.Children

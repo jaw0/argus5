@@ -123,7 +123,6 @@ func (m *M) webChangedSince(since int64) bool {
 func (m *M) webMeta(ctx *web.Context, md map[string]interface{}) {
 
 	m.Lock.RLock()
-	defer m.Lock.RUnlock()
 
 	md["alarm"] = m.P.Alarm
 	md["sirentime"] = m.P.SirenTime
@@ -132,6 +131,10 @@ func (m *M) webMeta(ctx *web.Context, md map[string]interface{}) {
 	md["unacked"] = notify.NumActive()
 	md["hasErrors"] = argus.HasErrors()
 	md["hasWarns"] = argus.HasWarnings()
+
+	m.Lock.RUnlock()
+
+	m.Me.WebMeta(md)
 }
 
 func (m *M) webJson(creds []string, md map[string]interface{}) {

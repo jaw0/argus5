@@ -62,10 +62,6 @@ func apiGetConfig(ctx *api.Context) {
 		}
 		prefix := "_"
 
-		if !v.Inherit {
-			prefix = "!"
-		}
-
 		switch val := v.Value.(type) {
 		case string:
 			ctx.SendKVP(prefix+k, val)

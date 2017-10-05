@@ -39,6 +39,7 @@ var status = "starting"
 
 func init() {
 	api.Add(true, "hup", apiHup)
+	api.Add(true, "reload", apiHup)
 	api.Add(true, "shutdown", apiStop)
 	api.Add(true, "status", apiStatus)
 
@@ -68,6 +69,8 @@ func main() {
 	// init sighandlers
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP, syscall.SIGUSR2)
 	go sigHandle()
+	os.Setenv("ARGUS_PID", fmt.Sprintf("%d", os.Getpid()))
+	os.Setenv("ARGUS_VER", argus.Version)
 
 	ping.Init()
 	sched.Init()

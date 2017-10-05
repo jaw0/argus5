@@ -29,6 +29,7 @@ type Moneler interface {
 	Persist(map[string]interface{})
 	Restore(map[string]interface{})
 	WebJson(map[string]interface{})
+	WebMeta(map[string]interface{})
 	Config(*configure.CF) error
 	Dump(*api.Context)
 	CheckNow()
@@ -296,6 +297,7 @@ func (m *M) DoneConfig() {
 	m.Me.DoneConfig()
 	m.determineStatus()
 	m.determineSummary()
+	m.setAlarm()
 }
 
 func (m *M) sortChildren() {

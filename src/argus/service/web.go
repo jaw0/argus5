@@ -33,3 +33,12 @@ func (s *Service) WebJson(md map[string]interface{}) {
 	s.check.WebJson(testinfo)
 	md["testinfo"] = testinfo
 }
+
+func (s *Service) WebMeta(md map[string]interface{}) {
+
+	s.mon.Lock.RLock()
+	defer s.mon.Lock.RUnlock()
+
+	md["lasttest"] = s.Lasttest
+	md["result"] = limitString(s.mon.P.Result, 32)
+}
