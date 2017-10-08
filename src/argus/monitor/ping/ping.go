@@ -8,7 +8,6 @@ package ping
 import (
 	"bufio"
 	"context"
-	"errors"
 	"expvar"
 	"fmt"
 	"io"
@@ -25,13 +24,12 @@ import (
 )
 
 type Conf struct {
-	Hostname string
 }
 
 type Ping struct {
-	S      *service.Service
-	Cf     Conf
-	IpAddr *resolv.IP
+	S  *service.Service
+	Cf Conf
+	Ip *resolv.IP
 }
 
 type pingWork struct {
@@ -87,15 +85,14 @@ func (p *Ping) Config(conf *configure.CF, s *service.Service) error {
 
 	conf.InitFromConfig(&p.Cf, "ping", "")
 
-	// validate
-	if p.Cf.Hostname == "" {
-		return errors.New("hostname not specified")
+	ip, err := resolv.Config(conf)
+	if err != nil {
+		return err
 	}
-
-	p.IpAddr = resolv.New(p.Cf.Hostname)
+	p.Ip = ip
 
 	// set names + labels
-	uname := "PING_" + p.Cf.Hostname
+	uname := "PING_" + p.Ip.Hostname()
 
 	s.SetNames(uname, "Ping", "Ping")
 
@@ -107,7 +104,7 @@ func (p *Ping) Init() error {
 }
 
 func (p *Ping) Hostname() string {
-	return p.Cf.Hostname
+	return p.Ip.Hostname()
 }
 func (p *Ping) Recycle() {
 }
@@ -123,7 +120,7 @@ func (p *Ping) Start(s *service.Service) {
 
 	s.Debug("ping start")
 
-	addr, _, fail := p.IpAddr.Addr()
+	addr, _, fail := p.Ip.Addr()
 	s.Debug("addr: %s, %v", addr, fail)
 	if fail {
 		s.FailNow("cannot resolve hostname")
@@ -287,7 +284,8 @@ func processResult(uw map[string][]*service.Service, line string) {
 
 func (p *Ping) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/ping/CF/": p.Cf,
+		"service/ip/CF/":   &p.Ip.Cf,
+		"service/ping/CF/": &p.Cf,
 	}
 }
 func (p *Ping) WebJson(md map[string]interface{}) {

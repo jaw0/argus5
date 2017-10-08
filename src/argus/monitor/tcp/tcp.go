@@ -21,17 +21,16 @@ import (
 )
 
 type Conf struct {
-	Hostname string
-	Port     int
-	Send     string
-	ReadHow  string
-	SSL      bool
+	Port    int
+	Send    string
+	ReadHow string
+	SSL     bool
 }
 
 type TCP struct {
 	S      *service.Service
 	Cf     Conf
-	IpAddr *resolv.IP
+	Ip     *resolv.IP
 	ToSend string
 }
 
@@ -71,18 +70,19 @@ func (t *TCP) PreConfig(conf *configure.CF, s *service.Service) error {
 }
 func (t *TCP) Config(conf *configure.CF, s *service.Service) error {
 
-	conf.InitFromConfig(&t.Cf, "tcp", "")
 	dl.Debug("tcp config")
+	conf.InitFromConfig(&t.Cf, "tcp", "")
+
+	ip, err := resolv.Config(conf)
+	if err != nil {
+		return err
+	}
+	t.Ip = ip
 
 	// validate
-	if t.Cf.Hostname == "" {
-		return errors.New("hostname not specified")
-	}
 	if t.Cf.Port == 0 {
 		return errors.New("port not specified")
 	}
-
-	t.IpAddr = resolv.New(t.Cf.Hostname)
 
 	if conf.Name == "TCP/HTTP" || conf.Name == "TCP/HTTPS" {
 		t.Cf.Send = t.httpSend()
@@ -90,22 +90,23 @@ func (t *TCP) Config(conf *configure.CF, s *service.Service) error {
 
 	// set names + labels
 	name := protoName(conf.Name)
+	host := t.Ip.Hostname()
 	friendly := ""
 	uname := ""
 	label := ""
 
 	if name != "" {
 		label = name
-		uname = name + "_" + t.Cf.Hostname
-		friendly = name + " on " + t.Cf.Hostname
+		uname = name + "_" + host
+		friendly = name + " on " + host
 		if strings.HasPrefix(name, "NFS") {
 			uname = "TCP_" + uname
 		}
 
 	} else {
 		label = "TCP"
-		uname = fmt.Sprintf("TCP_%d_%s", t.Cf.Port, t.Cf.Hostname)
-		friendly = fmt.Sprintf("TCP/%d on %s", t.Cf.Port, t.Cf.Hostname)
+		uname = fmt.Sprintf("TCP_%d_%s", t.Cf.Port, host)
+		friendly = fmt.Sprintf("TCP/%d on %s", t.Cf.Port, host)
 	}
 	s.SetNames(uname, label, friendly)
 
@@ -118,7 +119,7 @@ func (t *TCP) Init() error {
 }
 
 func (t *TCP) Hostname() string {
-	return t.Cf.Hostname
+	return t.Ip.Hostname()
 }
 func (t *TCP) Recycle() {
 }
@@ -237,7 +238,7 @@ func (t *TCP) Read(conn net.Conn) ([]byte, bool) {
 
 func (t *TCP) Connect() (net.Conn, bool) {
 
-	addr, fail := t.IpAddr.AddrWB()
+	addr, fail := t.Ip.AddrWB()
 	if fail {
 		t.S.FailNow("cannot resolve hostname")
 		return nil, true
@@ -268,7 +269,7 @@ func (t *TCP) Connect() (net.Conn, bool) {
 func (t *TCP) httpSend() string {
 
 	send := "GET / HTTP/1.1\r\n" +
-		"Host: " + t.Cf.Hostname + "\r\n" +
+		"Host: " + t.Ip.Hostname() + "\r\n" +
 		"Connection: Close\r\n" +
 		"User-Agent: Argus\r\n" +
 		"\r\n"
@@ -287,7 +288,8 @@ func protoName(name string) string {
 
 func (t *TCP) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/tcp/CF/": t.Cf,
+		"service/ip/CF":   &t.Ip.Cf,
+		"service/tcp/CF/": &t.Cf,
 	}
 }
 func (t *TCP) WebJson(md map[string]interface{}) {

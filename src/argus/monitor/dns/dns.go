@@ -6,7 +6,6 @@
 package dns
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -22,21 +21,20 @@ import (
 )
 
 type Conf struct {
-	Hostname string
-	Port     int
-	Zone     string
-	Query    string
-	Class    string
-	Recurse  bool
-	Test     string
-	Proto    string
+	Port    int
+	Zone    string
+	Query   string
+	Class   string
+	Recurse bool
+	Test    string
+	Proto   string
 }
 
 type DNS struct {
-	S      *service.Service
-	Cf     Conf
-	IpAddr *resolv.IP
-	msg    *dns.Msg
+	S   *service.Service
+	Cf  Conf
+	Ip  *resolv.IP
+	msg *dns.Msg
 }
 
 var dl = diag.Logger("dns")
@@ -77,17 +75,18 @@ func (d *DNS) Config(conf *configure.CF, s *service.Service) error {
 		return err
 	}
 
-	if d.Cf.Hostname == "" {
-		return errors.New("hostname not specified")
+	ip, err := resolv.Config(conf)
+	if err != nil {
+		return err
 	}
+	d.Ip = ip
+
 	if d.Cf.Port == 0 {
 		d.Cf.Port = 53
 	}
 
-	d.IpAddr = resolv.New(d.Cf.Hostname)
-
 	d.buildPacket()
-	determineNames(&d.Cf, conf, s)
+	d.determineNames(conf, s)
 
 	return nil
 }
@@ -158,34 +157,36 @@ func configDNS(d *Conf, conf *configure.CF) error {
 	return nil
 }
 
-func determineNames(d *Conf, conf *configure.CF, s *service.Service) {
+func (d *DNS) determineNames(conf *configure.CF, s *service.Service) {
 
+	dcf := &d.Cf
 	label := conf.Name
 	label = strings.TrimPrefix(label, "TCP/")
 	label = strings.TrimPrefix(label, "UDP/")
 
-	if d.Zone != "" && d.Zone != "." {
-		label = d.Zone
+	if dcf.Zone != "" && dcf.Zone != "." {
+		label = dcf.Zone
 	}
 
-	friendly := "DNS for " + d.Zone + " on " + d.Hostname
+	host := d.Ip.Hostname()
+	friendly := "DNS for " + dcf.Zone + " on " + host
 
 	uname := ""
-	if d.Proto == "tcp" {
+	if dcf.Proto == "tcp" {
 		uname = "TCPDNS_"
 	} else {
 		uname = "DNS_"
 	}
 
-	if d.Zone != "" && d.Zone != "." {
-		uname += d.Zone + "_"
+	if dcf.Zone != "" && dcf.Zone != "." {
+		uname += dcf.Zone + "_"
 	}
-	uname += d.Query + "_"
-	if d.Test != "" && d.Test != "none" {
-		uname += d.Test + "_"
+	uname += dcf.Query + "_"
+	if dcf.Test != "" && dcf.Test != "none" {
+		uname += dcf.Test + "_"
 	}
 
-	uname += d.Hostname
+	uname += host
 
 	s.SetNames(uname, label, friendly)
 }
@@ -220,7 +221,7 @@ func (d *DNS) Init() error {
 }
 
 func (d *DNS) Hostname() string {
-	return d.Cf.Hostname
+	return d.Ip.Hostname()
 }
 func (d *DNS) Recycle() {
 }
@@ -236,7 +237,7 @@ func (d *DNS) Start(s *service.Service) {
 	s.Debug("dns start")
 	defer s.Done()
 
-	addr, fail := d.IpAddr.AddrWB()
+	addr, fail := d.Ip.AddrWB()
 	if fail {
 		s.FailNow("cannot resolve hostname")
 		return
@@ -375,7 +376,8 @@ func checkIntValue(s *service.Service, n int) {
 
 func (t *DNS) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/dns/CF/": t.Cf,
+		"service/ip/CF/":  &t.Ip.Cf,
+		"service/dns/CF/": &t.Cf,
 	}
 }
 func (t *DNS) WebJson(md map[string]interface{}) {

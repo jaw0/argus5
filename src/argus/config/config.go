@@ -34,8 +34,6 @@ type Config struct {
 	DNS_search      []string
 	DevMode         bool
 	Debug           map[string]bool
-
-	// RSN - various files + directories ...
 }
 
 var cf *Config = &Config{}

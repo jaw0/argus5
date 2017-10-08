@@ -6,64 +6,85 @@
 package resolv
 
 import (
+	"errors"
 	"net"
 	"strings"
 
 	"argus/clock"
+	"argus/configure"
 )
 
-type IP struct {
-	name  string
-	ipv   int
-	cache *cacheE
-	idx   int
-	asis  bool
+type Conf struct {
+	Hostname  string
+	Hostname_ string
+	IPVersion string
 }
 
-// RSN - (name, ipv)
-func New(name string) *IP {
+type IP struct {
+	Cf      Conf
+	name    string
+	cache   *cacheE
+	ipvpref []int
+	asis    bool
+	ipv     int
+}
+
+func Config(conf *configure.CF) (*IP, error) {
+
+	ip := &IP{}
+	conf.InitFromConfig(&ip.Cf, "ip", "")
+
+	if ip.Cf.Hostname == "" && ip.Cf.Hostname_ != "" {
+		// backdoor default (see url)
+		ip.Cf.Hostname = ip.Cf.Hostname_
+	}
+
+	if ip.Cf.Hostname == "" {
+		return nil, errors.New("hostname not specified")
+	}
+	name := ip.Cf.Hostname
 
 	// check for dotted quad / cologned octopus
-	ip := net.ParseIP(name)
+	ipp := net.ParseIP(name)
 
-	if ip != nil {
-		ipv := 4
-		if len(ip) > 4 {
-			ipv = 6
+	if ipp != nil {
+		ip.ipv = 4
+		if len(ipp) > 4 {
+			ip.ipv = 6
 		}
-		return &IP{name: name, ipv: ipv, asis: true}
+
+		ip.name = name
+		ip.asis = true
+		return ip, nil
 	}
 
 	// parse out ipv spec: eg. hostname._ipv6
+	// overrides IPVersion
 
 	dl.Debug("New: %s", name)
 
-	ipv := 0
+	ip.confPref()
+
 	ldot := strings.LastIndex(name, "._ipv")
 	dl.Debug("ldot %d; len %d", ldot, len(name))
 
 	if ldot != -1 && ldot <= len(name)-6 {
 
-		if ipv == 0 {
-			switch name[len(name)-1] {
-			case '4':
-				ipv = 4
-			case '6':
-				ipv = 6
-			}
+		switch name[len(name)-1] {
+		case '4':
+			ip.ipvpref = []int{4}
+		case '6':
+			ip.ipvpref = []int{6}
 		}
 		name = name[:ldot]
-		dl.Debug("ipv %d => %s", ipv, name)
+		dl.Debug("ipv %d => %s", ip.ipv, name)
 	}
 
 	name = strings.ToLower(name)
+	ip.name = name
 	lookup(name)
 
-	return &IP{
-		name:  name,
-		ipv:   ipv,
-		cache: getCache(name),
-	}
+	return ip, nil
 }
 
 func (a *IP) Addr() (string, int, bool) {
@@ -90,13 +111,37 @@ func (a *IP) Addr() (string, int, bool) {
 		lookup(a.name)
 	}
 
-	// RSN - rotate
-	// first matching result
+	if len(e.result) > 0 && len(a.ipvpref) == 0 {
+		// no preference - return first result
+		r := e.result[0]
+		return r.addr, r.ipv, false
+	}
+
+	var a4 []string
+	var a6 []string
+
 	for i, _ := range e.result {
 		r := &e.result[i]
 
-		if a.ipv == 0 || a.ipv == r.ipv {
-			return r.addr, r.ipv, false
+		switch r.ipv {
+		case 4:
+			a4 = append(a4, r.addr)
+		case 6:
+			a6 = append(a6, r.addr)
+		}
+	}
+
+	for _, pref := range a.ipvpref {
+		// return first result matching configured preference
+		switch pref {
+		case 4:
+			if len(a4) > 0 {
+				return a4[0], 4, false
+			}
+		case 6:
+			if len(a6) > 0 {
+				return a6[0], 6, false
+			}
 		}
 	}
 
@@ -122,6 +167,24 @@ func (a *IP) AddrWB() (string, bool) {
 	return addr, ok
 }
 
+func (ip *IP) confPref() {
+
+	if ip.Cf.IPVersion == "" {
+		return
+	}
+
+	p := strings.Fields(ip.Cf.IPVersion)
+
+	for _, v := range p {
+		switch v {
+		case "4":
+			ip.ipvpref = append(ip.ipvpref, 4)
+		case "6":
+			ip.ipvpref = append(ip.ipvpref, 6)
+		}
+	}
+}
+
 func (a *IP) WillNeedIn(secs int) {
 
 }
@@ -136,4 +199,8 @@ func (a *IP) IsValid() {
 
 func (a *IP) IsTimedOut() {
 
+}
+
+func (ip *IP) Hostname() string {
+	return ip.name
 }

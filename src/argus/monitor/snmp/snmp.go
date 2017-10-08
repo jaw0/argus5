@@ -22,7 +22,6 @@ import (
 )
 
 type Conf struct {
-	Hostname     string
 	Port         int
 	Community    string
 	Oid          string // 1.3.6.1.2, ifInOctets.1, ifInOctets[Interface0/0]
@@ -37,7 +36,7 @@ type Conf struct {
 type SNMP struct {
 	S       *service.Service
 	Cf      Conf
-	IpAddr  *resolv.IP
+	Ip      *resolv.IP
 	oid     string   // actual oid to monitor
 	baseOid string   // oid of table (ifInOctets)
 	idxDesc string   // description "Serial1/0"
@@ -92,6 +91,12 @@ func (t *SNMP) PreConfig(conf *configure.CF, s *service.Service) error {
 	}
 
 	conf.InitFromConfig(&t.Cf, "snmp", "")
+	ip, err := resolv.Config(conf)
+	if err != nil {
+		return err
+	}
+
+	t.Ip = ip
 
 	// parse oid spec, configure defaults, etal
 	ocf, baseoid, descr := parseOid(t.Cf.Oid)
@@ -130,9 +135,6 @@ func (t *SNMP) PreConfig(conf *configure.CF, s *service.Service) error {
 func (t *SNMP) Config(conf *configure.CF, s *service.Service) error {
 
 	// validate
-	if t.Cf.Hostname == "" {
-		return errors.New("hostname not specified")
-	}
 	if t.Cf.Port == 0 {
 		return errors.New("port not specified")
 	}
@@ -144,18 +146,17 @@ func (t *SNMP) Config(conf *configure.CF, s *service.Service) error {
 	t.Cf.SNMPPriv = strings.ToLower(t.Cf.SNMPPriv)
 	t.v3sec = t.snmpV3Security()
 
-	t.IpAddr = resolv.New(t.Cf.Hostname)
-
 	label := t.Cf.Oid
 	uname := "SNMP_"
+	host := t.Ip.Hostname()
 
 	if t.idxDesc == "" {
-		uname += t.oid + "_" + t.Cf.Hostname
+		uname += t.oid + "_" + host
 	} else {
-		uname += t.baseOid + "_" + t.idxDesc + "_" + t.Cf.Hostname
+		uname += t.baseOid + "_" + t.idxDesc + "_" + host
 	}
 
-	friendly := t.Cf.Oid + " on " + t.Cf.Hostname
+	friendly := t.Cf.Oid + " on " + host
 
 	s.SetNames(uname, label, friendly)
 
@@ -166,7 +167,7 @@ func (t *SNMP) Init() error {
 	return nil
 }
 func (t *SNMP) Hostname() string {
-	return t.Cf.Hostname
+	return t.Ip.Hostname()
 }
 func (t *SNMP) Recycle() {
 }
@@ -176,8 +177,9 @@ func (t *SNMP) DoneConfig() {
 }
 func (t *SNMP) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/snmp/CF/": t.Cf,
-		"service/snmp/": struct {
+		"service/ip/CF":    &t.Ip.Cf,
+		"service/snmp/CF/": &t.Cf,
+		"service/snmp/": &struct {
 			oid     string
 			baseOid string
 			idxDesc string
@@ -339,7 +341,7 @@ func (t *SNMP) verifyResults(rm map[string]*snmpResult) bool {
 
 func (t *SNMP) snmpClient() *gosnmp.GoSNMP {
 
-	addr, _, fail := t.IpAddr.Addr()
+	addr, _, fail := t.Ip.Addr()
 	if fail {
 		t.S.FailNow("cannot resolve hostname")
 		return nil

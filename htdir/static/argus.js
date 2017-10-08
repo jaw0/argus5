@@ -41,7 +41,6 @@ function argus_onload(){
 function argus_page(){
 
     argus.log("page loaded")
-
     build_page()
 }
 
@@ -119,6 +118,7 @@ function build_page_ok(d){
     })
 
     configure_topnav_buttons()
+    configure_graphs()
     setInterval( build_page, 30000 )
 }
 
@@ -506,7 +506,10 @@ function process_meta(d){
     // copy updated details
     if( jsondata ){
         if( "result" in d ) jsondata.result = d.result
-        if( ("lasttest" in d) && d.lasttest != 0 ) jsondata.lasttest_fmt = date_format(d.lasttest/1000000)
+        if( ("lasttest" in d) && d.lasttest != 0 ){
+            jsondata.lasttest = d.lasttest
+            jsondata.lasttest_fmt = date_format(d.lasttest/1000000)
+        }
     }
 }
 

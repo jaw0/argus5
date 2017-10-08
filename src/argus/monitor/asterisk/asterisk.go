@@ -55,12 +55,12 @@ func (d *Asterisk) Config(conf *configure.CF, s *service.Service) error {
 	d.TCP.Config(conf, s)
 
 	// determine names
-	uname := "Asterisk_" + d.Cf.Hostname
+	uname := "Asterisk_" + d.Ip.Hostname()
 	if acf.Cmd != "" {
 		uname = uname + "_" + acf.Cmd
 	}
 
-	s.SetNames(uname, "Asterisk", "Asterisk on "+d.Cf.Hostname)
+	s.SetNames(uname, "Asterisk", "Asterisk on "+d.Ip.Hostname())
 
 	return nil
 }

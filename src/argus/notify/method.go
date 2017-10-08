@@ -15,7 +15,6 @@ import (
 
 type Method struct {
 	builtin bool
-	PATH    string
 	Command string
 	Send    string
 	Qtime   int64                    `cfconv:"timespec"`

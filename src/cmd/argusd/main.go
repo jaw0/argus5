@@ -27,6 +27,7 @@ import (
 	"argus/resolv"
 	"argus/sched"
 	"argus/service"
+	"argus/testport"
 	"argus/web"
 )
 
@@ -62,6 +63,7 @@ func main() {
 
 	// load small base config
 	config.Load(configfile)
+	cf := config.Cf()
 
 	argus.Loggit("", "Argus starting")
 	diag.Verbose("starting....")
@@ -80,6 +82,7 @@ func main() {
 
 	// start, http, test servers
 	web.Init()
+	testport.Start(cf.Port_test)
 
 	// change user/group
 
@@ -88,7 +91,6 @@ func main() {
 	createGdataDirs()
 
 	// read large config
-	cf := config.Cf()
 	construct.ReadConfig(cf.Monitor_config)
 
 	// prepare web serving

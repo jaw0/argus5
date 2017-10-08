@@ -20,7 +20,6 @@ import (
 )
 
 type Conf struct {
-	Hostname             string
 	Port                 int
 	Send                 string
 	SendHex              string
@@ -31,7 +30,7 @@ type Conf struct {
 type UDP struct {
 	S       *service.Service
 	Cf      Conf
-	IpAddr  *resolv.IP
+	Ip      *resolv.IP
 	ToSend  string
 	dstaddr *net.UDPAddr
 }
@@ -73,18 +72,19 @@ func (t *UDP) PreConfig(conf *configure.CF, s *service.Service) error {
 
 func (t *UDP) Config(conf *configure.CF, s *service.Service) error {
 
-	conf.InitFromConfig(&t.Cf, "udp", "")
 	dl.Debug("udp config")
+	conf.InitFromConfig(&t.Cf, "udp", "")
+
+	ip, err := resolv.Config(conf)
+	if err != nil {
+		return err
+	}
+	t.Ip = ip
 
 	// validate
-	if t.Cf.Hostname == "" {
-		return errors.New("hostname not specified")
-	}
 	if t.Cf.Port == 0 {
 		return errors.New("port not specified")
 	}
-
-	t.IpAddr = resolv.New(t.Cf.Hostname)
 
 	if t.Cf.SendHex != "" {
 		t.Cf.Send = hxd(t.Cf.SendHex)
@@ -95,6 +95,7 @@ func (t *UDP) Config(conf *configure.CF, s *service.Service) error {
 	}
 
 	// set names + labels
+	host := t.Ip.Hostname()
 	name := protoName(conf.Name)
 	friendly := ""
 	uname := ""
@@ -102,13 +103,13 @@ func (t *UDP) Config(conf *configure.CF, s *service.Service) error {
 
 	if name != "" {
 		label = name
-		uname = name + "_" + t.Cf.Hostname
-		friendly = name + " on " + t.Cf.Hostname
+		uname = name + "_" + host
+		friendly = name + " on " + host
 
 	} else {
 		label = "UDP"
-		uname = fmt.Sprintf("UDP_%d_%s", t.Cf.Port, t.Cf.Hostname)
-		friendly = fmt.Sprintf("UDP/%d on %s", t.Cf.Port, t.Cf.Hostname)
+		uname = fmt.Sprintf("UDP_%d_%s", t.Cf.Port, host)
+		friendly = fmt.Sprintf("UDP/%d on %s", t.Cf.Port, host)
 	}
 	s.SetNames(uname, label, friendly)
 
@@ -119,7 +120,7 @@ func (t *UDP) Init() error {
 	return nil
 }
 func (t *UDP) Hostname() string {
-	return t.Cf.Hostname
+	return t.Ip.Hostname()
 }
 func (t *UDP) Recycle() {
 }
@@ -199,7 +200,7 @@ func (t *UDP) Read(conn *net.UDPConn) ([]byte, bool) {
 
 func (t *UDP) Connect() (*net.UDPConn, bool) {
 
-	addr, fail := t.IpAddr.AddrWB()
+	addr, fail := t.Ip.AddrWB()
 
 	if fail {
 		t.S.FailNow("cannot resolve hostname")
@@ -271,7 +272,8 @@ func protoName(name string) string {
 
 func (u *UDP) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/udp/CF/": u.Cf,
+		"service/ip/CF/":  &u.Ip.Cf,
+		"service/udp/CF/": &u.Cf,
 	}
 }
 func (u *UDP) WebJson(md map[string]interface{}) {

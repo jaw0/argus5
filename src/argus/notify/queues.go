@@ -104,6 +104,10 @@ func runQueues() {
 				}
 			}
 
+			if len(ns) == 0 {
+				return
+			}
+
 			qd.notif = nil
 			qd.lastt = now
 

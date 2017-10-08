@@ -70,7 +70,7 @@ func (d *Url) Config(conf *configure.CF, s *service.Service) error {
 		d.Cf.SSL = true
 	}
 
-	d.Cf.Hostname = purl.Hostname()
+	conf.Param["hostname_!"] = &configure.CFV{Value: purl.Hostname(), Used: true}
 	d.Host = purl.Hostname()
 	d.File = purl.RequestURI()
 
@@ -90,7 +90,10 @@ func (d *Url) Config(conf *configure.CF, s *service.Service) error {
 	}
 
 	// set tcp config
-	d.TCP.Config(conf, s)
+	err = d.TCP.Config(conf, s)
+	if err != nil {
+		return err
+	}
 
 	// determine names
 	uname := fmt.Sprintf("URL_%s:%d%s", d.Host, d.Cf.Port, d.File)

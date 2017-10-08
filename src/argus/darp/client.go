@@ -20,7 +20,6 @@ const (
 
 type Client struct {
 	Name string
-	Host string
 	Port int
 	ip   *resolv.IP
 	conn *client.Conn
@@ -64,7 +63,6 @@ func (d *DARP) NewClient(timeout int64) *Client {
 
 	c := &Client{
 		Name: d.Name,
-		Host: d.Hostname,
 		Port: d.Port,
 		ip:   d.ip,
 	}
@@ -129,7 +127,7 @@ func (c *Client) ipAddr() string {
 			return addr
 		}
 		if fail {
-			dl.Verbose("cannot resolve hostname '%s'", c.Host)
+			dl.Verbose("cannot resolve hostname '%s'", c.ip.Hostname())
 			time.Sleep(60 * time.Second)
 		}
 		time.Sleep(time.Second)

@@ -359,6 +359,10 @@ func webGraphInfo(ctx *web.Context) {
 
 	gi.List = m.graphList("", gi.List)
 	d["graph"] = gi
+
+	js, _ := json.MarshalIndent(d, "", "  ")
+	ctx.W.Header().Set("Content-Type", "application/json; charset=utf-8")
+	ctx.W.Write(js)
 }
 
 func (m *M) graphList(label string, gl []interface{}) []interface{} {

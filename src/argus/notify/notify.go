@@ -107,6 +107,7 @@ var idno = 1000
 var NActive = expvar.NewInt("notifies")
 
 var globalDefaults = GlobalConf{
+	Mail_From:        "argus",
 	Message_Fmt:      "{{.IDNO}} {{.CREATED}} {{.CONTENT}}",
 	ACL_NotifyDetail: "staff root",
 	ACL_NotifyList:   "staff root",

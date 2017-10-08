@@ -10,8 +10,9 @@
 
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
   <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js"></script>
-  <script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/jquery.flot.min.js"></script>
   <script src="https://unpkg.com/vue"></script>
+  <script src="/static/picasso.js"></script>
+  <script src="/static/chartstrip.js"></script>
   <script src="/static/argus.js"></script>
 
   <link rel="icon" href="/static/sadred.gif" type="image/gif">

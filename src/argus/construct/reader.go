@@ -226,6 +226,8 @@ func cleanLine(l []byte) []byte {
 				buf[j] = '\r'
 			case 't':
 				buf[j] = '\t'
+			case '#':
+				buf[j] = '#'
 
 				// RSN - \xFF
 			default:

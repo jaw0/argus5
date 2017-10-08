@@ -29,7 +29,6 @@ type DARP struct {
 	Pass         string
 	Type         string
 	Fetch_Config string // name of master
-	Hostname     string
 	Port         int
 	ip           *resolv.IP
 	ch           chan *sendMsg
@@ -69,6 +68,12 @@ func New(conf *configure.CF) error {
 	d := &DARP{Port: DEFAULTPORT, Name: conf.Name}
 	conf.InitFromConfig(d, "darp", "")
 
+	ip, err := resolv.Config(conf)
+	if err != nil {
+		return err
+	}
+
+	d.ip = ip
 	name := conf.Name
 
 	// validate
@@ -83,9 +88,7 @@ func New(conf *configure.CF) error {
 	if t != "master" && t != "slave" {
 		return errors.New("must specify type: master or slave")
 	}
-	if d.Hostname == "" {
-		return errors.New("hostname not specified")
-	}
+
 	if d.Pass == "" {
 		return errors.New("pass not specified")
 	}
@@ -105,8 +108,6 @@ func New(conf *configure.CF) error {
 	if d.Type == "master" && d.Name != MyId {
 		masters[d.Name] = d
 	}
-
-	d.ip = resolv.New(d.Hostname)
 
 	conf.CheckTypos()
 	return nil

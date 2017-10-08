@@ -52,12 +52,12 @@ func (d *Freeswitch) Config(conf *configure.CF, s *service.Service) error {
 	d.TCP.Config(conf, s)
 
 	// determine names
-	uname := "Freeswitch_" + d.Cf.Hostname
+	uname := "Freeswitch_" + d.Ip.Hostname()
 	if cf.Cmd != "" {
 		uname = uname + "_" + cf.Cmd
 	}
 
-	s.SetNames(uname, "Freeswitch", "Freeswitch on "+d.Cf.Hostname)
+	s.SetNames(uname, "Freeswitch", "Freeswitch on "+d.Ip.Hostname())
 
 	return nil
 }

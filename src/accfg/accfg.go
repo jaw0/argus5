@@ -133,7 +133,7 @@ func (c *conf) read_config(f *bufio.Reader, cf interface{}, isBlock bool) error 
 	var cfinfo = c.learn_conf(cf)
 
 	for {
-		key, delim, err := c.read_token(f)
+		key, delim, err := c.read_token(f, true)
 		if err == io.EOF {
 			return nil
 		}
@@ -146,7 +146,7 @@ func (c *conf) read_config(f *bufio.Reader, cf interface{}, isBlock bool) error 
 
 		var val string
 		if delim == ' ' {
-			val, delim, err = c.read_token(f)
+			val, delim, err = c.read_token(f, false)
 			if err != nil {
 				return err
 			}
@@ -198,7 +198,7 @@ func (c *conf) include_file(file string) string {
 
 }
 
-func (c *conf) read_token(f *bufio.Reader) (string, int, error) {
+func (c *conf) read_token(f *bufio.Reader, orcolon bool) (string, int, error) {
 	var buf []byte
 
 	for {
@@ -223,6 +223,13 @@ func (c *conf) read_token(f *bufio.Reader) (string, int, error) {
 				return string(buf), '\n', nil
 			}
 			continue
+
+		case ':':
+			// permit colon to delimit first token
+			if !orcolon {
+				break
+			}
+			fallthrough
 
 		case ' ', '\t', '\r':
 			if len(buf) != 0 {
