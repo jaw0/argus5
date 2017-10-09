@@ -328,9 +328,9 @@ func webGraphDJson(ctx *web.Context) {
 	since, _ := strconv.ParseInt(ctx.Get("since"), 10, 64)
 	tag := ctx.Get("tag")
 	which := ctx.Get("which")
-	//width := ctx.Get("width")
+	width, _ := strconv.ParseInt(ctx.Get("width"), 10, 64)
 
-	d["data"] = graph.Get(m.Pathname(tag, ""), which, since)
+	d["data"] = graph.Get(m.Pathname(tag, ""), which, since, int(width))
 
 	js, _ := json.MarshalIndent(d, "", "  ")
 	ctx.W.Header().Set("Content-Type", "application/json; charset=utf-8")

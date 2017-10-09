@@ -3,6 +3,14 @@
 // Created: 2017-Oct-05 18:19 (EDT)
 // Function: picasso paints graphs
 
+var colors = ["#897fd9","#80ab51","#754192","#4bac73",
+              "#c97dcb","#3c6e2c","#de77a4","#3fb5b1",
+              "#8e396f","#81862f","#435193","#ac8a39",
+              "#5890d7","#a95e24","#4d9fc1","#de9258",
+              "#3e5676","#754618","#a2aad1","#625427",
+              "#927eae","#93a36e","#c891b4","#3e8a78",
+              "#724f66","#81aea3","#9d734b","#698599",
+              "#b59e7d","#345d5c","#6e7d63","#425439"]
 
 function configure_graphs(){
 
@@ -60,7 +68,7 @@ function graph_fetch_data(g, i, which, tag){
     });
 }
 
-// https://github.com/flot/flot/blob/master/API.md
+
 function build_graph_ok(g, i, which, tag, r){
 
     argus.log("graph data ok " )
@@ -75,34 +83,7 @@ function build_graph_ok(g, i, which, tag, r){
     var opts = {
         xaxis: {mode: "time"}
     }
-    
-    $.plot(g.el, [plot], opts );
-
-}
 
 
-//****************************************************************
-
-function graphValue(d){
-
-    var i
-    var a = []
-    for(i=0; i<d.length; i++){
-        // RSN - missing value? push null
-        a.push( [d[i].When * 1000, d[i].Value] )
-    }
-
-    return a
-}
-
-function graphHwab(d){
-
-    var i
-    var a = []
-    for(i=0; i<d.length; i++){
-        a.push( [d[i].When * 1000, d[i].Exp + d[i].Delt, d[i].Exp - d[i].Delt] )
-    }
-
-    return a
 }
 

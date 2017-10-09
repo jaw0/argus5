@@ -81,7 +81,7 @@ type SummyData struct {
 	// total size = 32
 }
 type Export struct {
-	When   int64
+	Time   int64
 	Status argus.Status
 	Value  float32
 	Min    float32
@@ -154,7 +154,7 @@ func Add(file string, when int64, status argus.Status, val float64, yn float64, 
 
 func (g *graphData) add(when int64, status argus.Status, val float64, yn float64, dn float64) {
 
-	dl.Debug("add sample")
+	dl.Debug("add sample idx %d count %d", g.h.Samp.Idx, g.h.Samp.Count)
 	g.seek(g.sampStart + SampSize*int64(g.h.Samp.Idx))
 	binary.Write(g.f, binary.BigEndian, &SampleData{
 		When:   fromSeconds(when),
@@ -274,7 +274,7 @@ func (hs *HeaderSect) reset(val float32) {
 
 // ################################################################
 
-func Get(file string, which string, since int64) []*Export {
+func Get(file string, which string, since int64, width int) []*Export {
 
 	if datadir == "" {
 		dl.Debug("no datadir")
@@ -295,22 +295,26 @@ func Get(file string, which string, since int64) []*Export {
 
 	switch which {
 	case "samples":
-		return g.getSamples(since)
+		return g.getSamples(since, width)
 	case "hours":
-		return g.getHourSummy(since)
+		return g.getHourSummy(since, width)
 	case "days":
-		return g.getDaySummy(since)
+		return g.getDaySummy(since, width)
 	}
 	return nil
 }
 
-func (g *graphData) getSamples(since int64) []*Export {
+func (g *graphData) getSamples(since int64, width int) []*Export {
 
 	startRec := int(g.h.Samp.Idx)
 	if g.h.Samp.Count < g.h.Samp.NMax {
 		startRec = 0
 	}
 	numRec := int(g.h.Samp.Count)
+	if width < 1 {
+		width = numRec
+	}
+	subSamp := int(math.Ceil(float64(numRec) / float64(width)))
 
 	// estimate start pos from since
 	if since > 0 {
@@ -321,39 +325,56 @@ func (g *graphData) getSamples(since int64) []*Export {
 
 	r := NewCbufReader(g.f, g.sampStart, int64(g.h.Samp.NMax*SampSize))
 	r.Seek(int64(startRec * SampSize))
+	pt := uint32(0)
+
+	dl.Debug("start %d num %d; %+v", startRec, numRec, &g.h.Samp)
 
 	var res []*Export
 	for i := 0; i < numRec; i++ {
 		s := &SampleData{}
 		binary.Read(r, binary.BigEndian, s)
 
+		if i%subSamp != 0 {
+			continue
+		}
+
+		dl.Debug("[%d]: +%d", i, s.When-pt)
+		if s.When < pt {
+			// break // corrupt?
+		}
+
 		e := &Export{
-			When:   toSeconds(s.When),
+			Time:   toSeconds(s.When),
 			Status: argus.Status(s.Status),
 			Value:  s.Value,
 			Exp:    s.Exp,
 			Delt:   s.Delt,
 		}
 		res = append(res, e)
+		pt = s.When
 	}
 
 	return res
 }
 
-func (g *graphData) getHourSummy(since int64) []*Export {
-	return g.getSummy(&g.h.Hour, g.hourStart, since, 3600)
+func (g *graphData) getHourSummy(since int64, width int) []*Export {
+	return g.getSummy(&g.h.Hour, g.hourStart, since, width, 3600)
 }
-func (g *graphData) getDaySummy(since int64) []*Export {
-	return g.getSummy(&g.h.Day, g.dayStart, since, 24*3600)
+func (g *graphData) getDaySummy(since int64, width int) []*Export {
+	return g.getSummy(&g.h.Day, g.dayStart, since, width, 24*3600)
 }
 
-func (g *graphData) getSummy(hs *HeaderSect, start int64, since int64, spu int) []*Export {
+func (g *graphData) getSummy(hs *HeaderSect, start int64, since int64, width int, spu int) []*Export {
 
 	startRec := int(hs.Idx)
 	if hs.Count < hs.NMax {
 		startRec = 0
 	}
 	numRec := int(hs.Count)
+	if width < 1 {
+		width = numRec
+	}
+	subSamp := int(math.Ceil(float64(numRec) / float64(width)))
 
 	// estimate start pos from since
 	if since > 0 {
@@ -370,8 +391,12 @@ func (g *graphData) getSummy(hs *HeaderSect, start int64, since int64, spu int) 
 		s := &SummyData{}
 		binary.Read(r, binary.BigEndian, s)
 
+		if i%subSamp != 0 {
+			continue
+		}
+
 		e := &Export{
-			When:   toSeconds(s.When),
+			Time:   toSeconds(s.When),
 			Status: argus.Status(s.Status),
 			Value:  s.Ave,
 			Stdev:  s.Stdev,

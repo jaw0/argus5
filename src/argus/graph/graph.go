@@ -18,7 +18,7 @@ func Add(file string, when int64, status argus.Status, val float64, yn float64, 
 	graphd.Add(file, when, status, val, yn, dn)
 }
 
-func Get(file string, which string, since int64) interface{} {
+func Get(file string, which string, since int64, width int) interface{} {
 
-	return graphd.Get(file, which, since)
+	return graphd.Get(file, which, since, width)
 }

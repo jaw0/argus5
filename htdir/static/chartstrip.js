@@ -1,50 +1,49 @@
+// Copyright (c) 2017
+// Author: Jeff Weisberg <jaw @ tcp4me.com>
+// Created: 2017-Oct-08 16:32 (EDT)
+// Function: draw strip charts
+//
+// see Chart::Strip
 
 
-
-// constructor
 function ChartStrip(el, opts){
 
     this.el = el
     this.defaultOpts(opts)
     this.init()
-    this.drawBorder() // XXX
 
     return this
 }
-
-/*
-  datasets: []{ data[], xmin,xmax,ymin,ymax, opts{ tags{}, color, type, func
-
-    data[]{Time, Value, [Color, Min, Max]
-*/
 
 (function(){
     var p = ChartStrip.prototype
 
     p.defaults = {
         title_font: 	   '16px Arial, Sans-serif',
-        title_color: 	   '#000',
+        title_color: 	   '#864',
         ylabel_font: 	   '14px Arial, Sans-serif',
-        ylabel_color: 	   '#000',
+        ylabel_color: 	   '#864',
         branding: 	   'argus-monitoring.com',
         branding_font:     '10px Monospaced',
-        branding_color:    '#00E',
-        axii_color: 	   '#000',
+        branding_color:    '#8AE',
+        axii_color: 	   '#864',
+        border_color:	   '#bbb',
         limit_factor: 	   4,
         smooth_factor: 	   1, // best results: 0.75 - 1
+        plot_line_thick:   3,
         n_y_tics:          4, // aprox.
         binary:		   0,
         draw_border:       1,
         draw_grid:         1,
         draw_tics:         1,
         draw_tic_labels:   1,
-        xtic_color:        '#000',
-        ytic_color:	   '#000',
-        grid_color:	   '#000',
-        xtic_label_color:  '#000',
-        mark_label_color:  '#d00',
-        xtic_label_font:   '12px Monospaced',
-        ytic_label_color:  '#000',
+        xtic_color:        '#864',
+        ytic_color:	   '#864',
+        grid_color:	   '#864',
+        xtic_label_color:  '#864',
+        mark_label_color:  '#d44',
+        xtic_label_font:   'bold 12px Monospaced',
+        ytic_label_color:  '#864',
         ytic_label_font:   '12px Monospaced',
 
 
@@ -53,8 +52,8 @@ function ChartStrip(el, opts){
 
     p.defaultOpts = function(uopts){
         var opts = {}
-
         var i
+        // merge user supplied opts with defaults, above
         var k = Object.keys(this.defaults)
         for(i=0; i<k.length; i++){
             opts[ k[i] ] = this.defaults[ k[i] ]
@@ -76,8 +75,7 @@ function ChartStrip(el, opts){
         this.width = c.scrollWidth
         this.height = c.scrollHeight
         this.datasets = []
-        this.margin_top = this.margin_left = this.margin_right = 0
-        this.margin_bottom = 10 // XXX
+        this.margin_top = this.margin_bottom = this.margin_left = this.margin_right = 0
     }
 
     p.Add = function(data, opts){
@@ -90,11 +88,19 @@ function ChartStrip(el, opts){
         this.analyze( set )
         this.datasets.push( set )
     }
-    p.Hide = function(tag){
+    p.Hide = function(id){
+        var i
 
+        for(i=0; i<this.datasets.length; i++){
+            if( this.datasets[i].id == id ) this.datasets[i].hide = 1
+        }
     }
-    p.Show = function(tag){
+    p.Show = function(id){
+        var i
 
+        for(i=0; i<this.datasets.length; i++){
+            if( this.datasets[i].id == id ) this.datasets[i].hide = 0
+        }
     }
     p.analyze = function(dataset){
         var xmin, xmax, ymin, ymax
@@ -107,6 +113,8 @@ function ChartStrip(el, opts){
 
             if( i == 0 ) xmin = p.Time
             if( i == data.length-1 ) xmax = p.Time
+
+            //console.log("analyze: " + i + ": " + p.Time + " " + p.Value )
 
             if( dataset.opts.type == 'range' ){
                 if( i == 0 ){
@@ -155,21 +163,19 @@ function ChartStrip(el, opts){
                     dydx[i] = dyl / dxl
                 }
             }
-
-
         }
         dataset.yd_min = ymin
         dataset.yd_max = ymax
         dataset.xd_min = xmin
         dataset.xd_max = xmax
         dataset.dydx   = dydx
-
     }
 
     p.adjust = function(sets){
         var xmin, xmax, ymin, ymax
         var i,s
 
+        // determine min/max from selected datasets
         for(i=0; i<sets.length; i++){
             s = sets[i]
 
@@ -201,14 +207,20 @@ function ChartStrip(el, opts){
 
         this.xd_scale = (this.xd_max == this.xd_min) ? 1 : this.xmax / (this.xd_max - this.xd_min)
         this.yd_scale = (this.yd_max == this.yd_min) ? 1 : this.ymax / (this.yd_max - this.yd_min)
-
     }
-
 
     p.Render = function(){
         // RSN - figure out which datasets
-        var sets = this.datasets
+        var sets = []
+        var i
 
+        for(i=0; i<this.datasets.length; i++){
+            if( this.datasets[i].hide ) continue
+            sets.push( this.datasets[i] )
+        }
+
+        this.C.clearRect(0,0, this.width, this.height)
+        this.drawBorder()
         this.drawLabels()
         this.adjust(sets)
         this.ytics()
@@ -223,6 +235,7 @@ function ChartStrip(el, opts){
             } else if( sets[i].opts.type == 'range' ){
                 this.plot_range(sets[i])
             }
+            // boxes, points
         }
 
         this.drawAxii()
@@ -246,8 +259,10 @@ function ChartStrip(el, opts){
     }
 
     p.drawBorder = function(){
-        this.C.strokeStyle = '#000';
-        this.C.strokeRect(0,0, this.width, this.height)
+        if( this.opts.draw_border ){
+            this.C.strokeStyle = this.opts.border_color
+            this.C.strokeRect(0,0, this.width, this.height)
+        }
     }
 
     p.drawLabels = function(){
@@ -277,7 +292,7 @@ function ChartStrip(el, opts){
 
             this.margin_left = h + 5
         }
-
+        // url
         if( this.opts.branding ){
             this.C.fillStyle = this.opts.branding_color
             this.C.font = this.opts.branding_font
@@ -292,17 +307,6 @@ function ChartStrip(el, opts){
 
             this.margin_right = h + 5
         }
-
-    }
-
-    p.drawAxii = function(){
-        this.C.beginPath()
-        this.C.strokeStyle = this.opts.axii_color
-        this.C.lineWidth = 1
-        this.C.moveTo( this.px(-.5), this.py(this.ymax) )
-        this.C.lineTo( this.px(-.5), this.py(-.5) )
-        this.C.lineTo( this.px(this.xmax), this.py(-.5) )
-        this.C.stroke()
     }
 
     p.AsIs = function(p){
@@ -326,7 +330,7 @@ function ChartStrip(el, opts){
         var dxt, cx0, cx1, xy0, cy1
 
         C.save()
-        C.lineWidth = 2
+        C.lineWidth = this.opts.plot_line_thick
         C.lineJoin  = 'round'
         if( set.opts.shadow ){
             C.shadowColor = '#ccc'
@@ -387,7 +391,6 @@ function ChartStrip(el, opts){
 
         C.save()
         C.lineWidth = 0
-
         C.beginPath()
 
         for(i=0; i<data.length; i++){
@@ -412,7 +415,6 @@ function ChartStrip(el, opts){
             pp = p
         }
         C.restore()
-
     }
 
     p.pretty = function(y, st){
@@ -443,7 +445,7 @@ function ChartStrip(el, opts){
 	        y /= Math.pow(b,3);  st /= Math.pow(b,3);
 	        sc = 'G';
 	    }else if( ay >= Math.pow(b,2) ){
-	        y /= math.pow(b,2); st /= math.pow(b,2);
+	        y /= Math.pow(b,2); st /= Math.pow(b,2);
 	        sc = 'M';
 	    }else if( ay >= b ){
 	        y /= b;   st /= b;
@@ -638,7 +640,7 @@ function ChartStrip(el, opts){
 	}
 
     }
-    
+
     // this is good for (roughly) 10 mins - 10 yrs
     p.xtics = function(){
         if( this.xd_max == this.xd_min ) return
@@ -707,11 +709,24 @@ function ChartStrip(el, opts){
 
         if( this.opts.draw_tic_labels ){
             // move margin
-            this.margin_bottom += ht + 2
+            this.margin_bottom += ht + 5 + 4
         }
 
         this.xtics = tics
 
+    }
+
+    p.drawAxii = function(){
+        var x = Math.round(this.px(0))
+        var y = Math.round(this.py(0))
+
+        this.C.beginPath()
+        this.C.strokeStyle = this.opts.axii_color
+        this.C.lineWidth = 1
+        this.C.moveTo( x-.5, this.py(this.ymax) )
+        this.C.lineTo( x-.5, y-.5 )
+        this.C.lineTo( this.px(this.xmax), y-.5 )
+        this.C.stroke()
     }
 
     p.drawGrid = function(){
@@ -744,6 +759,7 @@ function ChartStrip(el, opts){
             if( this.opts.draw_tic_labels ){
                 C.fillStyle = this.opts.ytic_label_color
                 C.font = this.opts.ytic_label_font
+                // almost, but not exactly centered
                 C.fillText( tic.label, this.px(- tic.width)-6, y + tic.height/4)
             }
         }
@@ -779,6 +795,7 @@ function ChartStrip(el, opts){
                     C.fillStyle = this.opts.xtic_label_color
                 }
                 C.font = this.opts.xtic_label_font
+                // almost, but not exactly centered
                 C.fillText( tic.label, x - tic.width/3, this.py(0)+tic.height+5)
             }
         }
