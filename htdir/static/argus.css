@@ -53,6 +53,7 @@
 /****************************************************************/
 
 .footerargus {
+    margin-top:		25px;
     border-top:		1px solid #000;
     font-size:          75%;
     font-family:	Helvetica, Arial, sans-serif;
@@ -122,7 +123,8 @@ table#loginform {
     padding-bottom:	50px;
 }
 #graphs {
-    padding-top:	25px;
+    margin-top:		25px;
+    border:		1px solid #ddd;
 }
 
 .tophome {
@@ -305,6 +307,11 @@ th {
     font-family:		Helvetica, Arial, sans-serif;
     text-align: left;
 }
+
+.graphcontrols div {
+    float: left
+}
+
 
 /****************************************************************/
 /* animated buttons */

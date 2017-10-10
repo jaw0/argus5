@@ -1,13 +1,5 @@
 
 <div id=graphs v-if="deco.graph">
-  <table width=100%><tr>
-    <td valign=top width=65px>
-        <input type=radio name=range value=day checked>day<br>
-        <input type=radio name=range value=week>week<br>
-        <input type=radio name=range value=year>year<br>
-  </td><td>
+  <div id="graph" class="graph" data-ctls=yes v-bind:data-obj="deco.unique" style="height:200px;"> </div>
 
-    <div id="graph" class="graph" v-bind:data-obj="deco.unique" style="height:192px;"> </div>
-
-  </td></tr></table>
 </div>

@@ -12,6 +12,7 @@ import (
 
 	"argus/argus"
 	"argus/clock"
+	"argus/darp"
 	"argus/graph"
 	"argus/notify"
 	"argus/web"
@@ -330,6 +331,10 @@ func webGraphDJson(ctx *web.Context) {
 	which := ctx.Get("which")
 	width, _ := strconv.ParseInt(ctx.Get("width"), 10, 64)
 
+	if tag == "local" || tag == darp.MyId {
+		tag = ""
+	}
+
 	d["data"] = graph.Get(m.Pathname(tag, ""), which, since, int(width))
 
 	js, _ := json.MarshalIndent(d, "", "  ")
@@ -354,8 +359,9 @@ func webGraphInfo(ctx *web.Context) {
 	gi := struct {
 		Title  string
 		YLabel string
+		MyId   string
 		List   []interface{}
-	}{m.Cf.Title, m.Cf.YLabel, nil}
+	}{m.Cf.Title, m.Cf.YLabel, darp.MyId, nil}
 
 	gi.List = m.graphList("", gi.List)
 	d["graph"] = gi

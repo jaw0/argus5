@@ -4,9 +4,9 @@
 
 {[ template "_notes" . ]}
 {[ template "_info" . ]}
+<hr>
 {[ template "_darp" . ]}
 {[ template "_override" . ]}
-<hr>
 {[ template "_child" . ]}
 {[ template "_graphs" . ]}
 {[ template "_notifies" . ]}

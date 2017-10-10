@@ -154,11 +154,6 @@ func (s *Service) GraphList(label string, gl []interface{}) []interface{} {
 	defer s.mon.Lock.RUnlock()
 
 	for t, _ := range s.p.Statuses {
-		if t == "local" || t == darp.MyId {
-			t = ""
-		} else {
-			t = t + ":"
-		}
 		tags = append(tags, t)
 	}
 

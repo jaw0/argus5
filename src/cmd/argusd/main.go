@@ -91,7 +91,9 @@ func main() {
 	createGdataDirs()
 
 	// read large config
-	construct.ReadConfig(cf.Monitor_config)
+	if cf.Monitor_config != "" {
+		construct.ReadConfig(cf.Monitor_config)
+	}
 
 	// prepare web serving
 	web.Configured()

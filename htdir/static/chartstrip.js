@@ -20,13 +20,13 @@ function ChartStrip(el, opts){
 
     p.defaults = {
         title_font: 	   '16px Arial, Sans-serif',
-        title_color: 	   '#864',
+        title_color: 	   '#432',
         ylabel_font: 	   '14px Arial, Sans-serif',
-        ylabel_color: 	   '#864',
-        branding: 	   'argus-monitoring.com',
-        branding_font:     '10px Monospaced',
+        ylabel_color: 	   '#432',
+        branding: 	   '',
+        branding_font:     '10px Monospace',
         branding_color:    '#8AE',
-        axii_color: 	   '#864',
+        axii_color: 	   '#432',
         border_color:	   '#bbb',
         limit_factor: 	   4,
         smooth_factor: 	   1, // best results: 0.75 - 1
@@ -37,15 +37,14 @@ function ChartStrip(el, opts){
         draw_grid:         1,
         draw_tics:         1,
         draw_tic_labels:   1,
-        xtic_color:        '#864',
-        ytic_color:	   '#864',
-        grid_color:	   '#864',
-        xtic_label_color:  '#864',
+        xtic_color:        '#432',
+        ytic_color:	   '#432',
+        grid_color:	   '#432',
+        xtic_label_color:  '#432',
         mark_label_color:  '#d44',
-        xtic_label_font:   'bold 12px Monospaced',
-        ytic_label_color:  '#864',
-        ytic_label_font:   '12px Monospaced',
-
+        xtic_label_font:   'bold 12px Monospace',
+        ytic_label_color:  '#432',
+        ytic_label_font:   'bold 12px Monospace',
 
         comma: ','
     }
@@ -76,6 +75,8 @@ function ChartStrip(el, opts){
         this.height = c.scrollHeight
         this.datasets = []
         this.margin_top = this.margin_bottom = this.margin_left = this.margin_right = 0
+
+        this.drawLoading()
     }
 
     p.Add = function(data, opts){
@@ -93,6 +94,13 @@ function ChartStrip(el, opts){
 
         for(i=0; i<this.datasets.length; i++){
             if( this.datasets[i].id == id ) this.datasets[i].hide = 1
+        }
+    }
+    p.HideAll = function(){
+        var i
+
+        for(i=0; i<this.datasets.length; i++){
+            this.datasets[i].hide = 1
         }
     }
     p.Show = function(id){
@@ -123,7 +131,6 @@ function ChartStrip(el, opts){
                 }
                 if( p.Min < ymin ) ymin = p.Min
                 if( p.Max > ymax ) ymax = p.Max
-
             }
             if( dataset.opts.type == 'line' ){
                 if( i == 0 ) ymin = ymax = p.Value
@@ -230,12 +237,15 @@ function ChartStrip(el, opts){
         // plot graphs
         var i
         for(i=0; i<sets.length; i++){
-            if( sets[i].opts.type == 'line' ){
-                this.plot_line(sets[i])
-            } else if( sets[i].opts.type == 'range' ){
+            if( sets[i].opts.type == 'range' ){
                 this.plot_range(sets[i])
             }
-            // boxes, points
+        }
+        // boxes, points?
+        for(i=0; i<sets.length; i++){
+            if( sets[i].opts.type == 'line' ){
+                this.plot_line(sets[i])
+            }
         }
 
         this.drawAxii()
@@ -263,6 +273,45 @@ function ChartStrip(el, opts){
             this.C.strokeStyle = this.opts.border_color
             this.C.strokeRect(0,0, this.width, this.height)
         }
+    }
+
+    p.drawLoading = function(){
+        var sz = 20
+        var X = Math.ceil(this.width / sz)
+        var Y = Math.ceil(this.height / sz)
+        var x, y
+
+        this.C.save()
+        this.C.fillStyle = '#f8f8f8'
+
+        for(y=0; y<Y; y++){
+            for(x=0; x<X; x++){
+                if( (x^y)&1 ) this.C.fillRect( x*sz, y*sz, sz, sz )
+            }
+        }
+
+        this.C.strokeStyle = '#eee'
+        this.C.lineWidth = 20
+
+        this.C.beginPath()
+        this.C.moveTo(this.width * .05, this.height * .1)
+        this.C.lineTo(this.width * .05, this.height * .9)
+        this.C.lineTo(this.width * .95, this.height * .9)
+        this.C.stroke()
+
+        this.C.moveTo(this.width * .05, this.height * .8)
+        this.C.lineTo(this.width * .30, this.height * .5)
+        this.C.lineTo(this.width * .50, this.height * .6)
+        this.C.lineTo(this.width * .95, this.height * .1)
+        this.C.stroke()
+
+        this.C.fillStyle = '#eee'
+        this.C.font = 'bold 50px Monospace'
+        w = Math.round(this.C.measureText(this.opts.title).width)
+        h = Math.round(this.C.measureText('m').width * 1.25)
+        this.C.fillText(this.opts.title, Math.round((this.width - w)/2), h)
+
+        this.C.restore()
     }
 
     p.drawLabels = function(){
@@ -508,7 +557,7 @@ function ChartStrip(el, opts){
 
         if( this.opts.draw_tic_labels ){
             // move margin
-            this.margin_left += maxw + 5
+            this.margin_left += maxw + 10
         }
 
         this.ytics = tics
