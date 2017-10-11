@@ -54,18 +54,27 @@ func (rr *CbufReader) Read(p []byte) (int, error) {
 			rr.bpos = 0
 			rr.bend = 0
 		}
+		if rr.bpos == rr.bend {
+			rr.bpos = 0
+			rr.bend = 0
+		}
 
 		// read more
 		rlen := rr.sectsize - rr.sectpos
+
 		if rlen > BUFSIZE {
 			rlen = BUFSIZE
 		}
+		rlen -= rr.sectpos % BUFSIZE
+
 		r, err := rr.f.Read(rr.buf[:rlen])
 		if err != nil {
 			return nr, err
 		}
+		dl.Debug("read %d %d", rlen, r)
 		rr.bend = r
-		if rr.sectpos+int64(r) >= rr.sectsize {
+		rr.sectpos += int64(r)
+		if rr.sectpos >= rr.sectsize {
 			// wrap back around
 			rr.Seek(0)
 		}
@@ -74,7 +83,5 @@ func (rr *CbufReader) Read(p []byte) (int, error) {
 
 func (rr *CbufReader) Seek(pos int64) {
 	rr.sectpos = pos
-	rr.bpos = 0
-	rr.bend = 0
 	rr.f.Seek(rr.sectpos+rr.sectoff, 0)
 }

@@ -107,7 +107,7 @@ function ChartStrip(el, opts){
         var i
 
         for(i=0; i<this.datasets.length; i++){
-            if( this.datasets[i].id == id ) this.datasets[i].hide = 0
+            if( this.datasets[i].opts.id == id ) this.datasets[i].hide = 0
         }
     }
     p.analyze = function(dataset){
@@ -226,12 +226,13 @@ function ChartStrip(el, opts){
             sets.push( this.datasets[i] )
         }
 
+        this.margin_top = this.margin_bottom = this.margin_left = this.margin_right = 0
         this.C.clearRect(0,0, this.width, this.height)
         this.drawBorder()
         this.drawLabels()
         this.adjust(sets)
-        this.ytics()
-        this.xtics()
+        this.determineYtics()
+        this.determineXtics()
         this.setScale()
 
         // plot graphs
@@ -516,7 +517,7 @@ function ChartStrip(el, opts){
         return "" + y.toPrecision(prec+l) + sc
     }
 
-    p.ytics = function(){
+    p.determineYtics = function(){
         var min = this.yd_min
         var max = this.yd_max
         var maxw = 0
@@ -691,7 +692,7 @@ function ChartStrip(el, opts){
     }
 
     // this is good for (roughly) 10 mins - 10 yrs
-    p.xtics = function(){
+    p.determineXtics = function(){
         if( this.xd_max == this.xd_min ) return
         var range      = this.xd_max - this.xd_min
         var range_hrs  = range / 3600

@@ -69,7 +69,7 @@ func (s *Service) Config(conf *configure.CF) error {
 	s.Cf.DARP_Tags = strings.ToLower(s.Cf.DARP_Tags)
 
 	hwab := false
-	for i := argus.CLEAR; i <= argus.CRITICAL; i++ {
+	for i := argus.UNKNOWN; i <= argus.CRITICAL; i++ {
 		if !math.IsNaN(s.Cf.Maxdeviation[i]) {
 			hwab = true
 		}

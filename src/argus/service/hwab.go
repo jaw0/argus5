@@ -54,8 +54,6 @@ const (
 
 func (s *Service) HwabConfig(conf *configure.CF) error {
 
-	dl.Debug("hwab config")
-
 	h := &HWAB{
 		Created: clock.Unix(),
 		mon:     s.mon,
@@ -74,6 +72,9 @@ func (s *Service) HwabConfig(conf *configure.CF) error {
 
 	h.buckets = h.cf.Period / TWIN
 
+	h.C = make([]float32, h.buckets)
+	h.D = make([]float32, h.buckets)
+
 	return nil
 }
 
@@ -86,6 +87,7 @@ func (h *HWAB) Add(val float64) {
 
 	// resample from service.Freq -> TWIN
 
+	h.mon.Debug("hwab add")
 	now := clock.Unix()
 	if h.cstart == 0 {
 		h.cstart = now

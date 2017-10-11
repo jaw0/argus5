@@ -308,8 +308,33 @@ th {
     text-align: left;
 }
 
-.graphcontrols div {
-    float: left
+/****************************************************************/
+
+.graphcontrols {
+    padding-top:	10px;
+    padding-bottom:	5px;
+    font-size:		85%;
+}
+.graphcontrols .graphrange, .graphcontrols .graphdarp {
+    float: 		left;
+    padding-right: 	10px;
+    padding-left:  	20px;
+    font-family:	Arial, Sans-serif;
+}
+
+.graphlabels {
+    float: 		left;
+    padding-left:	20px;
+}
+
+.graphlabel {
+    padding-right: 	15px;
+    float:	  	left;
+    font-family:	Arial, Sans-serif;
+}
+
+.graphlabel:hover {
+    cursor:		pointer;
 }
 
 
