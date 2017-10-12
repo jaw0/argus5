@@ -208,7 +208,8 @@ func (t *TCP) Read(conn net.Conn) ([]byte, bool) {
 		t.S.Debug("read: %d %v", n, err)
 
 		if n > 0 {
-			res = append(res, buf...)
+
+			res = append(res, buf[:n]...)
 		}
 		if len(res) > 0 && t.Cf.ReadHow == "once" {
 			return res, false

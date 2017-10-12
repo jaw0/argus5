@@ -89,11 +89,22 @@ function ChartStrip(el, opts){
         this.analyze( set )
         this.datasets.push( set )
     }
+
+    p.Replace = function(id, data){
+
+        for(i=0; i<this.datasets.length; i++){
+            if( this.datasets[i].opts.id != id ) continue
+
+            this.datasets[i].data = data
+            this.analyze( this.datasets[i] )
+        }
+    }
+
     p.Hide = function(id){
         var i
 
         for(i=0; i<this.datasets.length; i++){
-            if( this.datasets[i].id == id ) this.datasets[i].hide = 1
+            if( this.datasets[i].opts.id == id ) this.datasets[i].hide = 1
         }
     }
     p.HideAll = function(){
@@ -118,9 +129,10 @@ function ChartStrip(el, opts){
         var data = dataset.data
         for(i=0;  i<data.length; i++){
             p = dataset.opts.data_func( data[i] )
+            if( !p ) continue
 
-            if( i == 0 ) xmin = p.Time
-            if( i == data.length-1 ) xmax = p.Time
+            if( typeof(xmin) == 'undefined' ) xmin = p.Time
+            xmax = p.Time
 
             //console.log("analyze: " + i + ": " + p.Time + " " + p.Value )
 
@@ -393,6 +405,7 @@ function ChartStrip(el, opts){
 
         for(i=0; i<data.length; i++){
             p = dfunc( data[i] )
+            if( !p ) continue
             c = cfunc( data[i], color )
 
             gap = ( pp && limit && (p.Time - pp.Time) > limit )
@@ -417,6 +430,7 @@ function ChartStrip(el, opts){
             }
             if( (c != prevcolor) || !pp ){
                 C.stroke()
+                C.beginPath()
                 C.strokeStyle = c
                 C.moveTo( this.dx(p.Time), this.dy(p.Value) )
             }
@@ -441,10 +455,10 @@ function ChartStrip(el, opts){
 
         C.save()
         C.lineWidth = 0
-        C.beginPath()
 
         for(i=0; i<data.length; i++){
             p = dfunc( data[i] )
+            if( !p ) continue
             c = cfunc( data[i], color )
 
             gap = ( pp && limit && (p.Time - pp.Time) > limit )
@@ -454,6 +468,7 @@ function ChartStrip(el, opts){
             C.fillStyle = c
 
             if( pp ){
+                C.beginPath()
                 C.moveTo( this.dx(pp.Time), this.dy(pp.Min) )
                 C.lineTo( this.dx(pp.Time), this.dy(pp.Max) )
                 C.lineTo( this.dx(p.Time),  this.dy(p.Max) )
@@ -512,6 +527,7 @@ function ChartStrip(el, opts){
         }
 
         // my castle for sprintf
+        if( !y ) y = 0
         var i = '' + Math.floor(y)
         var l = i.length
         return "" + y.toPrecision(prec+l) + sc
@@ -631,6 +647,7 @@ function ChartStrip(el, opts){
             }
 
         }else if( step >= 3600*24 ){
+            argus.log("t: " + t)
 	    while(1){
                 // search for midnight
                 lt = new Date(t * 1000)

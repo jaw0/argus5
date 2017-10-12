@@ -52,6 +52,8 @@ func init() {
 	web.Add(web.WRITE, "/api/annotate", webAnnotate)
 	web.Add(web.PRIVATE, "/api/graph", webGraphInfo)
 	web.Add(web.PRIVATE, "/api/graphd", webGraphDJson)
+	web.Add(web.PRIVATE, "/api/listdown", webDownList)
+	web.Add(web.PRIVATE, "/api/listov", webOverrideList)
 }
 
 func webJson(ctx *web.Context) {
@@ -396,6 +398,69 @@ func (m *M) graphList(label string, gl []interface{}) []interface{} {
 	}
 
 	return gl
+}
+
+// ################################################################
+
+func webDownList(ctx *web.Context) {
+
+	lock.RLock()
+	defer lock.RUnlock()
+
+	webList(ctx, isdown, true)
+}
+func webOverrideList(ctx *web.Context) {
+
+	lock.RLock()
+	defer lock.RUnlock()
+
+	webList(ctx, inoverride, false)
+}
+
+func webList(ctx *web.Context, list map[string]*M, interesting bool) {
+
+	d := make(map[string]interface{})
+
+	d["unacked"] = notify.NumActive()
+	d["hasErrors"] = argus.HasErrors()
+	d["hasWarns"] = argus.HasWarnings()
+
+	if ctx.User == nil {
+		ctx.W.WriteHeader(403)
+		return
+	}
+
+	creds := strings.Fields(ctx.User.Groups)
+
+	type export struct {
+		Obj    string
+		Status argus.Status
+	}
+	var out []export
+
+	for obj, m := range list {
+		if !argus.ACLPermitsUser(m.Cf.ACL_Page, creds) {
+			continue
+		}
+		if m.Cf.Hidden {
+			continue
+		}
+		if interesting && !m.Interesting {
+			continue
+		}
+
+		m.Lock.RLock()
+		st := m.P.OvStatus
+		m.Lock.RUnlock()
+
+		out = append(out, export{obj, st})
+	}
+
+	d["list"] = out
+
+	js, _ := json.MarshalIndent(d, "", "  ")
+	ctx.W.Header().Set("Content-Type", "application/json; charset=utf-8")
+	ctx.W.Write(js)
 }
 
 // ################################################################

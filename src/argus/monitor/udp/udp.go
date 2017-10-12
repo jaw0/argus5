@@ -195,7 +195,7 @@ func (t *UDP) Read(conn *net.UDPConn) ([]byte, bool) {
 		return nil, true
 	}
 
-	return buf, false
+	return buf[:n], false
 }
 
 func (t *UDP) Connect() (*net.UDPConn, bool) {

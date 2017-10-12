@@ -61,11 +61,17 @@ func (rr *CbufReader) Read(p []byte) (int, error) {
 
 		// read more
 		rlen := rr.sectsize - rr.sectpos
+		//dl.Debug("size %d - pos %d = rlen %d", rr.sectsize, rr.sectpos, rlen)
 
 		if rlen > BUFSIZE {
 			rlen = BUFSIZE
 		}
-		rlen -= rr.sectpos % BUFSIZE
+
+		if rr.sectpos&^(BUFSIZE-1) != (rr.sectpos+rlen)&^(BUFSIZE-1) {
+			// align
+			rlen -= (rr.sectpos + rlen) & (BUFSIZE - 1)
+			//dl.Debug("aligned %d", rlen)
+		}
 
 		r, err := rr.f.Read(rr.buf[:rlen])
 		if err != nil {

@@ -67,6 +67,7 @@ func (m *M) commonUpdate(prevOv argus.Status) {
 
 	m.WebTime = clock.Nano()
 	m.setAlarm()
+	go m.updateIsDown(m.P.OvStatus) // needs a different lock
 	m.loggitL("TRANSITION", m.P.Reason)
 	dl.Verbose("TRANSITION [%s -> %s] %s (%s)", prevOv, m.P.OvStatus, m.Cf.Unique, m.P.Reason)
 	m.statsTransition()
@@ -75,8 +76,7 @@ func (m *M) commonUpdate(prevOv argus.Status) {
 	m.maybeNotify(prevOv)
 
 	// RSN - audit hook
-	// if up + ov + auto -> remove
-	// if up + notify + autoack -> ack
+	// RSN - if up + ov + auto -> remove
 
 	m.andUpwards()
 }
@@ -88,7 +88,29 @@ func (m *M) commonUpdateNoChange() {
 	m.statsTransition()
 	m.determineSummary()
 	m.setAlarm()
+	go m.updateIsDown(m.P.OvStatus)
 	m.andUpwards()
+}
+
+func (m *M) updateIsDown(ovstatus argus.Status) {
+
+	lock.Lock()
+	defer lock.Unlock()
+
+	// keep track of all down + overridden elements - for reporting
+	switch ovstatus {
+	case argus.UNKNOWN, argus.CLEAR, argus.OVERRIDE, argus.DEPENDS:
+		delete(isdown, m.Cf.Unique)
+	default:
+		isdown[m.Cf.Unique] = m
+	}
+
+	switch ovstatus {
+	case argus.OVERRIDE:
+		inoverride[m.Cf.Unique] = m
+	default:
+		delete(inoverride, m.Cf.Unique)
+	}
 }
 
 func (m *M) andUpwards() {

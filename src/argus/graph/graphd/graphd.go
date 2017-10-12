@@ -320,7 +320,9 @@ func (g *graphData) getSamples(since int64, width int) []*Export {
 	if since > 0 {
 		minago := int((clock.Unix() - since + 59) / 60)
 		startRec += int(g.h.Samp.NMax) - minago
+		startRec %= int(g.h.Samp.NMax)
 		numRec = minago
+		dl.Debug("since: idx %d, minago %d, start %d, num %d", g.h.Samp.Idx, minago, startRec, numRec)
 	}
 
 	r := NewCbufReader(g.f, g.sampStart, int64(g.h.Samp.NMax*SampSize))
@@ -333,6 +335,10 @@ func (g *graphData) getSamples(since int64, width int) []*Export {
 	for i := 0; i < numRec; i++ {
 		s := &SampleData{}
 		binary.Read(r, binary.BigEndian, s)
+
+		if since > 0 && toSeconds(s.When) <= since {
+			continue
+		}
 
 		if i%subSamp != 0 {
 			continue
@@ -380,6 +386,7 @@ func (g *graphData) getSummy(hs *HeaderSect, start int64, since int64, width int
 	if since > 0 {
 		uago := (int(clock.Unix()-since) + spu - 1) / spu
 		startRec += int(hs.NMax) - uago
+		startRec %= int(g.h.Samp.NMax)
 		numRec = uago
 	}
 
@@ -390,6 +397,10 @@ func (g *graphData) getSummy(hs *HeaderSect, start int64, since int64, width int
 	for i := 0; i < numRec; i++ {
 		s := &SummyData{}
 		binary.Read(r, binary.BigEndian, s)
+
+		if since > 0 && toSeconds(s.When) <= since {
+			continue
+		}
 
 		if i%subSamp != 0 {
 			continue

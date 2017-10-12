@@ -22,6 +22,8 @@ var dl = diag.Logger("monel")
 
 var lock sync.RWMutex
 var byname = make(map[string]*M)
+var isdown = make(map[string]*M)
+var inoverride = make(map[string]*M)
 var NMonel = expvar.NewInt("objects")
 
 // Service, Group, Alias
@@ -119,6 +121,7 @@ type M struct {
 	Friendlyname string // ""
 	Depends      []string
 	Notifies     []*notify.N
+	Interesting  bool
 }
 
 func New(me Moneler, parent *M) *M {
@@ -202,6 +205,8 @@ func (m *M) Recycle(cascade bool) {
 
 	lock.Lock()
 	delete(byname, m.Cf.Unique)
+	delete(isdown, m.Cf.Unique)
+	delete(inoverride, m.Cf.Unique)
 	NMonel.Set(int64(len(byname)))
 	lock.Unlock()
 
@@ -283,6 +288,8 @@ func (m *M) GetResult() string {
 
 func (m *M) DoneConfig() {
 
+	m.determineInteresting()
+
 	for _, child := range m.Children {
 		child.DoneConfig()
 	}
@@ -292,12 +299,44 @@ func (m *M) DoneConfig() {
 	m.sortChildren()
 	m.resolveDepends()
 
-	// determine interestingness
-
 	m.Me.DoneConfig()
 	m.determineStatus()
 	m.determineSummary()
 	m.setAlarm()
+}
+
+func (m *M) determineInteresting() {
+
+	ip := false
+
+	if len(m.Parent) > 0 && m.Parent[0].Interesting {
+		// He smiled a kind of sickly smile and curled up on the floor
+		// And the subsequent proceedings interested him no more.
+		//   -- Francis Bret Harte, The Society upon the Stanislaus
+		return
+	}
+	// Thank you,' said Alice, `it's very interesting.
+	//   -- Alice in Wonderland
+	if m.Cf.Countstop {
+		ip = true
+	}
+	if m.Cf.Gravity == argus.GRAV_UP {
+		ip = true
+	}
+	if len(m.Children) == 0 {
+		ip = true
+	}
+	if m.Cf.Nostatus {
+		ip = false
+	}
+	if m.Cf.Passive {
+		ip = false
+	}
+	if m.Cf.Hidden {
+		ip = false
+	}
+
+	m.Interesting = ip
 }
 
 func (m *M) sortChildren() {

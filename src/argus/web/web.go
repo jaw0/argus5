@@ -134,6 +134,7 @@ func (ctx *Context) Get(name string) string {
 // ################################################################
 
 func httpAdapt(authreq int, f WebHandlerFunc) func(http.ResponseWriter, *http.Request) {
+
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		r.ParseForm()
@@ -146,6 +147,7 @@ func httpAdapt(authreq int, f WebHandlerFunc) func(http.ResponseWriter, *http.Re
 			if x := recover(); x != nil {
 				dl.Bug("http panic: %v", x)
 			}
+
 			user := "[nouser]"
 			if ctx.User != nil {
 				user = ctx.User.Name

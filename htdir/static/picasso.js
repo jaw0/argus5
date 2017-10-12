@@ -12,6 +12,8 @@ var colors = ["#897fd9","#80ab51","#754192","#4bac73",
               "#724f66","#81aea3","#9d734b","#698599",
               "#b59e7d","#345d5c","#6e7d63","#425439"]
 
+var status_colors = [ null, null, '#88DDFF','#EEEE00', '#FFBB44', '#FF6666', '#BBBBBB', null]
+
 var gcount = 0
 
 function configure_graphs(){
@@ -48,6 +50,9 @@ function Graph(el, obj, which, darp, ctls, width){
 
     gcount ++
     this.fetchGraphInfo()
+
+    var g = this
+    setInterval( function(){ g.periodicUpdate() }, 300000 )
     graphd = this
     return this
 }
@@ -208,6 +213,16 @@ function Graph(el, obj, which, darp, ctls, width){
         return which + " " + darp + " " + obj
     }
 
+    p.statusColor = function(p, color){
+        return status_colors[ p.Status ] || color
+    }
+
+    p.graphHwab = function(p){
+        if( !p || !p.Exp || !p.Delt ) return
+
+        return {Time: p.Time, Min: p.Exp - p.Delt, Max: p.Exp + p.Delt}
+    }
+
     p.selectAll = function(){
         var i
         var L = this.info.List
@@ -218,7 +233,7 @@ function Graph(el, obj, which, darp, ctls, width){
     }
 
     p.updateSelection = function(){
-        var i, t
+        var i, t, id
         var L = this.info.List
         var which = this.select.which
         var obj, darp
@@ -234,11 +249,14 @@ function Graph(el, obj, which, darp, ctls, width){
                 darp = L[i].Tags[t]
                 if( ! this.select.darp[ darp ] ) continue
 
-                // RSN - only fetch if needed
-                this.fetchData(which, darp, obj)
-                this.selected[ this.Id(which, darp, obj) ] = 1
+                // fetch it, if we don't already have it
+                id = this.Id(which, darp, obj)
+                if( ! this.datasets[id] )
+                    this.fetchData(which, darp, obj)
+                this.selected[ id ] = 1
             }
         }
+        this.maybeBuild()
     }
 
     p.fetchData = function(which, darp, obj){
@@ -259,17 +277,42 @@ function Graph(el, obj, which, darp, ctls, width){
     p.gotData = function(which, darp, obj, r){
         var id = this.Id(which, darp, obj)
         delete this.pending[id]
-        this.datasets[id] = r.data
+        this.datasets[id] = { data: r.data, which: which, darp: darp, obj: obj }
 
         // add to chart
         this.cs.Add( r.data, {
             id:		id,
             color:	this.objs[obj].color,
+            color_func: this.statusColor,
             smooth:	1,
             type:	'line',
             shadow:	1
             // ...
         })
+
+        // add hwab, 'supplement ' + id
+        // or min/max, ave/std?
+
+        if( r.data[ r.data.length - 1].Delt ){
+            argus.log("add hwab")
+            this.cs.Add( r.data, {
+                id:		'supplement ' + id,
+                color:		'#ddddff',
+                data_func:	this.graphHwab,
+                smooth:		1,
+                type:		'range',
+                shadow:		1
+            })
+        }else if( r.data[ r.data.length - 1].Max ){
+            argus.log("add min/max")
+            this.cs.Add( r.data, {
+                id:		'supplement ' + id,
+                color:		'#ddeeee',
+                smooth:		1,
+                type:		'range',
+                shadow:		1
+            })
+        }
 
         this.maybeBuild()
     }
@@ -295,9 +338,67 @@ function Graph(el, obj, which, darp, ctls, width){
         for(i=0; i<sel.length; i++){
             argus.log("selected: " + sel[i] )
             this.cs.Show( sel[i] )
+
+            if( sel.length == 1 )
+                this.cs.Show( 'supplement ' + sel[i] )
         }
 
         this.cs.Render()
     }
+
+    p.periodicUpdate = function(){
+        var i, id, ids, set, data, maxt, pt, dt
+        var g = this
+        var now = (new Date()).valueOf / 1000
+
+        ids = Object.keys(this.datasets)
+        for(i=0; i<ids.length; i++){
+            id = ids[i]
+            set = this.datasets[id]
+            data = set.data
+            maxt = 0
+
+            if( data.length > 1 ){
+                // predict when more data will be added
+                maxt = data[ data.length - 1].Time
+                pt   = data[ data.length - 2].Time
+                argus.log("maxt " + maxt)
+                dt = maxt - pt
+
+                if( maxt + dt > now ) continue
+            }
+
+            (function(id){
+                $.ajax({
+                    dataType: "json",
+                    url: '/api/graphd',
+                    data: {obj: set.obj, darp: set.darp, which: set.which, since: maxt, width: this.width},
+                    success: function(r){ g.gotUpdate(id, r)},
+                    error:   function(r){ argus.log("update graph failed") }
+                });
+            })(id)
+        }
+    }
+
+    p.gotUpdate = function(id, r){
+        if( !r.data ) return
+        argus.log("got update " + id + " len: " + r.data.length)
+        var set = this.datasets[id]
+        var data = set.data
+        var i
+
+        // add/trim dataset
+        for(i=0; i<r.data.length; i++){
+            argus.log("+ " + r.data[i].Time )
+            data.push( r.data[i] )
+            data.shift()
+        }
+        // update graph data
+        this.cs.Replace( id, data )
+        this.cs.Replace( 'supplement ' + id, data ) // will be ignored if there is no supplement
+        // re-render?
+        if( this.selected[id] ) this.maybeBuild()
+    }
+
 
 })()
