@@ -1,0 +1,9 @@
+
+
+<h3>Down</h3>
+<table cellspacing=0 id=listdown>
+  <tr v-for="m in list">
+    <td><a v-bind:href="m.PageUrl" v-bind:class="[m.OvStatus_sev]">{{ m.Unique }}</a></td>
+  </tr>
+</table>
+

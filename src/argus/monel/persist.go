@@ -128,7 +128,7 @@ func (m *M) restore(pm map[string]interface{}) {
 			id = int(idi)
 		}
 
-		n := notify.Load(m.NotifyCf, id)
+		n := notify.Load(m.NotifyCf, id, m)
 		if n != nil {
 			m.Notifies = append(m.Notifies, n)
 		}

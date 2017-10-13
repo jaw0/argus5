@@ -164,7 +164,7 @@ func (m *M) maybeNotify(prevOv argus.Status) {
 		Result:       m.P.Result,
 		OvStatus:     st,
 		PrevOv:       prevOv,
-	})
+	}, m)
 
 	if notif != nil {
 		m.Notifies = append(m.Notifies, notif)

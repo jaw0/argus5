@@ -49,7 +49,7 @@ func saveIdNo() {
 
 // ################################################################
 
-func Load(conf *Conf, idno int) *N {
+func Load(conf *Conf, idno int, mon Remover) *N {
 
 	if conf == nil {
 		dl.Debug("no conf - skipping")
@@ -57,7 +57,8 @@ func Load(conf *Conf, idno int) *N {
 	}
 
 	n := &N{
-		cf: conf,
+		cf:  conf,
+		mon: mon,
 	}
 
 	cf := config.Cf()

@@ -310,6 +310,39 @@ th {
 
 /****************************************************************/
 
+#listnotify {
+    font-size:		80%;
+}
+#listnotify tr {
+    padding-top:	5px;
+    padding-bottom:	5px;
+}
+#listnotify td {
+    padding-left:	5px;
+    padding-right:	5px;
+    border-top:		2px solid #fff;
+}
+#listnotify .button {
+    font-size:		80%;
+    padding: 		1px;
+}
+
+a.nbutton {
+    font: 		14px "Trebuchet MS", Arial, Helvetica, sans-serif;
+    font-size:		80%;
+    border-radius:	2px;
+    -moz-border-radius:	2px;
+    color: 		#446;
+    background-color:	rgba(255,255,255, .5);
+
+    border:		1px outset #bbb;
+    padding:		1px;
+    cursor: 		pointer;
+}
+
+
+/****************************************************************/
+
 .graphcontrols {
     padding-top:	10px;
     padding-bottom:	5px;

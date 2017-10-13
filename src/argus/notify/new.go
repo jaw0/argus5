@@ -12,14 +12,15 @@ import (
 	"argus/clock"
 )
 
-func New(ncf *NewConf) *N {
+func New(ncf *NewConf, mon Remover) *N {
 
 	if ncf.OvStatus > argus.CRITICAL {
 		return nil
 	}
 
 	n := &N{
-		cf: ncf.Conf,
+		cf:  ncf.Conf,
+		mon: mon,
 		p: Persist{
 			IdNo:         nextIdNo(),
 			Created:      clock.Unix(),

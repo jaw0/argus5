@@ -16,14 +16,16 @@ var status_colors = [ null, null, '#88DDFF','#EEEE00', '#FFBB44', '#FF6666', '#B
 
 var gcount = 0
 
-function configure_graphs(){
+// graphs are just a div with a set of attributes
 
-    $('.graph').each(function(){
+function configure_graphs(cname){
+
+    $('.' + cname).each(function(){
         var el    = $(this)
         var obj   = el.attr("data-obj")
         var which = el.attr("data-which") || 'samples'
         var darp  = el.attr("data-darp")  // empty == all
-        var ctls  = el.attr("data-ctls")
+        var ctls  = el.attr("data-ctls")  // should we display controls?
 
         var wid   = el.width()
         new Graph(el.get(0), obj, which, darp, ctls, wid)
@@ -35,10 +37,10 @@ var graphd	// for debugging
 function Graph(el, obj, which, darp, ctls, width){
 
     argus.log("new graph " + obj)
-    this.el    = el
-    this.obj   = obj
-    this.ctls  = ctls   // show controls
-    this.width = width
+    this.el       = el
+    this.obj      = obj
+    this.ctls     = ctls
+    this.width    = width
     this.pending  = {}
     this.datasets = {}
     this.grctlid  = 'grctl' + gcount

@@ -8,6 +8,4 @@
 {[define "script" ]}
   var datasrc = "\/\/" + urlhost + "/api/page"
   var dataarg = {obj: objname}
-
-  argus_page()
 {[end]}

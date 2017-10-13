@@ -449,3 +449,19 @@ func (m *M) loggitL(tag string, msg string) {
 }
 
 // ################################################################
+
+func (m *M) RemoveNotify(remove *notify.N) {
+
+	m.Lock.Lock()
+	defer m.Lock.Unlock()
+
+	for i, n := range m.Notifies {
+		if n != remove {
+			continue
+		}
+
+		copy(m.Notifies[i:], m.Notifies[i+1:])
+		m.Notifies = m.Notifies[:len(m.Notifies)-1]
+		break
+	}
+}

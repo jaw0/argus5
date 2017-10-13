@@ -631,7 +631,7 @@ function ChartStrip(el, opts){
             while(1){
                 // search for 1jan
                 lt = new Date(t * 1000)
-                if( (lt.getMonth() == 0) && (lt.getDate() == 1) && (lt.getHour() == 0) ) break
+                if( (lt.getMonth() == 0) && (lt.getDate() == 1) && (lt.getHours() == 0) ) break
                 // jump fwd: 1M, 1D, or 1H
                 dt = (lt.getMonth() == 11) ? 24*30 : (lt.getDate() < 30) ? 24 : 1
                 t += dt * 3600
@@ -641,7 +641,7 @@ function ChartStrip(el, opts){
 	    while(1){
 	        // find 1st of mon
                 lt = new Date(t * 1000)
-                if( (lt.getDate() == 1) && (lt.getHour() == 0) ) break
+                if( (lt.getDate() == 1) && (lt.getHours() == 0) ) break
                 dt = (lt.getDate() < 28) ? 24 : 1
                 t += dt * 3600
             }
@@ -651,7 +651,7 @@ function ChartStrip(el, opts){
 	    while(1){
                 // search for midnight
                 lt = new Date(t * 1000)
-                if( lt.getHour() == 0 ) break
+                if( lt.getHours() == 0 ) break
 	        t += 3600;
 	    }
         }

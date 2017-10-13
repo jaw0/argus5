@@ -96,25 +96,46 @@ func webList(ctx *web.Context) {
 
 	canAck := argus.ACLPermitsUser(globalDefaults.ACL_NotifyAck, creds)
 
+	type schwartz struct {
+		n *N
+		s int64
+	}
+
 	lock.RLock()
-	var all []*N
+	var all []schwartz
 	for _, n := range byid {
-		all = append(all, n)
+		n.lock.RLock()
+		s := n.p.Created
+		if n.p.IsActive {
+			s /= 2
+		}
+		n.lock.RUnlock()
+		all = append(all, schwartz{n, s})
 	}
 	lock.RUnlock()
 
-	sort.Slice(all, func(i, j int) bool { return all[i].p.Created < all[j].p.Created })
+	// order by IsActive, Created
+	sort.Slice(all, func(i, j int) bool { return all[i].s < all[j].s })
+
+	d := make(map[string]interface{})
+
+	d["unacked"] = NumActive()
+	d["hasErrors"] = argus.HasErrors()
+	d["hasWarns"] = argus.HasWarnings()
 
 	var res []export
 
-	for _, n := range all {
+	for i, _ := range all {
+		n := all[i].n
 		n.lock.RLock()
 		res = append(res, export{n.p.IdNo, n.p.Created * SECSNANO, n.p.IsActive,
 			canAck, n.p.OvStatus, n.p.Message, n.p.Unique})
 		n.lock.RUnlock()
 	}
 
-	js, _ := json.MarshalIndent(res, "", "  ")
+	d["list"] = res
+
+	js, _ := json.MarshalIndent(d, "", "  ")
 	ctx.W.Header().Set("Content-Type", "application/json; charset=utf-8")
 	ctx.W.Write(js)
 

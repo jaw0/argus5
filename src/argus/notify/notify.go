@@ -7,14 +7,22 @@ package notify
 
 import (
 	"expvar"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
 	"argus/argus"
 	"argus/clock"
+	"argus/config"
 	"argus/configure"
 	"argus/diag"
+	"argus/sched"
 )
+
+type Remover interface {
+	RemoveNotify(*N)
+}
 
 type GlobalConf struct {
 	Mail_From        string
@@ -23,6 +31,7 @@ type GlobalConf struct {
 	ACL_NotifyDetail string
 	ACL_NotifyList   string
 	ACL_NotifyAck    string
+	Notify_Discard   int64 `cfconv:"timespec"`
 }
 
 type NewConf struct {
@@ -92,6 +101,7 @@ type LogDat struct {
 
 type N struct {
 	cf   *Conf
+	mon  Remover
 	lock sync.RWMutex
 	p    Persist
 }
@@ -112,6 +122,7 @@ var globalDefaults = GlobalConf{
 	ACL_NotifyDetail: "staff root",
 	ACL_NotifyList:   "staff root",
 	ACL_NotifyAck:    "staff root",
+	Notify_Discard:   30 * 24 * 3600,
 }
 var NotifyCfDefaults = Conf{
 	Renotify:      300,
@@ -189,7 +200,14 @@ func nextIdNo() int {
 func Init() {
 	loadIdNo()
 	go worker()
+
+	sched.NewFunc(&sched.Conf{
+		Freq: 3600,
+		Text: "notify clean up",
+		Auto: true,
+	}, janitor)
 }
+
 func Stop() {
 
 	lock.RLock()
@@ -257,14 +275,73 @@ func (n *N) statusChange() {
 	n.maybeAck()
 }
 
+func (n *N) discard() {
+
+	delete(byid, n.p.IdNo)
+	delete(actives, n.p.IdNo)
+	NActive.Set(int64(len(actives)))
+
+	go n.mon.RemoveNotify(n)
+}
+
 func notifMaintenance() {
+
+	now := clock.Unix()
 
 	lock.Lock()
 	defer lock.Unlock()
 
+	// resend? timeout?
 	for _, n := range actives {
+		if n.cf.UnAck_Timeout > 0 && n.p.Created+n.cf.UnAck_Timeout < now {
+			n.ack("timeout")
+			continue
+		}
 		n.maybeQueue()
 	}
 
-	// RSN - delete old?
+	// discard old
+	for _, n := range byid {
+
+		if globalDefaults.Notify_Discard > 0 && n.p.Created+globalDefaults.Notify_Discard < now {
+			n.discard()
+		}
+	}
+}
+
+func janitor() {
+	cleanOldFiles()
+}
+
+func cleanOldFiles() {
+
+	cf := config.Cf()
+	if cf.Datadir == "" {
+		return
+	}
+	dir := cf.Datadir + "/notify"
+
+	f, err := os.Open(dir)
+	if err != nil {
+		dl.Verbose("cannot open notify dir: %v", err)
+		return
+	}
+
+	all, _ := f.Readdirnames(-1)
+	f.Close()
+
+	for _, id := range all {
+		if id[0] == '.' {
+			continue
+		}
+
+		idno, _ := strconv.Atoi(id)
+
+		if byid[idno] != nil {
+			continue
+		}
+
+		dl.Debug("removing old orphaned file '%s'", id)
+		os.Remove(dir + "/" + id)
+	}
 }

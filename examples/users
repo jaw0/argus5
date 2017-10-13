@@ -1,0 +1,4 @@
+
+# users are no longer configured by editing a file
+# see argusctl setuser
+

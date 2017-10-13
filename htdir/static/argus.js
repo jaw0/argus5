@@ -28,20 +28,45 @@ var argus = {
 var MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 var DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
+var gizmoConfig = [
+    { el: 'listnotify',   url: '/api/listnotify', args: {}, freq: 3000 },
+    { el: 'listdown',     url: '/api/listdown',   args: {}, freq: 3000 },
+    { el: 'listoverride', url: '/api/listov',     args: {}, freq: 3000 }
+]
+
+
 var webtime = 0
 var jsondata
 var jsonnotify
+var gizmo = {}
 
 console.log("argusjs")
 
 function argus_onload(){
     argus.log("argus onload")
+
+    var i, g, gx
+    for(i=0; i<gizmoConfig.length; i++){
+        g = gizmoConfig[i]
+        if( document.getElementById( g.el ) ){
+            gx = new Gizmo('#' + g.el, g.url, g.args, g.freq)
+            gizmo[ g.el ] = gx
+        }
+    }
+
+    if( datasrc ){
+        build_page()
+    }
+
+    // configure stand-alone graphs:
+    configure_graphs('graph')
+    // page graphs are configured below, after the page data is fetched
 }
 
 function argus_page(){
 
     argus.log("page loaded")
-    build_page()
+    //build_page()
 }
 
 function build_page(){
@@ -117,18 +142,86 @@ function build_page_ok(d){
         data: jsondata
     })
 
-    configure_topnav_buttons()
-    configure_graphs()
+    configure_graphs('pagegraph')
     setInterval( build_page, 30000 )
 }
 
 // ****************************************************************
 
-function configure_topnav_buttons(){
+function Gizmo(el, url, urlargs, hasmeta, freq){
 
-    //argus.log("conf tnav buttons " + $('#overridebutton'))
+    argus.log("new gizmo")
+    this.el      = el
+    this.url     = url
+    this.urlArgs = urlargs || {}
+    this.hasMeta = hasmeta
 
+    this.init()
+
+    var g = this
+//    setInterval( function(){ g.periodicUpdate() }, freq )
+    return this
 }
+
+(function(){
+    var p = Gizmo.prototype
+
+    p.init = function(){
+        this.fetchData()
+    }
+
+    p.configure = function(){
+
+    }
+
+    p.FetchNow = function(){
+        delete this.urlArgs.since
+        if(this.hasMeta) this.data.webtime = 0
+        this.fetchData()
+    }
+
+    p.fetchData = function(){
+
+        spinner_on()
+        var g = this
+
+        argus.log("gizmo fetch " + this.url)
+
+        jQuery.ajax({
+            dataType: "json",
+            url: this.url,
+            data: this.urlArgs,
+            success: function(r){ g.gotData(r) },
+            error: ajax_fail,
+        });
+    }
+
+    p.gotData = function(r){
+        spinner_off()
+
+        if( this.hasMeta ) process_meta(r)
+        convert_data(r)
+
+        if( r.webtime ) this.urlArgs.since = r.webtime
+
+        if( this.data ){
+            copy_data(r, this.data)
+            return
+        }
+
+        this.data = r
+        this.app = new Vue({
+            el: this.el,
+            data: this.data
+        })
+
+        this.configure()
+    }
+
+})()
+
+// ****************************************************************
+
 
 // ****************************************************************
 function override_init(){
@@ -368,15 +461,31 @@ function notify_ack(idno){
     argus.log("ack: " + idno)
     notify_dismiss()
 
+    // update notify list gizmo?
+    if( gizmo['listnotify'] ){
+        var n = gizmo['listnotify'].data.list
+        var i;
+
+        for(i=0; i<n.length; i++){
+            if( idno == n[i].IdNo ){
+                // the button will dissappear
+                n[i].IsActive = false
+            }
+        }
+    }
+
     var args = { idno: idno, xtok: token }
 
-    $.ajax({
-        type:	    'POST',
-        url:	    '/api/notifyack',
-        data:       args,
-        dataType:   'json',
-        timeout:    5000
-    });
+   $.ajax({
+       type:	   'POST',
+       url:	   '/api/notifyack',
+       data:       args,
+       dataType:   'json',
+       timeout:    5000,
+       success:    function(){ gizmo['listnotify'].FetchNow() },
+       error:      function(){ gizmo['listnotify'].FetchNow() }
+   });
+
 }
 
 
@@ -538,8 +647,10 @@ function convert_data(o){
             }
             if( c > 1500000000000000000 ){
                 o[k + "_fmt"] = date_format(c/1000000)
+                o[k + "_sht"] = date_short(c/1000000)
             }else if( c > 1500000000 ){
                 o[k + "_fmt"] = date_format(c*1000)
+                o[k + "_sht"] = date_short(c*1000)
             }
         }
         if( k == "Unique" ){

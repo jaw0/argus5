@@ -1,0 +1,13 @@
+
+{[define "content"]}
+<table>
+  <tr><td valign=top>
+        {[template "_listnotify"]}
+  </td><td valign=top>
+        {[template "_listdown"]}
+  </td><td valign=top>
+        {[template "_listoverride"]}
+  </td></tr>
+</table>
+{[end]}
+

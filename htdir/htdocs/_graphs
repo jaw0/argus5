@@ -1,5 +1,5 @@
 
 <div id=graphs v-if="deco.graph">
-  <div id="graph" class="graph" data-ctls=yes v-bind:data-obj="deco.unique" style="height:200px;"> </div>
+  <div id="graph" class="pagegraph" data-ctls=yes v-bind:data-obj="deco.unique" style="height:200px;"> </div>
 
 </div>

@@ -7,6 +7,7 @@ package monel
 
 import (
 	"encoding/json"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -404,15 +405,9 @@ func (m *M) graphList(label string, gl []interface{}) []interface{} {
 
 func webDownList(ctx *web.Context) {
 
-	lock.RLock()
-	defer lock.RUnlock()
-
 	webList(ctx, isdown, true)
 }
 func webOverrideList(ctx *web.Context) {
-
-	lock.RLock()
-	defer lock.RUnlock()
 
 	webList(ctx, inoverride, false)
 }
@@ -432,13 +427,30 @@ func webList(ctx *web.Context, list map[string]*M, interesting bool) {
 
 	creds := strings.Fields(ctx.User.Groups)
 
+	type X struct {
+		m *M
+		T int64
+	}
+
+	var all []X
+	lock.RLock()
+	for _, m := range list {
+		m.Lock.RLock()
+		all = append(all, X{m, m.P.TransTime})
+		m.Lock.RUnlock()
+	}
+	lock.RUnlock()
+
+	sort.Slice(all, func(i, j int) bool { return all[i].T > all[j].T })
+
 	type export struct {
 		Obj    string
 		Status argus.Status
 	}
 	var out []export
 
-	for obj, m := range list {
+	for i, _ := range all {
+		m := all[i].m
 		if !argus.ACLPermitsUser(m.Cf.ACL_Page, creds) {
 			continue
 		}
@@ -453,7 +465,7 @@ func webList(ctx *web.Context, list map[string]*M, interesting bool) {
 		st := m.P.OvStatus
 		m.Lock.RUnlock()
 
-		out = append(out, export{obj, st})
+		out = append(out, export{m.Cf.Unique, st})
 	}
 
 	d["list"] = out
