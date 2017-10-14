@@ -212,6 +212,8 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 		fval, err = doExpr(s.expr, fval)
 		if err != nil {
 			s.Debug("invalid expr '%s': %v", s.Cf.Expr, err)
+			s.FailNow("invalid expr")
+			return "", 0, "skip"
 		}
 	}
 

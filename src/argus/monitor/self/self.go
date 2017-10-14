@@ -19,6 +19,16 @@ type Conf struct {
 	Param string
 }
 
+/*
+  some interesting params:
+
+    services
+    objects
+    notifies
+    monrate
+    idlerate
+
+*/
 type Self struct {
 	S  *service.Service
 	Cf Conf

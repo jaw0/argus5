@@ -33,6 +33,10 @@ func (m *M) SetOverride(ov *argus.Override) {
 	m.WebTime = clock.Nano()
 	m.Lock.Unlock()
 
+	lock.Lock()
+	inoverride[m.Cf.Unique] = m
+	lock.Unlock()
+
 	m.ovPropDown()
 	m.ReUpdate("override")
 	m.setOverrideExpire()
@@ -83,6 +87,10 @@ func (m *M) DelOverride(user string, reason string) {
 	m.P.Override = nil
 	m.WebTime = clock.Nano()
 	m.Lock.Unlock()
+
+	lock.Lock()
+	delete(inoverride, m.Cf.Unique)
+	lock.Unlock()
 
 	m.ovPropDown()
 	m.ReUpdate("override")

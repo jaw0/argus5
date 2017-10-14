@@ -26,7 +26,7 @@ func ScheduleAlways(val string) *Schedule {
 	return &Schedule{[]ScheduleItem{{-1, 0, 2400, val}}}
 }
 
-func (s *Schedule) ResultNow() string {
+func (s *Schedule) ResultNow(def string) string {
 
 	now := time.Now()
 	dow := int(now.Weekday())
@@ -49,11 +49,11 @@ func (s *Schedule) ResultNow() string {
 
 		return r.Val
 	}
-	return ""
+	return def
 }
 
-func (s *Schedule) PermitNow() bool {
-	return CheckBool(s.ResultNow())
+func (s *Schedule) PermitNow(def string) bool {
+	return CheckBool(s.ResultNow(def))
 }
 
 func (s *Schedule) Append(dow int, start int, end int, value string) {

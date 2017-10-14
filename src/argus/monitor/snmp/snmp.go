@@ -214,6 +214,7 @@ func (t *SNMP) Start(s *service.Service) {
 
 	if t.oid == "" {
 		if !t.autoDiscover(client) {
+			s.Fail("cannot discover oid")
 			return
 		}
 	}
@@ -251,7 +252,7 @@ func (t *SNMP) Start(s *service.Service) {
 func (t *SNMP) autoDiscover(client *gosnmp.GoSNMP) bool {
 
 	for _, oid := range t.idxOids {
-		dl.Debug("audodiscovery %s", oid)
+		t.S.Debug("audodiscovery check: %s", oid)
 		resp, _ := getall(oid, client)
 		if t.searchDescr(resp) {
 			return true
@@ -280,6 +281,7 @@ func (t *SNMP) searchDescr(resp []gosnmp.SnmpPDU) bool {
 	for _, pdu := range resp {
 		val := pduToString(&pdu)
 		dl.Debug("resp: %s = %s", pdu.Name, val)
+		t.S.Debug("discovery found: %s = %s", val, pdu.Name)
 
 		if val == t.idxDesc {
 			t.descOid = pdu.Name

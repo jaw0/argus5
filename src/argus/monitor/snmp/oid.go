@@ -46,10 +46,20 @@ var oids = map[string]*OidConf{
 func NewOID(conf *configure.CF) error {
 
 	c := &OidConf{}
+
+	f := strings.Fields(conf.Name)
+	name := f[0]
+
+	if len(f) > 1 {
+		c.Oid = f[1]
+	}
+
 	conf.InitFromConfig(c, "snmpoid", "")
 
-	oids[conf.Name] = c
+	oids[name] = c
 	conf.CheckTypos()
+
+	dl.Debug("new oid %s -> %+v", name, c)
 	return nil
 }
 

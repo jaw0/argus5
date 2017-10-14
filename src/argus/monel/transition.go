@@ -97,7 +97,7 @@ func (m *M) updateIsDown(ovstatus argus.Status) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	// keep track of all down + overridden elements - for reporting
+	// keep track of all down elements - for reporting
 	switch ovstatus {
 	case argus.UNKNOWN, argus.CLEAR, argus.OVERRIDE, argus.DEPENDS:
 		delete(isdown, m.Cf.Unique)
@@ -105,12 +105,6 @@ func (m *M) updateIsDown(ovstatus argus.Status) {
 		isdown[m.Cf.Unique] = m
 	}
 
-	switch ovstatus {
-	case argus.OVERRIDE:
-		inoverride[m.Cf.Unique] = m
-	default:
-		delete(inoverride, m.Cf.Unique)
-	}
 }
 
 func (m *M) andUpwards() {
@@ -188,10 +182,10 @@ func (m *M) permitNotify(status argus.Status) bool {
 	}
 
 	if m.Cf.Sendnotify[int(status)] != nil {
-		return m.Cf.Sendnotify[int(status)].PermitNow()
+		return m.Cf.Sendnotify[int(status)].PermitNow("yes")
 	}
 	if m.Cf.Sendnotify[int(argus.UNKNOWN)] != nil {
-		return m.Cf.Sendnotify[int(argus.UNKNOWN)].PermitNow()
+		return m.Cf.Sendnotify[int(argus.UNKNOWN)].PermitNow("yes")
 	}
 	return false
 }
@@ -202,7 +196,9 @@ func (m *M) setAlarm() {
 	a := false
 
 	if m.P.OvStatus > argus.CLEAR && m.P.OvStatus <= argus.CRITICAL {
-		a = true
+		if m.Cf.Siren[int(m.P.OvStatus)] || m.Cf.Siren[int(argus.UNKNOWN)] {
+			a = true
+		}
 	}
 
 	if a != m.P.Alarm {

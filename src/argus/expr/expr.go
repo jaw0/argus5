@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"argus/clock"
 	"argus/monel"
 )
 
@@ -22,6 +23,7 @@ type OP struct {
 }
 
 var ops = map[string]OP{
+	"time":  {6, fop_time},
 	"SUM":   {5, fop_sum}, // group aggregate ops
 	"AVE":   {5, fop_ave},
 	"AVG":   {5, fop_ave},
@@ -400,6 +402,12 @@ func fop_max(es *exprStack) (float64, bool) {
 }
 
 // ****************************************************************
+
+func fop_time(es *exprStack) (float64, bool) {
+
+	now := clock.Unix()
+	return float64(now), true
+}
 
 func fop_rand(es *exprStack) (float64, bool) {
 

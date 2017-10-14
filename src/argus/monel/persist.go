@@ -86,7 +86,13 @@ func (m *M) Restore() {
 	m.Me.Restore(dat)
 	m.Lock.Unlock()
 
-	m.setOverrideExpire()
+	if m.P.Override != nil {
+		lock.Lock()
+		inoverride[m.Cf.Unique] = m
+		lock.Unlock()
+
+		m.setOverrideExpire()
+	}
 }
 
 func (m *M) persist(pm map[string]interface{}) {

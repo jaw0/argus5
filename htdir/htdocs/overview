@@ -1,6 +1,6 @@
 
 {[define "content"]}
-<table>
+<table id=overviewtable>
   <tr><td valign=top>
         {[template "_listnotify"]}
   </td><td valign=top>

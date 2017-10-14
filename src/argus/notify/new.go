@@ -98,7 +98,7 @@ func (n *N) determineSendTo() {
 
 	// current notify value
 	if ns != nil {
-		nv := strings.Fields(ns.ResultNow())
+		nv := strings.Fields(ns.ResultNow(""))
 		if len(nv) > 0 {
 			dst = append(dst, nv...)
 		}

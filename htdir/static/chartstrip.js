@@ -23,7 +23,7 @@ function ChartStrip(el, opts){
         title_color: 	   '#432',
         ylabel_font: 	   '14px Arial, Sans-serif',
         ylabel_color: 	   '#432',
-        branding: 	   '',
+        branding: 	   '',	// Aldeborontiphoscophornio!
         branding_font:     '10px Monospace',
         branding_color:    '#8AE',
         axii_color: 	   '#432',
@@ -66,6 +66,7 @@ function ChartStrip(el, opts){
     }
 
     p.init = function(){
+        var g = this
         var c = document.createElement('canvas')
         c.width = this.el.scrollWidth
         c.height = this.el.scrollHeight
@@ -78,6 +79,7 @@ function ChartStrip(el, opts){
 
         this.drawLoading()
     }
+
 
     p.Add = function(data, opts){
         if( !('data_func'  in opts) ) opts.data_func  = this.AsIs
@@ -121,6 +123,13 @@ function ChartStrip(el, opts){
             if( this.datasets[i].opts.id == id ) this.datasets[i].hide = 0
         }
     }
+
+    // I hear beyond the range of sound,
+    // I see beyond the range of sight,
+    // New earths and skies and seas around,
+    // And in my day the sun doth pale his light.
+    //   -- Thoreau, Inspiration
+
     p.analyze = function(dataset){
         var xmin, xmax, ymin, ymax
         var i, p, left, right, dxl, dxr, dyl, dyr, dl, dr
@@ -803,6 +812,8 @@ function ChartStrip(el, opts){
         C.save()
         C.lineWidth = 1
 
+        if( !this.xtics || !this.ytics ) return
+        
         for(i=0; i<this.ytics.length; i++){
             tic = this.ytics[i]
             y = Math.round(this.dy(tic.y))

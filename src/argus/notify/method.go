@@ -17,8 +17,8 @@ type Method struct {
 	builtin bool
 	Command string
 	Send    string
-	Qtime   int64                    `cfconv:"timespec"`
-	Permit  [argus.CRITICAL + 1]bool `cfconv:"dotsev"`
+	Qtime   int64                               `cfconv:"timespec"`
+	Permit  [argus.CRITICAL + 1]*argus.Schedule `cfconv:"dotsev"`
 }
 
 var methods = map[string]*Method{

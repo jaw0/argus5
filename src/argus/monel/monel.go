@@ -47,27 +47,27 @@ type Conf struct {
 	Unique       string
 	Label        string
 	Friendlyname string
-	Sort         bool
-	Overridable  bool
 	Note         string
 	Info         string
 	Details      string
 	Comment      string
-	Debug        bool
-	Passive      bool
 	Depends      string
-	Siren        bool
+	Debug        bool
+	Sort         bool
+	Overridable  bool
+	Passive      bool
 	Nostatus     bool
-	Gravity      argus.Gravity
 	Countstop    bool
 	Hidden       bool
+	Graph        bool
+	Siren        [argus.CRITICAL + 1]bool            `cfconv:"dotsev"`
 	Sendnotify   [argus.CRITICAL + 1]*argus.Schedule `cfconv:"dotsev"`
+	Gravity      argus.Gravity
 	ACL_Page     string
 	ACL_Override string
 	ACL_Annotate string
 	ACL_CheckNow string
 	ACL_About    string
-	Graph        bool
 	GraphLabel   string
 	YLabel       string
 	Title        string
@@ -303,6 +303,7 @@ func (m *M) DoneConfig() {
 	m.determineStatus()
 	m.determineSummary()
 	m.setAlarm()
+	m.updateIsDown(m.P.OvStatus)
 }
 
 func (m *M) determineInteresting() {

@@ -7,6 +7,7 @@ package monel
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"argus/api"
 	"argus/argus"
@@ -103,6 +104,7 @@ func apiDump(ctx *api.Context) {
 	ctx.SendKVP("monel/DirName", m.DirName)
 	ctx.SendKVP("monel/Label", m.Label)
 	ctx.SendKVP("monel/Friendlyname", m.Friendlyname)
+	ctx.SendKVP("monel/Interesting", fmt.Sprintf("%v", m.Interesting))
 	ctx.DumpStruct(&m.Cf, "monel/CF/")
 	ctx.DumpStruct(&m.P, "monel/")
 

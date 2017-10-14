@@ -57,7 +57,7 @@ func (c *Compute) Config(conf *configure.CF, s *service.Service) error {
 		return fmt.Errorf("invalid compute expr: %v", err)
 	}
 	c.objs = obj
-	dl.Debug("expr: %v", expr)
+	dl.Debug("expr: %#v", expr)
 
 	// set names + labels
 	uname := "COMPUTE_" + c.Cf.Expr

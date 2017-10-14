@@ -29,9 +29,9 @@ var MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct
 var DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 var gizmoConfig = [
-    { el: 'listnotify',   url: '/api/listnotify', args: {}, freq: 3000 },
-    { el: 'listdown',     url: '/api/listdown',   args: {}, freq: 3000 },
-    { el: 'listoverride', url: '/api/listov',     args: {}, freq: 3000 }
+    { el: 'listnotify',   url: '/api/listnotify', args: {}, freq: 30000 },
+    { el: 'listdown',     url: '/api/listdown',   args: {}, freq: 30000 },
+    { el: 'listoverride', url: '/api/listov',     args: {}, freq: 30000 }
 ]
 
 
@@ -54,7 +54,7 @@ function argus_onload(){
         }
     }
 
-    if( datasrc ){
+    if( typeof(datasrc) != 'undefined' ){
         build_page()
     }
 
@@ -66,7 +66,6 @@ function argus_onload(){
 function argus_page(){
 
     argus.log("page loaded")
-    //build_page()
 }
 
 function build_page(){
@@ -159,7 +158,8 @@ function Gizmo(el, url, urlargs, hasmeta, freq){
     this.init()
 
     var g = this
-//    setInterval( function(){ g.periodicUpdate() }, freq )
+    if( freq )
+        setInterval( function(){ g.periodicUpdate() }, freq )
     return this
 }
 
@@ -172,6 +172,10 @@ function Gizmo(el, url, urlargs, hasmeta, freq){
 
     p.configure = function(){
 
+    }
+
+    p.periodicUpdate = function(){
+        this.fetchData()
     }
 
     p.FetchNow = function(){
@@ -637,6 +641,10 @@ function convert_data(o){
         if( typeof(c) == "object" ){
             // recurse
             convert_data(c)
+        }
+
+        if( k == 'lasttest' ){
+            o["lasttest_fmt"] = ""
         }
 
         if( typeof(c) == "number" ){

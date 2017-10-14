@@ -427,16 +427,16 @@ func webList(ctx *web.Context, list map[string]*M, interesting bool) {
 
 	creds := strings.Fields(ctx.User.Groups)
 
-	type X struct {
+	type schwartz struct {
 		m *M
 		T int64
 	}
 
-	var all []X
+	var all []schwartz
 	lock.RLock()
 	for _, m := range list {
 		m.Lock.RLock()
-		all = append(all, X{m, m.P.TransTime})
+		all = append(all, schwartz{m, m.P.TransTime})
 		m.Lock.RUnlock()
 	}
 	lock.RUnlock()
@@ -444,7 +444,7 @@ func webList(ctx *web.Context, list map[string]*M, interesting bool) {
 	sort.Slice(all, func(i, j int) bool { return all[i].T > all[j].T })
 
 	type export struct {
-		Obj    string
+		Unique string
 		Status argus.Status
 	}
 	var out []export

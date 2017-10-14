@@ -310,14 +310,20 @@ th {
 
 /****************************************************************/
 
-#listnotify {
+#overviewtable td {
+    padding-left:	10px;
+    padding-right:	10px;
+}
+
+#listnotify, #listdown, #listoverride {
+    color:		#432;
     font-size:		80%;
 }
-#listnotify tr {
+#listnotify tr, #listdown tr, #listoverride tr {
     padding-top:	5px;
     padding-bottom:	5px;
 }
-#listnotify td {
+#listnotify td, #listdown td, #listoverride td {
     padding-left:	5px;
     padding-right:	5px;
     border-top:		2px solid #fff;
@@ -340,6 +346,10 @@ a.nbutton {
     cursor: 		pointer;
 }
 
+#listdown a, #listoverride a {
+    color:		#432;
+    text-decoration:	none;
+}
 
 /****************************************************************/
 
@@ -348,11 +358,14 @@ a.nbutton {
     padding-bottom:	5px;
     font-size:		85%;
 }
-.graphcontrols .graphrange, .graphcontrols .graphdarp {
+.graphcontrols .graphrange, .graphcontrols .graphdarp, .graphcontrols .graphsupplement {
     float: 		left;
     padding-right: 	10px;
     padding-left:  	20px;
     font-family:	Arial, Sans-serif;
+}
+.graphcontrols .graphsupplement {
+    display:		none;
 }
 
 .graphlabels {

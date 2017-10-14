@@ -6,5 +6,5 @@
 package argus
 
 // about argus
-var Version = "5.0(alpha)"
+var Version = "X5.X(experimental)"
 var URL = "http://www.argus-monitoring.com"

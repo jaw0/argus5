@@ -1,8 +1,11 @@
 // Copyright (c) 2017
 // Author: Jeff Weisberg <jaw @ tcp4me.com>
 // Created: 2017-Oct-05 18:19 (EDT)
-// Function: picasso paints graphs
+// Function: lay paint on canvas. make pretty graphs.
 
+// Downward the various goddess took her flight,
+// And drew a thousand colors from the light;
+//   -- Virgil, Aeneid
 var colors = ["#897fd9","#80ab51","#754192","#4bac73",
               "#c97dcb","#3c6e2c","#de77a4","#3fb5b1",
               "#8e396f","#81862f","#435193","#ac8a39",
@@ -12,7 +15,12 @@ var colors = ["#897fd9","#80ab51","#754192","#4bac73",
               "#724f66","#81aea3","#9d734b","#698599",
               "#b59e7d","#345d5c","#6e7d63","#425439"]
 
+// What is your favorite color?
+// Blue.  No yel--  Auuuuuuuugh!
+//   -- Monty Python, Holy Grail
+
 var status_colors = [ null, null, '#88DDFF','#EEEE00', '#FFBB44', '#FF6666', '#BBBBBB', null]
+var supplement_color = '#ddddff'
 
 var gcount = 0
 
@@ -45,7 +53,7 @@ function Graph(el, obj, which, darp, ctls, width){
     this.datasets = {}
     this.grctlid  = 'grctl' + gcount
     this.selected = {}
-    this.select   = { which: which, darp: {}, obj: {} }
+    this.select   = { which: which, darp: {}, supplement: '', obj: {} }
     if( darp ) this.select.darp[ darp ] = 1
 
     // info{}, cs, darptags{}
@@ -141,11 +149,14 @@ function Graph(el, obj, which, darp, ctls, width){
         var i, t, L
 
         if( this.ctls ){
-            // range
-            // darp
-            html = '<div class=graphrange><input type=radio name=range value=samples>Day<br>' +
-                '<input type=radio name=range value=hours>Month<br>' +
-                '<input type=radio name=range value=days>Year<br>' +
+            // range, supplement type, darp
+            html = '<div class=graphrange>' +
+                this.radioButtons('range', [['samples','Day'], ['hours','Month'], ['days', 'Year']]) +
+                '</div>' + "\n"
+
+            html += '<div class=graphsupplement>' +
+                this.radioButtons('extra', [['', 'None'], ['hwab', 'Predicted'],
+                                            ['minmax', 'Min/Max'], ['stdev', 'Std Dev']]) +
                 '</div>' + "\n"
 
             if( this.darptags.length > 1 ){
@@ -175,6 +186,7 @@ function Graph(el, obj, which, darp, ctls, width){
 
         // update range selector
         $('#' + ctlid + ' input[name=range][value='+this.select.which+']').attr('checked', 'checked')
+        $('#' + ctlid + ' input[name=extra][value=""]').attr('checked', 'checked')
 
         // resize labels so they line up nicely
         var maxw = Math.max.apply(Math, $('#' + ctlid + ' .graphlabel').map(function(){ return $(this).width(); }).get());
@@ -184,14 +196,29 @@ function Graph(el, obj, which, darp, ctls, width){
         // add change/click handlers
         var g = this
         $( '#' + ctlid + ' input[name=range]').change( function(){ g.controlChanged(this) })
+        $( '#' + ctlid + ' input[name=extra]').change( function(){ g.controlChanged(this) })
         $( '#' + ctlid + ' .graphlabel').click( function(){ g.labelClicked(this) })
 
+        this.updateSupplementDpy()
+    }
+
+    // choices: [ [value, label], ...]
+    p.radioButtons = function(name, choices){
+        var i, html=''
+
+        for(i=0; i<choices.length; i++){
+            html += '<span class="' + name + choices[i][0] + '"><input type=radio name="' + name + '" value="' +
+                choices[i][0] + '">' + choices[i][1] + '</span><br>'
+        }
+        return html
     }
 
     p.controlChanged = function(el){
         var which = $('#' + this.grctlid + ' input[name=range]:checked').val()
+        var extra = $('#' + this.grctlid + ' input[name=extra]:checked').val()
         argus.log('control ' + which)
         this.select.which = which
+        this.select.supplement = extra
         this.updateSelection()
     }
     p.labelClicked = function(el){
@@ -211,10 +238,59 @@ function Graph(el, obj, which, darp, ctls, width){
         this.updateSelection()
     }
 
+    p.updateSupplementDpy = function(){
+        var sel = Object.keys(this.select.obj)
+        var obj = sel[0]
+        var L = this.info.List
+
+        if( sel.length != 1 ){
+            $('#' + this.grctlid + ' .graphsupplement').hide()
+            return
+        }
+
+        // hwab enabled?
+        var hwab = 0
+        for(i=0; i<L.length; i++){
+            if( (L[i].Obj == obj) && L[i].Hwab ) hwab = 1
+        }
+
+        if( this.select.which == 'samples' ){
+            // samples - only choice is none|hwab
+            if( !hwab ){
+                $('#' + this.grctlid + ' .graphsupplement').hide()
+                return
+            }
+            $('#' + this.grctlid + ' .extraminmax').hide()
+            $('#' + this.grctlid + ' .extrastdev').hide()
+            if( this.select.supplement != 'hwab' )
+                $('#' + this.grctlid + ' input[name=extra][value=""]').attr('checked', 'checked')
+        }else{
+            $('#' + this.grctlid + ' .extraminmax').show()
+            $('#' + this.grctlid + ' .extrastdev').show()
+        }
+
+        if( hwab ){
+            $('#' + this.grctlid + ' .extrahwab').show()
+            if( this.select.supplement == 'hwab' )
+                $('#' + this.grctlid + ' input[name=extra][value="hwab"]').attr('checked', 'checked')
+        }else{
+            $('#' + this.grctlid + ' .extrahwab').hide()
+
+            if( this.select.supplement == 'hwab' )
+                $('#' + this.grctlid + ' input[name=extra][value=""]').attr('checked', 'checked')
+        }
+
+        $('#' + this.grctlid + ' .graphsupplement').show()
+    }
+
     p.Id = function(which, darp, obj){
         return which + " " + darp + " " + obj
     }
 
+    // Nor long the sun his daily course withheld,
+    // But added colors to the world reveal'd:
+    // When early Turnus, wak'ning with the light,
+    //   -- Virgil, Aeneid
     p.statusColor = function(p, color){
         return status_colors[ p.Status ] || color
     }
@@ -223,6 +299,11 @@ function Graph(el, obj, which, darp, ctls, width){
         if( !p || !p.Exp || !p.Delt ) return
 
         return {Time: p.Time, Min: p.Exp - p.Delt, Max: p.Exp + p.Delt}
+    }
+    p.graphStdev = function(p){
+        var v = p.Value
+        var s = p.Stdev
+        return {Time: p.Time, Min: v - 2*s, Max: v + 2*s}
     }
 
     p.selectAll = function(){
@@ -258,6 +339,7 @@ function Graph(el, obj, which, darp, ctls, width){
                 this.selected[ id ] = 1
             }
         }
+        this.updateSupplementDpy()
         this.maybeBuild()
     }
 
@@ -292,29 +374,26 @@ function Graph(el, obj, which, darp, ctls, width){
             // ...
         })
 
-        // add hwab, 'supplement ' + id
-        // or min/max, ave/std?
-
-        if( r.data[ r.data.length - 1].Delt ){
-            argus.log("add hwab")
-            this.cs.Add( r.data, {
-                id:		'supplement ' + id,
-                color:		'#ddddff',
-                data_func:	this.graphHwab,
-                smooth:		1,
-                type:		'range',
-                shadow:		1
-            })
-        }else if( r.data[ r.data.length - 1].Max ){
-            argus.log("add min/max")
-            this.cs.Add( r.data, {
-                id:		'supplement ' + id,
-                color:		'#ddeeee',
-                smooth:		1,
-                type:		'range',
-                shadow:		1
-            })
-        }
+        this.cs.Add( r.data, {
+            id:		'hwab ' + id,
+            color:	supplement_color,
+            data_func:	this.graphHwab,
+            smooth:	1,
+            type:	'range'
+        })
+        this.cs.Add( r.data, {
+            id:		'minmax ' + id,
+            color:	supplement_color,
+            smooth:	1,
+            type:	'range'
+        })
+        this.cs.Add( r.data, {
+            id:		'stdev ' + id,
+            color:	supplement_color,
+            data_func:	this.graphStdev,
+            smooth:	1,
+            type:	'range'
+        })
 
         this.maybeBuild()
     }
@@ -341,8 +420,8 @@ function Graph(el, obj, which, darp, ctls, width){
             argus.log("selected: " + sel[i] )
             this.cs.Show( sel[i] )
 
-            if( sel.length == 1 )
-                this.cs.Show( 'supplement ' + sel[i] )
+            if( sel.length == 1 && this.select.supplement)
+                this.cs.Show( this.select.supplement + ' ' + sel[i] )
         }
 
         this.cs.Render()

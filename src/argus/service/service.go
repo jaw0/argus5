@@ -253,7 +253,7 @@ func (s *Service) RemoveAlsoRun(c *Service) {
 
 func (s *Service) SetResult(status argus.Status, result string, reason string) {
 
-	if s.Cf.Checking != nil && !s.Cf.Checking.PermitNow() {
+	if s.Cf.Checking != nil && !s.Cf.Checking.PermitNow("yes") {
 		s.mon.Debug("checking bypassed by schedule")
 		status = argus.CLEAR
 	}
@@ -276,6 +276,7 @@ func (s *Service) SetResult(status argus.Status, result string, reason string) {
 	}
 
 	// RSN - archive
+	s.p.Result = result
 	s.SetResultFor(darp.MyId, status, result, reason)
 }
 
@@ -326,7 +327,7 @@ func (s *Service) tasRunning() bool {
 	}
 
 	// RSN - disabled?
-	if s.Cf.Testing != nil && !s.Cf.Testing.PermitNow() {
+	if s.Cf.Testing != nil && !s.Cf.Testing.PermitNow("yes") {
 		return false
 	}
 
