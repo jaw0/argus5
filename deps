@@ -1,0 +1,5 @@
+golang.org/x/crypto/bcrypt
+github.com/miekg/dns
+github.com/mitchellh/mapstructure
+github.com/soniah/gosnmp
+github.com/uknth/jsonpath
