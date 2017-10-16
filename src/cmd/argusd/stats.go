@@ -15,7 +15,7 @@ const LAMBDA = 10
 const DELAY = 30 * time.Second
 
 var monrate = expvar.NewFloat("monrate")
-var idlerate = expvar.NewFloat("idlerate")
+var cpurate = expvar.NewFloat("cpurate")
 
 func statsCollector() {
 
@@ -65,7 +65,7 @@ func statsCollector() {
 		}
 
 		idle = (lambda*idle + cidle) / (lambda + 1)
-		idlerate.Set(idle)
+		cpurate.Set(idle)
 
 	}
 }

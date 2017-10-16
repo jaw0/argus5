@@ -23,6 +23,7 @@ func (s *Service) WebJson(md map[string]interface{}) {
 	darp := make(map[string]darpStatusResult)
 	md["darp"] = darp
 	md["hostname"] = s.check.Hostname()
+	md["IsService"] = true
 
 	for k, st := range s.p.Statuses {
 		r := s.p.Results[k]

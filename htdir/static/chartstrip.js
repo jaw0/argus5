@@ -136,6 +136,9 @@ function ChartStrip(el, opts){
         var dydx = []
 
         var data = dataset.data
+
+        if( !data ) return
+
         for(i=0;  i<data.length; i++){
             p = dataset.opts.data_func( data[i] )
             if( !p ) continue
@@ -388,6 +391,7 @@ function ChartStrip(el, opts){
     }
 
     p.plot_line = function(set){
+        if( !set.data ) return
         var C = this.C
         var data = set.data
         var dydx = set.dydx

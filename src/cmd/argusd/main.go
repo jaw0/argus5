@@ -6,6 +6,7 @@
 package main
 
 import (
+	"expvar"
 	"flag"
 	"fmt"
 	"os"
@@ -43,8 +44,7 @@ func init() {
 	api.Add(true, "reload", apiHup)
 	api.Add(true, "shutdown", apiStop)
 	api.Add(true, "status", apiStatus)
-
-	web.Add(web.PUBLIC, "/hello", func(c *web.Context) { c.W.Write([]byte("hello, web!\n")) })
+	api.Add(true, "self", apiExpvar)
 }
 
 func main() {
@@ -71,6 +71,8 @@ func main() {
 	// init sighandlers
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP, syscall.SIGUSR2)
 	go sigHandle()
+	// set up env, etal
+	raiseFileLimit()
 	os.Setenv("ARGUS_PID", fmt.Sprintf("%d", os.Getpid()))
 	os.Setenv("ARGUS_VER", argus.Version)
 
@@ -114,6 +116,26 @@ func main() {
 	diag.Verbose("stopped")
 	argus.Loggit("", "Argus exiting")
 	os.Exit(exitvalue)
+}
+
+func raiseFileLimit() {
+
+	cf := config.Cf()
+	// attempt to increase to max possible
+	limit := syscall.Rlimit{syscall.RLIM_INFINITY, syscall.RLIM_INFINITY}
+	syscall.Setrlimit(syscall.RLIMIT_NOFILE, &limit)
+	// how many do we actually have?
+	syscall.Getrlimit(syscall.RLIMIT_NOFILE, &limit)
+
+	warn := 100
+	if cf.Mon_maxrun+10 > warn {
+		warn = cf.Mon_maxrun + 10
+	}
+
+	if int(limit.Cur) < warn {
+		dl.Verbose("open file limit is only %d. reducing maxrun to compensate.", limit.Cur)
+		cf.Mon_maxrun = int(limit.Cur) - 10
+	}
 }
 
 func sigHandle() {
@@ -184,9 +206,23 @@ func apiStatus(ctx *api.Context) {
 	ctx.SendKVP("alerts", notify.NActive.String())
 	ctx.SendKVP("uptime", argus.Elapsed(clock.Unix()-starttime))
 	ctx.SendKVP("monrate", fmt.Sprintf("%.2f per second", monrate.Value()))
-	ctx.SendKVP("idle", fmt.Sprintf("%.2f%%", 100*idlerate.Value()))
+	ctx.SendKVP("idle", fmt.Sprintf("%.2f%%", 100*cpurate.Value()))
 
 	// RSN - darp info
+
+	ctx.SendFinal()
+}
+
+func apiExpvar(ctx *api.Context) {
+
+	ctx.SendOK()
+
+	expvar.Do(func(kv expvar.KeyValue) {
+		if kv.Key == "memstats" || kv.Key == "cmdline" {
+			return
+		}
+		ctx.SendKVP(kv.Key, kv.Value.String())
+	})
 
 	ctx.SendFinal()
 }

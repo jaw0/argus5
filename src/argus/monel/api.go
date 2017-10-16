@@ -100,11 +100,22 @@ func apiDump(ctx *api.Context) {
 	ctx.SendOK()
 	m.Lock.RLock()
 
+	var parent []string
+	var children []string
+	for _, p := range m.Parent {
+		parent = append(parent, p.Cf.Unique)
+	}
+	for _, c := range m.Children {
+		children = append(children, c.Cf.Unique)
+	}
+
 	ctx.SendKVP("monel/Filename", m.Filename)
 	ctx.SendKVP("monel/DirName", m.DirName)
 	ctx.SendKVP("monel/Label", m.Label)
 	ctx.SendKVP("monel/Friendlyname", m.Friendlyname)
 	ctx.SendKVP("monel/Interesting", fmt.Sprintf("%v", m.Interesting))
+	ctx.SendKVP("monel/Parent", fmt.Sprintf("%v", parent))
+	ctx.SendKVP("monel/Children", fmt.Sprintf("%v", children))
 	ctx.DumpStruct(&m.Cf, "monel/CF/")
 	ctx.DumpStruct(&m.P, "monel/")
 

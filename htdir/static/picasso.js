@@ -105,6 +105,8 @@ function Graph(el, obj, which, darp, ctls, width){
             draw_border: 0
         })
 
+        if( ! this.info.List ) return
+        
         // gather darp tag list
         // what type of graph?
         // assign colors
@@ -124,6 +126,7 @@ function Graph(el, obj, which, darp, ctls, width){
         this.objs = {}
 
         for(i=0; i<L.length; i++){
+            if( !L[i].Tags ) continue
             for(j=0; j<L[i].Tags.length; j++){
                 t = L[i].Tags[j]
                 darp[ t ] = 1
@@ -190,8 +193,10 @@ function Graph(el, obj, which, darp, ctls, width){
 
         // resize labels so they line up nicely
         var maxw = Math.max.apply(Math, $('#' + ctlid + ' .graphlabel').map(function(){ return $(this).width(); }).get());
-        argus.log("maxw: " + maxw)
         $('#' + ctlid + ' .graphlabel').width(maxw + 15 + 1)
+
+        var lht = $('#' + ctlid).height()
+        $('#' + ctlid + ' .graphrange').height(lht)
 
         // add change/click handlers
         var g = this
@@ -328,6 +333,8 @@ function Graph(el, obj, which, darp, ctls, width){
             if( ! this.select.obj[ obj ] ) continue
             argus.log("obj " + obj)
 
+            if( ! L[i].Tags ) continue
+
             for(t=0; t<L[i].Tags.length; t++){
                 darp = L[i].Tags[t]
                 if( ! this.select.darp[ darp ] ) continue
@@ -439,7 +446,7 @@ function Graph(el, obj, which, darp, ctls, width){
             data = set.data
             maxt = 0
 
-            if( data.length > 1 ){
+            if( data && (data.length > 1) ){
                 // predict when more data will be added
                 maxt = data[ data.length - 1].Time
                 pt   = data[ data.length - 2].Time

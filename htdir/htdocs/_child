@@ -6,15 +6,15 @@
 
         <template v-if="c.HasChild">
           <td v-bind:class="{clear: c.Up}">
-              <span v-for="cc in c.Up"><a v-bind:href="cc.PageUrl">{{ cc.Label }}</a> </span>
+              <span v-for="cc in c.Up"><a v-bind:href="cc.PageUrl">{{ cc.Label }} </a> </span>
           </td>
 
           <td v-bind:class="[c.Dn ? c.Sev_sev : '']">
-              <span v-for="cc in c.Dn"><a v-bind:href="cc.PageUrl">{{ cc.Label }}</a> </span>
+              <span v-for="cc in c.Dn"><a v-bind:href="cc.PageUrl">{{ cc.Label }} </a> </span>
           </td>
 
           <td v-bind:class="{override: c.Ov}">
-              <span v-for="cc in c.Ov"><a v-bind:href="cc.PageUrl">{{ cc.Label }}</a> </span>
+              <span v-for="cc in c.Ov"><a v-bind:href="cc.PageUrl">{{ cc.Label }} </a> </span>
           </td>
         </template>
 

@@ -100,10 +100,27 @@ func (a *Alias) Children() []*monel.M {
 	if m == nil {
 		return nil
 	}
-	return m.Children
+
+	if len(m.Children) != 0 {
+		return m.Children
+	}
+	return []*monel.M{m}
+}
+func (a *Alias) Self() *monel.M {
+	if a.Object != nil {
+		return a.Object
+	}
+	return a.mon
 }
 
 func (a *Alias) WebJson(md map[string]interface{}) {
+
+	if a.Object == nil {
+		md["testinfo"] = struct {
+			Cannot_Find string
+		}{a.Target}
+		return
+	}
 }
 func (a *Alias) WebMeta(md map[string]interface{}) {
 }

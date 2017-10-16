@@ -40,8 +40,6 @@ var jsondata
 var jsonnotify
 var gizmo = {}
 
-console.log("argusjs")
-
 function argus_onload(){
     argus.log("argus onload")
 

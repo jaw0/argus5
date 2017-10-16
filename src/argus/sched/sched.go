@@ -39,15 +39,20 @@ type Starter interface {
 }
 
 const (
+	MINWORKER = 2
 	MAXWORKER = 100 // override in config file
+	QUEUELEN  = 1000
 )
 
-var schedchan = make(chan *D, 1000)
-var workchan = make(chan *D, 1000)
+var schedchan = make(chan *D, QUEUELEN)
+var workchan = make(chan *D, QUEUELEN)
 var stopchan = make(chan struct{})
 var done sync.WaitGroup
 var dl = diag.Logger("sched")
 var NRun = expvar.NewInt("runs")
+var SchedQueue = expvar.NewInt("schedqueue")
+var SchedIdle = expvar.NewInt("workidle")
+var WorkQueue = expvar.NewInt("workqueue")
 
 func New(cf *Conf, obj Starter) *D {
 
@@ -117,6 +122,7 @@ func (d *D) ReSchedule(delay int) {
 		d.when += int64(rand.Intn(4) + 1)
 	}
 
+	SchedQueue.Set(int64(len(schedchan)))
 	schedchan <- d
 }
 
@@ -126,7 +132,15 @@ func (d *D) Remove() {
 }
 
 func (d *D) ASAP() {
-	workchan <- d
+
+	// if the work queue has room, send it straight in
+	// otherwise, reschedule it
+	select {
+	case workchan <- d:
+		break
+	default:
+		d.ReSchedule(1)
+	}
 }
 
 func Init() {
@@ -137,8 +151,11 @@ func Init() {
 	cf := config.Cf()
 	nwork := cf.Mon_maxrun
 
-	if nwork <= 0 {
+	if nwork == 0 {
 		nwork = MAXWORKER
+	}
+	if nwork < MINWORKER {
+		nwork = MINWORKER
 	}
 
 	for i := 0; i < nwork; i++ {
@@ -180,9 +197,10 @@ func mainloop() {
 	defer tock.Stop()
 
 	for {
+		SchedQueue.Set(int64(len(schedchan)))
 		select {
 		case <-stopchan:
-			return
+			break
 		case d := <-schedchan:
 			if d.locte != nil {
 				d.del()
@@ -195,6 +213,13 @@ func mainloop() {
 			dispatch()
 		}
 	}
+
+	// shutting down, discard requests
+	for {
+		select {
+		case <-schedchan:
+		}
+	}
 }
 
 func worker(devmode bool) {
@@ -202,10 +227,14 @@ func worker(devmode bool) {
 	defer done.Done()
 
 	for {
+		amIdle(true)
+		WorkQueue.Set(int64(len(workchan)))
+
 		select {
-		case <-stopchan:
-			return
+		//case <-stopchan:
+		//	return
 		case d := <-workchan:
+			amIdle(false)
 			d.run(devmode)
 
 			if d.auto {
@@ -286,9 +315,26 @@ func dispatch() {
 
 		for d, _ := range schedule[i].todo {
 			d.locte = nil
-			workchan <- d
+			WorkQueue.Set(int64(len(workchan)))
+			select {
+			case workchan <- d:
+				delete(schedule[i].todo, d)
+			default:
+				// queue full - take a break...
+				schedule = schedule[i:]
+				return
+			}
 		}
 	}
 
 	schedule = schedule[i:]
+}
+
+func amIdle(y bool) {
+
+	if y {
+		SchedIdle.Add(1)
+	} else {
+		SchedIdle.Add(-1)
+	}
 }

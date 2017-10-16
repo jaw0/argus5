@@ -72,6 +72,10 @@ func (g *Group) Children() []*monel.M {
 
 	return g.mon.Children
 }
+func (g *Group) Self() *monel.M {
+	return g.mon
+}
+
 func (g *Group) Dump(ctx *api.Context) {
 }
 func (g *Group) CheckNow() {

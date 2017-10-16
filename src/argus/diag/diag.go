@@ -33,7 +33,7 @@ import (
 
 // defaults
 const (
-	stack_max = 32768
+	stack_max = 1048576
 )
 
 var hostname = "?"

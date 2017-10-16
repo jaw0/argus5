@@ -18,6 +18,8 @@ import (
 	"argus/notify"
 )
 
+const STOPWORKERS = 5
+
 var dl = diag.Logger("monel")
 
 var lock sync.RWMutex
@@ -39,6 +41,7 @@ type Moneler interface {
 	DoneConfig()
 	Recycle()
 	Children() []*M
+	Self() *M
 	GraphList(string, []interface{}) []interface{}
 }
 
@@ -76,7 +79,7 @@ type Conf struct {
 
 var defaults = Conf{
 	Overridable:  true,
-	Siren:        true,
+	Siren:        [...]bool{true, false, false, false, false, false},
 	Gravity:      argus.GRAV_DN,
 	ACL_Page:     "user staff root",
 	ACL_Override: "staff root",
@@ -143,13 +146,29 @@ func New(me Moneler, parent *M) *M {
 
 func Stop() {
 
+	// save state
 	lock.RLock()
 	defer lock.RUnlock()
 
+	c := make(chan *M)
+	for i := 0; i < STOPWORKERS; i++ {
+		go stopper(c)
+	}
+
 	for _, m := range byname {
+		c <- m
+	}
+	close(c)
+}
+
+func stopper(c chan *M) {
+
+	for m := range c {
 		m.Persist()
 	}
 }
+
+// ################################################################
 
 func (m *M) SetNames(uname string, label string, friendly string) {
 	m.Uname = uname

@@ -76,6 +76,7 @@ func webJson(ctx *web.Context) {
 		deco := make(map[string]interface{})
 		d["mon"] = mond
 		d["deco"] = deco
+		mond["IsService"] = false // to simplify web view code
 
 		m.webDecor(creds, deco)
 		m.webJson(creds, mond)
@@ -193,11 +194,12 @@ func (m *M) webJson(creds []string, md map[string]interface{}) {
 	md["childsum"] = childsum
 }
 
-func (m *M) childSummary(creds []string) *childSummary {
+func (mm *M) childSummary(creds []string) *childSummary {
 
+	m := mm.Me.Self() // alias redirect
 	m.Lock.RLock()
 	cs := &childSummary{
-		Desc:   objectDescr{m.Cf.Unique, m.Cf.Uname, m.Cf.Label},
+		Desc:   objectDescr{m.Cf.Unique, mm.Cf.Uname, mm.Cf.Label},
 		Status: m.P.OvStatus,
 	}
 
@@ -218,14 +220,16 @@ func (m *M) childSummary(creds []string) *childSummary {
 
 	dl.Debug("%s %v -> %v", m.Cf.Unique, m.P.OvStatusSummary, cs)
 
-	for _, cc := range childs {
+	for _, cx := range childs {
+		cc := cx.Me.Self() // alias redirect
+
 		if cc.Cf.Hidden || !argus.ACLPermitsUser(cc.Cf.ACL_Page, creds) {
 			continue
 		}
 
 		cc.Lock.RLock()
 		st := cc.P.OvStatus
-		desc := &objectDescr{cc.Cf.Unique, cc.Cf.Uname, cc.Cf.Label}
+		desc := &objectDescr{cc.Cf.Unique, cx.Cf.Uname, cx.Cf.Label}
 
 		switch st {
 		case argus.OVERRIDE:

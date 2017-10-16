@@ -50,6 +50,7 @@ type Conf struct {
 	Unpack       string
 	Expr         string
 	JPath        string
+	Gr_what      string // only 'elapsed' is supported
 	Testing      *argus.Schedule
 	Checking     *argus.Schedule
 	Expect       [argus.CRITICAL + 1]string  `cfconv:"dotsev"`
@@ -67,7 +68,7 @@ var defaults = Conf{
 	Frequency:   60,
 	Retries:     2,
 	Retrydelay:  60,
-	Timeout:     60,
+	Timeout:     15,
 	DARPGravity: argus.GRAV_IETF,
 	Severity:    argus.CRITICAL,
 	Alpha:       1,
@@ -220,6 +221,9 @@ func (s *Service) FailNow(reason string) {
 }
 func (s *Service) Children() []*monel.M {
 	return nil
+}
+func (s *Service) Self() *monel.M {
+	return s.mon
 }
 
 func (s *Service) AddAlsoRun(c *Service) {

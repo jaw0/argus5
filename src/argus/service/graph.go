@@ -57,6 +57,10 @@ func (s *Service) recordMyGraphData(val float64) {
 		dn = float64(s.p.Hwab.dn)
 	}
 
+	if s.Cf.Gr_what == "elapsed" {
+		val = float64(clock.Nano()-s.Started) / 1e9
+	}
+
 	if s.mon.Cf.Graph {
 		// darpid = "" for backwards compat
 		s.Debug("graph")
