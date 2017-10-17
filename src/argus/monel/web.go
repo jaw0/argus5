@@ -7,6 +7,7 @@ package monel
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -69,7 +70,10 @@ func webJson(ctx *web.Context) {
 	d := m.newWebMetaResponse(ctx)
 
 	// only include these if something has changed
-	if !m.webChangedSince(since) {
+	changed, wt := m.webChangedSince(since)
+	d["webtime"] = fmt.Sprintf("%d", wt)
+
+	if !changed {
 		d["unchanged"] = true
 	} else {
 		mond := make(map[string]interface{})
@@ -90,37 +94,39 @@ func webJson(ctx *web.Context) {
 	ctx.W.Write(js)
 }
 
-func (m *M) webChangedSince(since int64) bool {
+func (m *M) webChangedSince(since int64) (bool, int64) {
 
 	m.Lock.RLock()
 	wt := m.WebTime
-	childs := m.Me.Children()
+	//childs := m.Me.Children()
 	m.Lock.RUnlock()
 
 	if wt > since {
-		return true
+		return true, wt
 	}
 
-	for _, c := range childs {
-		c.Lock.RLock()
-		wt := c.WebTime
-		childs := c.Me.Children()
-		c.Lock.RUnlock()
-		if wt > since {
-			return true
-		}
+	//for _, c := range childs {
+	//	c.Lock.RLock()
+	//	wt := c.WebTime
+	//	childs := c.Me.Children()
+	//	c.Lock.RUnlock()
+	//
+	//	if wt > since {
+	//		return true, wt
+	//	}
+	//
+	//	for _, cc := range childs {
+	//		cc.Lock.RLock()
+	//		wt := cc.WebTime
+	//		cc.Lock.RUnlock()
+	//
+	//		if wt > since {
+	//			return true, wt
+	//		}
+	//	}
+	//}
 
-		for _, cc := range childs {
-			cc.Lock.RLock()
-			wt := cc.WebTime
-			cc.Lock.RUnlock()
-			if wt > since {
-				return true
-			}
-		}
-	}
-
-	return false
+	return false, since
 }
 
 // ################################################################
@@ -132,7 +138,6 @@ func (m *M) webMeta(ctx *web.Context, md map[string]interface{}) {
 	md["alarm"] = m.P.Alarm
 	md["sirentime"] = m.P.SirenTime
 	md["sirenhush"] = ctx.Hush > m.P.SirenTime
-	md["webtime"] = m.WebTime
 	md["unacked"] = notify.NumActive()
 	md["hasErrors"] = argus.HasErrors()
 	md["hasWarns"] = argus.HasWarnings()

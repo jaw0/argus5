@@ -28,7 +28,7 @@ type readConf struct {
 var dl = diag.Logger("dozer")
 
 var confconf = map[string]*readConf{
-	"top":     &readConf{narg: 1, level: 2, permit: map[string]bool{"method": true, "snmpoid": true, "group": true, "host": true, "darp": true}},
+	"top":     &readConf{narg: 1, level: 2, permit: map[string]bool{"method": true, "snmpoid": true, "group": true, "host": true, "darp": true, "agent": true}},
 	"group":   &readConf{narg: 1, level: 2, permit: map[string]bool{"group": true, "host": true, "service": true, "alias": true}},
 	"host":    &readConf{narg: 1, level: 2, permit: map[string]bool{"group": true, "host": true, "service": true, "alias": true}},
 	"alias":   &readConf{narg: 2, onel: true, level: 2},
@@ -36,6 +36,7 @@ var confconf = map[string]*readConf{
 	"method":  &readConf{narg: 1, onel: true, level: 1, isInfo: true},
 	"snmpoid": &readConf{onel: true, level: 1, isInfo: true},
 	"darp":    &readConf{narg: 0, level: 1, isInfo: true},
+	"agent":   &readConf{narg: 2, level: 1, isInfo: true},
 	"resolv":  &readConf{},
 }
 

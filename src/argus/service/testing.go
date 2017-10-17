@@ -139,13 +139,13 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 	now := clock.Nano()
 
 	if s.Cf.Pluck != "" {
-		val = pluck(s.Cf.Pluck, val)
+		val = Pluck(s.Cf.Pluck, val)
 		valtype = "string"
 	}
 
-	if s.Cf.JPath != "" && valtype == "json" {
+	if s.Cf.JPath != "" && valtype != "" {
 		var err error
-		val, err = jsonPath(s.Cf.JPath, val)
+		val, err = JsonPath(s.Cf.JPath, val)
 		if err != nil {
 			diag.Problem("invalid json/jsonpath '%s': %v", s.Cf.JPath, err)
 		}
@@ -298,7 +298,7 @@ func testMatch(regex string, val string) bool {
 	return m
 }
 
-func pluck(regex string, val string) string {
+func Pluck(regex string, val string) string {
 
 	re, err := regexp.Compile(regex)
 	if err != nil {
@@ -314,7 +314,7 @@ func pluck(regex string, val string) string {
 	return matches[1]
 }
 
-func jsonPath(path string, val string) (string, error) {
+func JsonPath(path string, val string) (string, error) {
 
 	// RSN - save jdat for multi-service tests?
 

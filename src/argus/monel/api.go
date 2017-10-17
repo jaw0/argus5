@@ -14,15 +14,15 @@ import (
 )
 
 func init() {
-	api.Add(true, "setdebug", apiDebug)
+	api.Add(true, "setdebug", apiSetDebug)
+	api.Add(true, "clrdebug", apiClrDebug)
 	api.Add(true, "getconfig", apiGetConfig)
 	api.Add(true, "dump", apiDump)
 }
 
-func apiDebug(ctx *api.Context) {
+func apiSetDebug(ctx *api.Context) {
 
 	uid := ctx.Args["obj"]
-	enable := argus.CheckBool(ctx.Args["enabled"])
 	m := Find(uid)
 
 	if m == nil {
@@ -30,7 +30,26 @@ func apiDebug(ctx *api.Context) {
 		return
 	}
 
-	m.Cf.Debug = enable
+	enable := ctx.Args["enabled"]
+	if enable != "" {
+		m.Cf.Debug = argus.CheckBool(enable)
+	} else {
+		m.Cf.Debug = true
+	}
+	ctx.SendOKFinal()
+}
+
+func apiClrDebug(ctx *api.Context) {
+
+	uid := ctx.Args["obj"]
+	m := Find(uid)
+
+	if m == nil {
+		ctx.Send404()
+		return
+	}
+
+	m.Cf.Debug = false
 	ctx.SendOKFinal()
 }
 

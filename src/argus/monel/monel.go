@@ -311,6 +311,10 @@ func (m *M) DoneConfig() {
 
 	for _, child := range m.Children {
 		child.DoneConfig()
+		wt := child.WebTime
+		if wt > m.WebTime {
+			m.WebTime = wt
+		}
 	}
 
 	m.ConfCF.CheckTypos()

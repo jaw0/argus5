@@ -136,21 +136,9 @@ func (c *Client) ipAddr() string {
 
 func (c *Client) auth() bool {
 
-	resp, err := c.conn.Get("auth", nil, TIMEOUT)
-	if err != nil {
-		dl.Debug("error: %v", err)
-		return false
-	}
-
-	res := resp.Map()
-	nonce := res["nonce"]
-	dl.Debug("recvd nonce %s", nonce)
-
-	digest := authDigest(MyDarp.Pass, nonce)
-
-	resp, err = c.conn.Get("auth", map[string]string{
-		"name":   MyDarp.Name,
-		"digest": digest,
+	err := c.conn.Auth(&client.Creds{
+		Name: MyDarp.Name,
+		Pass: MyDarp.Pass,
 	}, TIMEOUT)
 
 	if err != nil {
@@ -158,9 +146,5 @@ func (c *Client) auth() bool {
 		return false
 	}
 
-	if resp.Code != 200 {
-		dl.Verbose("authentication with '%s' failed '%d %s'", c.Name, resp.Code, resp.Msg)
-		return false
-	}
 	return true
 }

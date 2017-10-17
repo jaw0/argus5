@@ -12,6 +12,7 @@ import (
 	"argus/darp"
 	"argus/group"
 	"argus/monel"
+	"argus/monitor/agent"
 	"argus/monitor/snmp"
 	"argus/notify"
 	"argus/service"
@@ -60,6 +61,11 @@ func Make(cf *configure.CF, parent *monel.M) *monel.M {
 
 	case "snmpoid":
 		err := snmp.NewOID(cf)
+		if err != nil {
+			cf.Error("%v", err)
+		}
+	case "agent":
+		err := agent.NewAgent(cf)
 		if err != nil {
 			cf.Error("%v", err)
 		}

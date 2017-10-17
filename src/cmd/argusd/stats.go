@@ -9,6 +9,8 @@ import (
 	"expvar"
 	"syscall"
 	"time"
+
+	"argus/clock"
 )
 
 const LAMBDA = 10
@@ -16,6 +18,7 @@ const DELAY = 30 * time.Second
 
 var monrate = expvar.NewFloat("monrate")
 var cpurate = expvar.NewFloat("cpurate")
+var uptime = expvar.NewInt("uptime")
 
 func statsCollector() {
 
@@ -34,6 +37,9 @@ func statsCollector() {
 		if lambda > LAMBDA {
 			lambda = LAMBDA
 		}
+
+		// uptime
+		uptime.Set(clock.Unix() - starttime)
 
 		// monitoring per second
 		crun := runs.Value()

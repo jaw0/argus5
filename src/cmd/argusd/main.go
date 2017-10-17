@@ -11,8 +11,10 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
+	_ "argus/agent"
 	"argus/api"
 	"argus/argus"
 	"argus/clock"
@@ -201,6 +203,7 @@ func apiStatus(ctx *api.Context) {
 	ctx.SendOK()
 	ctx.SendKVP("status", status)
 	ctx.SendKVP("version", argus.Version)
+	ctx.SendKVP("OS", runtime.GOOS)
 	ctx.SendKVP("objects", monel.NMonel.String())
 	ctx.SendKVP("services", service.NService.String())
 	ctx.SendKVP("alerts", notify.NActive.String())

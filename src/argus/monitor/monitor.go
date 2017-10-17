@@ -6,6 +6,7 @@
 package monitor
 
 import (
+	_ "argus/monitor/agent"
 	_ "argus/monitor/asterisk"
 	_ "argus/monitor/compute"
 	_ "argus/monitor/darpwatch"

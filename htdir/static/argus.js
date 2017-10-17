@@ -110,11 +110,15 @@ function ajax_fail(r, err, reason){
     $('#errormsg').show()
 }
 
+var jsonupd
 function build_page_ok(d){
 
     argus.log("json ok")
     argus.log(" json data: " + d)
     spinner_off()
+
+    jsonupd = d
+    argus.log("rcv since " + d.webtime)
 
     process_meta(d)
     convert_data(d)
