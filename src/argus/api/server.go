@@ -8,6 +8,7 @@ package api
 import (
 	"bufio"
 	"crypto/rand"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"os"
@@ -24,7 +25,6 @@ const (
 )
 
 type Serverer interface {
-	Auth(string, string, string) bool
 	Connected(string)
 	Disco(string)
 }
@@ -71,6 +71,21 @@ func ServerNew(ob Serverer, who string, dom string, addr string) {
 	go serverAccept(ob, l, dom)
 }
 
+func ServerNewTLS(ob Serverer, who string, addr string, tlscf *tls.Config) {
+
+	l, err := tls.Listen("tcp", addr, tlscf)
+
+	if err != nil {
+		dl.Problem("cannot open socket: %v", err)
+		return
+	}
+
+	dl.Verbose("%s listening on tls:%s", who, addr)
+
+	apiListener = append(apiListener, &listenSet{l, "tls"})
+	go serverAccept(ob, l, "tls")
+}
+
 func serverAccept(ob Serverer, l net.Listener, dom string) {
 
 	for {
@@ -97,8 +112,9 @@ func apiRun(ob Serverer, c net.Conn, dom string) {
 	}()
 
 	// unix socket connections are trusted,
-	// network connections need to authenticate
-	if dom == "unix" {
+	// tls connectsions are authenticated by pki
+	// other connections need to authenticate
+	if dom == "unix" || dom == "tls" {
 		ctx.Authed = true
 	} else {
 		nonce := make([]byte, NONCELEN)
@@ -114,6 +130,11 @@ func apiRun(ob Serverer, c net.Conn, dom string) {
 
 	for {
 		ok := ctx.readRequest()
+
+		if dom == "tls" && ctx.User == "" {
+			ctx.tlsInfo(c)
+		}
+
 		if !ok {
 			return
 		}
@@ -127,6 +148,27 @@ func apiRun(ob Serverer, c net.Conn, dom string) {
 		}
 	}
 
+}
+
+// determine darp name from cert
+func (ctx *Context) tlsInfo(c net.Conn) {
+
+	switch x := c.(type) {
+	case *tls.Conn:
+		s := x.ConnectionState()
+		if len(s.PeerCertificates) < 1 {
+			return
+		}
+		cert := s.PeerCertificates[0]
+		name := cert.Subject.CommonName
+
+		dl.Verbose("pki authentication ok for %s from %s", name, ctx.Conn.RemoteAddr())
+		ctx.User = name
+		ctx.Authed = true
+
+	default:
+		return
+	}
 }
 
 // Grammar, which knows how to control even kings.
@@ -250,7 +292,7 @@ func (ctx *Context) Send(txt string) {
 func init() {
 
 	Add(false, "exit", apiFuncExit)
-	Add(false, "auth", apiFuncAuth)
+	// Add(false, "auth", apiFuncAuth)
 	Add(true, "ping", apiFuncPing)
 }
 
@@ -263,31 +305,4 @@ func apiFuncPing(ctx *Context) {
 	// RSN - send back interesting data...
 	// started_time, user sessions, overrides, ...
 	ctx.SendOKFinal()
-}
-
-func apiFuncAuth(ctx *Context) {
-
-	name := ctx.Args["name"]
-	digest := ctx.Args["digest"]
-
-	if name == "" || digest == "" {
-		ctx.SendResponse(403, "Authentication Required")
-		ctx.SendKVP("nonce", string(ctx.Nonce))
-		ctx.SendFinal()
-		return
-	}
-
-	if ctx.doer != nil {
-		ok := ctx.doer.Auth(name, ctx.Nonce, digest)
-		if ok {
-			dl.Verbose("authentication ok for %s from %s", name, ctx.Conn.RemoteAddr())
-			ctx.User = name
-			ctx.Authed = true
-			ctx.doer.Connected(name)
-			ctx.SendOKFinal()
-		} else {
-			ctx.SendResponseFinal(403, "Authentication Failed")
-			dl.Verbose("authentication failed from %s", ctx.Conn.RemoteAddr())
-		}
-	}
 }

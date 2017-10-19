@@ -7,6 +7,7 @@ package client
 
 import (
 	"bufio"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"strconv"
@@ -45,6 +46,20 @@ func New(dom string, addr string, timeout time.Duration) (*Conn, error) {
 
 }
 
+func NewTLS(addr string, timeout time.Duration, tlscf *tls.Config) (*Conn, error) {
+
+	c, err := net.DialTimeout("tcp", addr, timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	tc := tls.Client(c, tlscf)
+
+	bfd := bufio.NewReader(tc)
+
+	return &Conn{C: tc, bfd: bfd}, nil
+
+}
 func (c *Conn) Close() {
 	c.C.Close()
 

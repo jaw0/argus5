@@ -6,12 +6,14 @@
 package darp
 
 import (
+	"crypto/tls"
 	"fmt"
 	"time"
 
 	"argus/api/client"
 	"argus/clock"
 	"argus/resolv"
+	"argus/sec"
 )
 
 const (
@@ -89,14 +91,22 @@ func (c *Client) Reconnect(timeout int64) {
 	c.Close()
 
 	for {
+		dl.Debug("connecting to %s", c.Name)
+
 		now := clock.Unix()
 		if timeout != 0 && t0+timeout < now {
 			return
 		}
 
 		// keep trying until we connect
-		addr := c.ipAddr()
-		conn, err := client.New("tcp", fmt.Sprintf("%s:%d", addr, c.Port), TIMEOUT)
+		addr, _ := c.ip.AddrWB()
+		name, _, _ := c.ip.Addr()
+
+		conn, err := client.NewTLS(fmt.Sprintf("%s:%d", addr, c.Port), TIMEOUT, &tls.Config{
+			Certificates: []tls.Certificate{*sec.Cert},
+			RootCAs:      sec.Root,
+			ServerName:   name, // cert must be configured with this ip addr
+		})
 		if err != nil {
 			dl.Debug("connect failed to '%s': %v", c.Name, err)
 			time.Sleep(5 * time.Second)
@@ -104,15 +114,7 @@ func (c *Client) Reconnect(timeout int64) {
 		}
 
 		c.conn = conn
-		ok := c.auth()
-
-		if ok {
-			break
-		}
-
-		time.Sleep(10 * time.Second)
-		conn.Close()
-		c.conn = nil
+		break
 	}
 
 	dl.Verbose("darp connected to %s", c.Name)
@@ -132,19 +134,4 @@ func (c *Client) ipAddr() string {
 		}
 		time.Sleep(time.Second)
 	}
-}
-
-func (c *Client) auth() bool {
-
-	err := c.conn.Auth(&client.Creds{
-		Name: MyDarp.Name,
-		Pass: MyDarp.Pass,
-	}, TIMEOUT)
-
-	if err != nil {
-		dl.Debug("error: %v", err)
-		return false
-	}
-
-	return true
 }

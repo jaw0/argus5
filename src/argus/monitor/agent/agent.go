@@ -6,17 +6,19 @@
 package agent
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"argus/api/client"
 	"argus/configure"
-	"argus/darp"
 	"argus/diag"
 	"argus/resolv"
+	"argus/sec"
 	"argus/service"
 )
 
@@ -35,7 +37,6 @@ type Command struct {
 type Conf struct {
 	Param      string
 	Arg        string
-	Agent_Pass string
 	Agent_Port int
 }
 
@@ -86,9 +87,6 @@ func (a *Agent) Config(conf *configure.CF, s *service.Service) error {
 	if a.Cf.Agent_Port == 0 {
 		return errors.New("agent_port not specified")
 	}
-	if a.Cf.Agent_Pass == "" {
-		return errors.New("agent_pass not specified")
-	}
 	if a.Cf.Param == "" {
 		return errors.New("param not specified")
 	}
@@ -125,18 +123,6 @@ func (a *Agent) Start(s *service.Service) {
 		return
 	}
 	defer conn.Close()
-
-	// auth
-	err := conn.Auth(&client.Creds{
-		Name: darp.MyId,
-		Pass: a.Cf.Agent_Pass,
-	}, timeout)
-
-	if err != nil {
-		a.S.Debug("error: %v", err)
-		a.S.Fail("auth failed")
-		return
-	}
 
 	if a.os == "" {
 		// determine OS
@@ -254,7 +240,11 @@ func (a *Agent) Connect() (*client.Conn, bool) {
 	a.S.Debug("connecting to tcp %s", addrport)
 
 	timeout := time.Duration(a.S.Cf.Timeout) * time.Second
-	conn, err := client.New("tcp", addrport, timeout)
+	conn, err := client.NewTLS(addrport, timeout, &tls.Config{
+		Certificates:       []tls.Certificate{*sec.Cert},
+		RootCAs:            sec.Root,
+		InsecureSkipVerify: true, // other side will verify us, not vice-versa
+	})
 
 	if err != nil {
 		a.S.Fail("connect failed")

@@ -26,6 +26,9 @@ type Config struct {
 	Port_https      int
 	Port_test       int
 	DARP_Name       string
+	DARP_root       string
+	DARP_key        string
+	DARP_cert       string
 	Datadir         string
 	Htdir           string
 	Monitor_config  string
@@ -33,6 +36,8 @@ type Config struct {
 	Nameserver      []string
 	DNS_search      []string
 	DevMode         bool
+	Agent_Mode      bool
+	Agent_Port      int
 	Debug           map[string]bool
 }
 

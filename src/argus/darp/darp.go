@@ -6,6 +6,7 @@
 package darp
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"argus/configure"
 	"argus/diag"
 	"argus/resolv"
+	"argus/sec"
 )
 
 type Maker interface {
@@ -26,7 +28,6 @@ type Maker interface {
 
 type DARP struct {
 	Name         string
-	Pass         string
 	Type         string
 	Fetch_Config string // name of master
 	Port         int
@@ -56,6 +57,7 @@ var MyDarp *DARP
 var iHaveSlaves bool
 var IsEnabled bool
 var objMaker Maker
+var serverRunning int
 var allDarp = make(map[string]*DARP)
 var masters = make(map[string]*DARP)
 
@@ -87,10 +89,6 @@ func New(conf *configure.CF) error {
 	}
 	if t != "master" && t != "slave" {
 		return errors.New("must specify type: master or slave")
-	}
-
-	if d.Pass == "" {
-		return errors.New("pass not specified")
 	}
 
 	allDarp[name] = d
@@ -133,9 +131,7 @@ func Init(mo Maker) {
 		}
 	}
 
-	// start server
-	ob := &DarpServerer{}
-	api.ServerNew(ob, "darp", "tcp", fmt.Sprintf(":%d", MyDarp.Port))
+	startServer("darp", MyDarp.Port)
 
 	// start clients
 	for _, d := range masters {
@@ -144,6 +140,37 @@ func Init(mo Maker) {
 		dx.ch = make(chan *sendMsg, 100)
 		go dx.StartClient()
 	}
+}
+
+// if running as an agent, start up a darp server
+func Agent(port int) {
+
+	cf := config.Cf()
+
+	if port == 0 {
+		port = cf.Agent_Port
+	}
+	if port == 0 {
+		port = DEFAULTPORT
+	}
+
+	if serverRunning == port {
+		return
+	}
+
+	startServer("agent", port)
+}
+
+func startServer(name string, port int) {
+
+	ob := &DarpServerer{}
+	api.ServerNewTLS(ob, name, fmt.Sprintf(":%d", port), &tls.Config{
+		Certificates: []tls.Certificate{*sec.Cert},
+		ClientCAs:    sec.Root,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+	})
+
+	serverRunning = port
 }
 
 // ################################################################

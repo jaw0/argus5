@@ -47,7 +47,7 @@ func load() {
 	err := argus.Load(file, &sessions)
 
 	if err != nil {
-		dl.Problem("cannot load users data: %v", err)
+		dl.Verbose("cannot load users data: %v", err)
 	}
 
 	cleanup()

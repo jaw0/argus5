@@ -16,6 +16,7 @@ import (
 	"argus/argus"
 	"argus/config"
 	"argus/diag"
+	"argus/sec"
 	"argus/users"
 )
 
@@ -71,6 +72,7 @@ func Start() *Server {
 	if cf.Port_https != 0 && cf.TLS_cert != "" && cf.TLS_key != "" {
 		doWeb = true
 		dl.Verbose("starting https on :%d", cf.Port_https)
+		sec.CertFileExpiresWarn(cf.TLS_cert, cf.TLS_key)
 		www := s.httpServer(cf.Port_https)
 		go func() {
 			defer s.done.Done()

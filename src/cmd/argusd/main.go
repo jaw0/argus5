@@ -29,6 +29,7 @@ import (
 	"argus/notify"
 	"argus/resolv"
 	"argus/sched"
+	"argus/sec"
 	"argus/service"
 	"argus/testport"
 	"argus/web"
@@ -52,9 +53,15 @@ func init() {
 func main() {
 	var configfile string
 	var foreground bool
+	var rootcert string
+	var controlsock string
+	var agentport int
 
-	flag.StringVar(&configfile, "c", "/dev/null", "config file")
+	flag.StringVar(&configfile, "c", "", "config file")
 	flag.BoolVar(&foreground, "f", false, "run in foreground")
+	flag.StringVar(&rootcert, "A", "", "run in agent mode using the specified root cert")
+	flag.IntVar(&agentport, "p", 0, "tcp port for agent mode")
+	flag.StringVar(&controlsock, "s", "", "control socket")
 	flag.Parse()
 
 	if !foreground {
@@ -64,8 +71,20 @@ func main() {
 	diag.Init("argusd")
 
 	// load small base config
-	config.Load(configfile)
+	if configfile != "" {
+		config.Load(configfile)
+	}
 	cf := config.Cf()
+
+	if controlsock != "" {
+		cf.Control_Socket = controlsock
+	}
+	if rootcert != "" {
+		cf.Agent_Mode = true
+		if configfile == "" {
+			diag.SetConfig(&diag.Config{Facility: "daemon"})
+		}
+	}
 
 	argus.Loggit("", "Argus starting")
 	diag.Verbose("starting....")
@@ -78,6 +97,7 @@ func main() {
 	os.Setenv("ARGUS_PID", fmt.Sprintf("%d", os.Getpid()))
 	os.Setenv("ARGUS_VER", argus.Version)
 
+	sec.Init(rootcert)
 	ping.Init()
 	sched.Init()
 	resolv.Init()
@@ -93,6 +113,7 @@ func main() {
 	// init stats dir, etal
 	createStatsDirs()
 	createGdataDirs()
+	createNotifyDirs()
 
 	// read large config
 	if cf.Monitor_config != "" {
@@ -103,6 +124,11 @@ func main() {
 	web.Configured()
 	api.Init()           // start local api server
 	darp.Init(&MakeIt{}) // after config is loaded
+
+	if cf.Agent_Mode {
+		darp.Agent(agentport)
+	}
+
 	go statsCollector()
 
 	argus.Loggit("", "Argus running")
@@ -124,7 +150,7 @@ func raiseFileLimit() {
 
 	cf := config.Cf()
 	// attempt to increase to max possible
-	limit := syscall.Rlimit{syscall.RLIM_INFINITY, syscall.RLIM_INFINITY}
+	limit := syscall.Rlimit{0xFFFFFFFF, 0xFFFFFFFF} // RLIM_INFINITY is broken on linux
 	syscall.Setrlimit(syscall.RLIMIT_NOFILE, &limit)
 	// how many do we actually have?
 	syscall.Getrlimit(syscall.RLIMIT_NOFILE, &limit)
@@ -163,6 +189,22 @@ func createGdataDirs() {
 	createDirs("gdata")
 }
 
+func createNotifyDirs() {
+
+	cf := config.Cf()
+
+	if cf.Datadir == "" {
+		return
+	}
+
+	fdir := cf.Datadir + "/notify"
+
+	err := mkdir(fdir)
+	if err != nil {
+		dl.Fatal("cannot create '%s': %v", fdir, err)
+	}
+}
+
 func createDirs(dir string) {
 
 	cf := config.Cf()
@@ -177,12 +219,30 @@ func createDirs(dir string) {
 
 	for a := 'A'; a <= 'Z'; a++ {
 		dir := fmt.Sprintf("%s/%c", fdir, a)
-		os.Mkdir(dir, 0777)
+		err := mkdir(dir)
+		if err != nil {
+			dl.Fatal("cannot create '%s': %v", dir, err)
+		}
 		for b := 'A'; b <= 'Z'; b++ {
 			dir := fmt.Sprintf("%s/%c/%c", fdir, a, b)
-			os.Mkdir(dir, 0777)
+			err := mkdir(dir)
+			if err != nil {
+				dl.Fatal("cannot create '%s': %v", dir, err)
+			}
 		}
 	}
+}
+
+func mkdir(dir string) error {
+
+	info, err := os.Stat(dir)
+	if err == nil && info.IsDir() {
+		// already exists. great
+		return nil
+	}
+
+	err = os.Mkdir(dir, 0777)
+	return err
 }
 
 func apiHup(ctx *api.Context) {
