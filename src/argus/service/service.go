@@ -40,8 +40,8 @@ type Conf struct {
 	Timeout      int `cfconv:"timespec"`
 	Showreason   bool
 	Showresult   bool
-	DARPGravity  argus.Gravity
 	Severity     argus.Status
+	DARP_Gravity argus.Gravity
 	DARP_Tags    string
 	Calc         string
 	Alpha        float64
@@ -65,13 +65,13 @@ type Conf struct {
 }
 
 var defaults = Conf{
-	Frequency:   60,
-	Retries:     2,
-	Retrydelay:  60,
-	Timeout:     15,
-	DARPGravity: argus.GRAV_IETF,
-	Severity:    argus.CRITICAL,
-	Alpha:       1,
+	Frequency:    60,
+	Retries:      2,
+	Retrydelay:   60,
+	Timeout:      15,
+	DARP_Gravity: argus.GRAV_IETF,
+	Severity:     argus.CRITICAL,
+	Alpha:        1,
 }
 
 func init() {
@@ -307,7 +307,7 @@ func (s *Service) setResultForL(id string, status argus.Status, result string, r
 
 	s.p.Statuses[id] = status
 
-	return darp.AggrStatus(s.Cf.DARPGravity, status, s.p.Statuses)
+	return darp.AggrStatus(s.Cf.DARP_Gravity, status, s.p.Statuses)
 }
 
 // ################################################################

@@ -99,7 +99,7 @@ func (c *Client) Reconnect(timeout int64) {
 		}
 
 		// keep trying until we connect
-		addr, _ := c.ip.AddrWB()
+		addr := c.ipAddr()
 		name, _, _ := c.ip.Addr()
 
 		conn, err := client.NewTLS(fmt.Sprintf("%s:%d", addr, c.Port), TIMEOUT, &tls.Config{

@@ -3,3 +3,7 @@ github.com/miekg/dns
 github.com/mitchellh/mapstructure
 github.com/soniah/gosnmp
 github.com/uknth/jsonpath
+github.com/lib/pq
+github.com/go-sql-driver/mysql/
+github.com/SAP/go-hdb/driver
+github.com/denisenkom/go-mssqldb

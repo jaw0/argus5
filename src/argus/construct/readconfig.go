@@ -40,7 +40,7 @@ var confconf = map[string]*readConf{
 	"resolv":  &readConf{},
 }
 
-func ReadConfig(file string) {
+func ReadConfig(file string) []string {
 
 	f := NewReader(file)
 	cf := configure.NewCF("group", "Top", nil)
@@ -57,6 +57,8 @@ func ReadConfig(file string) {
 	service.GraphConfig(cf)
 	// other.Configure(cf)
 	top.DoneConfig()
+
+	return f.allfiles
 }
 
 func readKVP(f *Files, cf *configure.CF) bool {

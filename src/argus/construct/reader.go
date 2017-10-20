@@ -24,11 +24,12 @@ type openfile struct {
 }
 
 type Files struct {
-	curr    *openfile
-	basedir string
-	files   []string
-	opens   []*openfile
-	ungot   string
+	curr     *openfile
+	basedir  string
+	files    []string
+	opens    []*openfile
+	allfiles []string
+	ungot    string
 }
 
 // file or directory
@@ -92,6 +93,7 @@ func (f *Files) openFile(file string) bool {
 	if f.curr != nil {
 		f.opens = append(f.opens, f.curr)
 	}
+	f.allfiles = append(f.allfiles, pathname)
 	f.curr = o
 	return true
 }

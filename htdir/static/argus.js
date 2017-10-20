@@ -594,8 +594,11 @@ function process_meta(d){
             siren_icon(1)
             $('#sirensound').trigger('play')
         }
+        $('#faviconico').attr('href','/static/sadred.gif');
+
     }else{
         siren_icon(0)
+        $('#faviconico').attr('href','/static/smile.gif');
     }
 
     if( d.unacked ){

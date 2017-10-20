@@ -17,6 +17,7 @@ import (
 	_ "argus/monitor/ping"
 	_ "argus/monitor/prog"
 	_ "argus/monitor/self"
+	_ "argus/monitor/sip"
 	_ "argus/monitor/snmp"
 	_ "argus/monitor/tcp"
 	_ "argus/monitor/udp"

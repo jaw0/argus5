@@ -26,7 +26,7 @@ func main() {
 
 	var rawoutput bool
 	var controlsock string
-	flag.StringVar(&controlsock, "c", "/tmp/argus.ctl", "control socket")
+	flag.StringVar(&controlsock, "s", "/tmp/argus.ctl", "control socket")
 	flag.BoolVar(&rawoutput, "r", false, "raw output")
 	flag.Parse()
 

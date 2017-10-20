@@ -5,6 +5,10 @@
 
 package argus
 
+import (
+	"strings"
+)
+
 type Gravity int
 
 const (
@@ -24,4 +28,22 @@ func (g Gravity) String() string {
 		return "invalid"
 	}
 	return gravityname[int(g)]
+}
+
+func GravityValue(name string) Gravity {
+
+	switch strings.ToLower(name) {
+	case "up":
+		return GRAV_UP
+	case "down":
+		return GRAV_DN
+	case "vote":
+		return GRAV_VOTE
+	case "ietf":
+		return GRAV_IETF
+	case "self":
+		return GRAV_SELF
+	}
+
+	return GRAV_UP
 }

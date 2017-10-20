@@ -8,6 +8,9 @@ package monel
 import (
 	"expvar"
 	"fmt"
+	"regexp"
+	"sort"
+	"strconv"
 	"sync"
 
 	"argus/api"
@@ -59,7 +62,6 @@ type Conf struct {
 	Sort         bool
 	Overridable  bool
 	Passive      bool
-	Nostatus     bool
 	Countstop    bool
 	Hidden       bool
 	Graph        bool
@@ -78,6 +80,7 @@ type Conf struct {
 }
 
 var defaults = Conf{
+	Sort:         true,
 	Overridable:  true,
 	Siren:        [...]bool{true, false, false, false, false, false},
 	Gravity:      argus.GRAV_DN,
@@ -141,6 +144,10 @@ func New(me Moneler, parent *M) *M {
 
 	m.Cf = defaults
 
+	if parent == nil {
+		m.Cf.Sort = false
+	}
+
 	return m
 }
 
@@ -182,6 +189,16 @@ func (m *M) Config(conf *configure.CF) error {
 	m.Name = conf.Name
 
 	conf.InitFromConfig(&m.Cf, "monel", "")
+
+	if m.Cf.Passive {
+		for i := 0; i < len(m.Cf.Sendnotify); i++ {
+			m.Cf.Sendnotify[i] = nil
+		}
+		for i := 0; i < len(m.Cf.Siren); i++ {
+			m.Cf.Siren[i] = false
+		}
+	}
+
 	m.configureNotify(conf)
 
 	err := m.Me.Config(conf)
@@ -350,9 +367,6 @@ func (m *M) determineInteresting() {
 	if len(m.Children) == 0 {
 		ip = true
 	}
-	if m.Cf.Nostatus {
-		ip = false
-	}
 	if m.Cf.Passive {
 		ip = false
 	}
@@ -365,11 +379,38 @@ func (m *M) determineInteresting() {
 
 func (m *M) sortChildren() {
 
-	if !m.Cf.Sort {
+	if !m.Cf.Sort || len(m.Children) == 0 {
 		return
 	}
 
-	// RSN - ...
+	re, err := regexp.Compile("\\d+")
+	if err != nil {
+		dl.Bug("regexp failed: %v", err)
+		return
+	}
+	type schwartz struct {
+		key string
+		mon *M
+	}
+
+	childs := make([]schwartz, len(m.Children))
+
+	for i, c := range m.Children {
+		name := re.ReplaceAllStringFunc(c.Cf.Unique, func(s string) string {
+			v, _ := strconv.Atoi(s)
+			return fmt.Sprintf("%09d", v)
+		})
+
+		childs[i].mon = c
+		childs[i].key = name
+	}
+
+	sort.Slice(childs, func(i, j int) bool { return childs[i].key < childs[j].key })
+
+	for i := range m.Children {
+		m.Children[i] = childs[i].mon
+	}
+
 }
 
 func (m *M) AddChild(n *M) {

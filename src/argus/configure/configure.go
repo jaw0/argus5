@@ -131,9 +131,11 @@ func (cf *CF) setValue(v reflect.Value, conv string, name string) {
 		case "string":
 			v.SetString(cval)
 		case "argus.Status":
-			v.SetInt(int64(statusValue(cval)))
+			v.SetInt(int64(argus.StatusValue(cval)))
 		case "darp.Gravity", "argus.Gravity":
-			v.SetInt(int64(gravityValue(cval)))
+			v.SetInt(int64(argus.GravityValue(cval)))
+		case "argus.DarpMode":
+			v.SetInt(int64(argus.DarpModeValue(cval)))
 		case "*argus.Schedule":
 			// convert string to always schedule
 			v.Set(reflect.ValueOf(argus.ScheduleAlways(cval)))

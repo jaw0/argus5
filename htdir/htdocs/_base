@@ -15,7 +15,7 @@
   <script src="/static/chartstrip.js"></script>
   <script src="/static/argus.js"></script>
 
-  <link rel="icon" href="/static/sadred.gif" type="image/gif">
+  <link rel="icon" href="/static/smile.gif" type="image/gif" id=faviconico>
 
   <script>
         var devmode = {[ .DevMode ]}

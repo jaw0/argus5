@@ -19,6 +19,10 @@ import (
 
 func (m *M) Persist() {
 
+	if m.Cf.Passive {
+		return
+	}
+
 	dat := make(map[string]interface{})
 
 	cf := config.Cf()

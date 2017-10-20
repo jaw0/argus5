@@ -5,6 +5,10 @@
 
 package argus
 
+import (
+	"strings"
+)
+
 type Status int
 
 const (
@@ -20,23 +24,6 @@ const (
 	MAXSTATUS Status = 7
 )
 
-type colors struct {
-	fg string
-	bg string
-	bk string
-}
-
-var conf = []colors{
-	CLEAR:    {"22AA22", "33DD33", "88ff88"}, // green
-	WARNING:  {"0088DD", "88DDFF", ""},       // blue
-	MINOR:    {"CCCC00", "FFFF00", ""},       // yellow
-	MAJOR:    {"DD9900", "FFBB44", ""},       // orange
-	CRITICAL: {"CC0000", "FF4444", "ff8888"}, // red
-	OVERRIDE: {"888888", "DDDDDD", ""},       // gray
-	DEPENDS:  {"DD9900", "FFCC44", ""},       // orange
-	UNKNOWN:  {"BB44EE", "DD99FF", ""},       // purple
-}
-
 var statusname = []string{
 	"unknown", "clear", "warning", "minor", "major", "critical", "override", "depends",
 }
@@ -49,18 +36,20 @@ func (s Status) String() string {
 	return statusname[int(s)]
 }
 
-func (s Status) ColorFG() string {
-	return conf[s].fg
-}
+func StatusValue(name string) Status {
 
-func (s Status) ColorBG() string {
-	return conf[s].bg
-}
+	switch strings.ToLower(name) {
+	case "clear":
+		return CLEAR
+	case "warning":
+		return WARNING
+	case "minor":
+		return MINOR
+	case "major":
+		return MAJOR
+	case "critical":
+		return CRITICAL
 
-func (s Status) ColorBulk() string {
-	c := conf[s].bk
-	if c != "" {
-		return c
 	}
-	return conf[s].bg
+	return UNKNOWN
 }

@@ -11,8 +11,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"os/user"
 	"runtime"
+	"strconv"
 	"syscall"
+	"time"
 
 	_ "argus/agent"
 	"argus/api"
@@ -34,6 +37,8 @@ import (
 	"argus/testport"
 	"argus/web"
 )
+
+const WEEK = 7 * 24 * 3600 * time.Second
 
 var dl = diag.Logger("main")
 var shutdown = make(chan int)
@@ -108,16 +113,21 @@ func main() {
 	web.Init()
 	testport.Start(cf.Port_test)
 
-	// change user/group
+	changeUser()
 
 	// init stats dir, etal
 	createStatsDirs()
 	createGdataDirs()
 	createNotifyDirs()
+	initCleanDirs()
 
 	// read large config
 	if cf.Monitor_config != "" {
-		construct.ReadConfig(cf.Monitor_config)
+		files := construct.ReadConfig(cf.Monitor_config)
+
+		if cf.Auto_Reload && !foreground {
+			go watchFiles(files)
+		}
 	}
 
 	// prepare web serving
@@ -144,6 +154,37 @@ func main() {
 	diag.Verbose("stopped")
 	argus.Loggit("", "Argus exiting")
 	os.Exit(exitvalue)
+}
+
+func changeUser() {
+
+	cf := config.Cf()
+
+	if cf.User != "" {
+		usr, err := user.Lookup(cf.User)
+		if err != nil {
+			dl.Fatal("invalid user '%s': %v", cf.User, err)
+		}
+		uid, _ := strconv.Atoi(usr.Uid)
+
+		err = syscall.Setreuid(uid, uid)
+		if err != nil {
+			dl.Fatal("cannot change user: %v", err)
+		}
+	}
+
+	if cf.Group != "" {
+		grp, err := user.LookupGroup(cf.Group)
+		if err != nil {
+			dl.Fatal("invalid group '%s': %v", cf.Group, err)
+		}
+		gid, _ := strconv.Atoi(grp.Gid)
+
+		err = syscall.Setregid(gid, gid)
+		if err != nil {
+			dl.Fatal("cannot change group: %v", err)
+		}
+	}
 }
 
 func raiseFileLimit() {
@@ -178,6 +219,30 @@ func sigHandle() {
 			exitvalue = 1
 			sched.Stop()
 		}
+	}
+}
+
+func watchFiles(files []string) {
+
+	start := time.Now()
+
+	for {
+		for _, f := range files {
+			info, err := os.Stat(f)
+			if err != nil {
+				continue
+			}
+
+			t := info.ModTime()
+
+			if t.After(start) {
+				dl.Verbose("config file '%s' changed - restarting", f)
+				sigchan <- syscall.SIGHUP
+				return
+			}
+		}
+
+		time.Sleep(30 * time.Second)
 	}
 }
 
@@ -228,6 +293,59 @@ func createDirs(dir string) {
 			err := mkdir(dir)
 			if err != nil {
 				dl.Fatal("cannot create '%s': %v", dir, err)
+			}
+		}
+	}
+}
+
+func initCleanDirs() {
+
+	sched.NewFunc(&sched.Conf{
+		Freq: 6 * 3600,
+		Text: "file cleanup",
+		Auto: true,
+	}, func() {
+		cleanDirs("stats", 2*WEEK)
+		cleanDirs("gdata", 2*WEEK)
+	})
+}
+
+// remove old orphaned files
+func cleanDirs(dir string, age time.Duration) {
+
+	cf := config.Cf()
+
+	if cf.Datadir == "" {
+		return
+	}
+
+	now := time.Now()
+	limit := now.Add(-age)
+
+	fdir := cf.Datadir + "/" + dir
+
+	for a := 'A'; a <= 'Z'; a++ {
+		for b := 'A'; b <= 'Z'; b++ {
+			dir := fmt.Sprintf("%s/%c/%c", fdir, a, b)
+
+			f, err := os.Open(dir)
+			if err != nil {
+				continue
+			}
+
+			files, _ := f.Readdirnames(-1)
+			f.Close()
+
+			for _, file := range files {
+				f := dir + "/" + file
+				info, err := os.Stat(f)
+				if err != nil {
+					continue
+				}
+
+				if info.ModTime().Before(limit) {
+					os.Remove(f)
+				}
 			}
 		}
 	}

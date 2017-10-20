@@ -33,10 +33,13 @@ type Config struct {
 	Htdir           string
 	Monitor_config  string
 	Control_Socket  string
+	User            string
+	Group           string
 	Nameserver      []string
 	DNS_search      []string
 	DevMode         bool
 	Agent_Mode      bool
+	Auto_Reload     bool
 	Agent_Port      int
 	Debug           map[string]bool
 }
