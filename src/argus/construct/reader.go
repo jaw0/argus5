@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 
 	"argus/argus"
@@ -158,6 +159,18 @@ func (f *Files) NextLine() (string, bool) {
 			continue
 		}
 
+		if len(a) > 0 {
+			// trim leading space after \ joiner
+			i := 0
+			var c byte
+			for i, c = range b {
+				if c != ' ' && c != '\t' {
+					break
+				}
+			}
+			b = b[i:]
+		}
+
 		a = append(a, b...)
 
 		if a[len(a)-1] == '\\' {
@@ -230,9 +243,19 @@ func cleanLine(l []byte) []byte {
 				buf[j] = '\t'
 			case '#':
 				buf[j] = '#'
+			case '&':
+				// zero-width
+				j--
+			case 'x':
+				// \xAB
+				if len(l) > i+3 {
+					x, _ := strconv.ParseInt(string(l[i+1:i+3]), 16, 32)
+					buf[j] = byte(x)
+					i += 2
+				}
 
-				// RSN - \xFF
 			default:
+				// \* -> \*
 				buf[j] = c
 				j++
 				buf[j] = l[i]
