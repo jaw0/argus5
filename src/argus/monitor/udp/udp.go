@@ -12,12 +12,15 @@ import (
 	"strings"
 	"time"
 
-	//"argus/argus"
 	"argus/configure"
 	"argus/diag"
 	"argus/resolv"
 	"argus/service"
 )
+
+type Packeter interface {
+	Packet(net.Conn) (string, error)
+}
 
 type Conf struct {
 	Port                 int
@@ -32,6 +35,7 @@ type UDP struct {
 	Cf      Conf
 	Ip      *resolv.IP
 	ToSend  string
+	FSend   Packeter
 	dstaddr *net.UDPAddr
 }
 
@@ -90,7 +94,7 @@ func (t *UDP) Config(conf *configure.CF, s *service.Service) error {
 		t.Cf.Send = hxd(t.Cf.SendHex)
 	}
 
-	if t.Cf.Send == "" {
+	if t.Cf.Send == "" && t.FSend == nil {
 		return errors.New("send not specified")
 	}
 
@@ -168,6 +172,16 @@ func (t *UDP) MakeRequest() (string, bool) {
 }
 
 func (t *UDP) Send(conn *net.UDPConn) bool {
+
+	if t.FSend != nil {
+		p, err := t.FSend.Packet(conn)
+		if err != nil {
+			t.S.Debug("build packet failed: %v", err)
+			t.S.Fail("send failed")
+			return true
+		}
+		t.ToSend = p
+	}
 
 	t.S.Debug("send %d", len(t.ToSend))
 	n, err := conn.Write([]byte(t.ToSend))

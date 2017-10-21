@@ -20,6 +20,10 @@ import (
 	"argus/service"
 )
 
+type Packeter interface {
+	Packet(net.Conn) (string, error)
+}
+
 type Conf struct {
 	Port    int
 	Send    string
@@ -32,6 +36,7 @@ type TCP struct {
 	Cf     Conf
 	Ip     *resolv.IP
 	ToSend string
+	FSend  Packeter
 }
 
 var dl = diag.Logger("tcp")
@@ -182,6 +187,16 @@ func (t *TCP) MakeRequest() (string, bool) {
 }
 
 func (t *TCP) Send(conn net.Conn) bool {
+
+	if t.FSend != nil {
+		p, err := t.FSend.Packet(conn)
+		if err != nil {
+			t.S.Debug("build packet failed: %v", err)
+			t.S.Fail("send failed")
+			return true
+		}
+		t.ToSend = p
+	}
 
 	if t.ToSend != "" {
 		t.S.Debug("send %d", len(t.ToSend))
