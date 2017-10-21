@@ -107,7 +107,7 @@ func webList(ctx *web.Context) {
 		n.lock.RLock()
 		s := n.p.Created
 		if n.p.IsActive {
-			s /= 2
+			s *= 2
 		}
 		n.lock.RUnlock()
 		all = append(all, schwartz{n, s})
@@ -115,7 +115,7 @@ func webList(ctx *web.Context) {
 	lock.RUnlock()
 
 	// order by IsActive, Created
-	sort.Slice(all, func(i, j int) bool { return all[i].s < all[j].s })
+	sort.Slice(all, func(i, j int) bool { return all[j].s < all[i].s })
 
 	d := make(map[string]interface{})
 
