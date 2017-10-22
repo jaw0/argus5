@@ -246,6 +246,10 @@ table#loginform {
     color:			#bbb;
 }
 
+#listnotify td[onclick] {
+    cursor:			pointer;
+}
+
 /****************************************************************/
 
 pre {
