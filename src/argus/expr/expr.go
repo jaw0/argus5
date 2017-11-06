@@ -411,12 +411,7 @@ func fop_time(es *exprStack) (float64, bool) {
 
 func fop_rand(es *exprStack) (float64, bool) {
 
-	a, ok := es.popf()
-	if !ok {
-		return 0, false
-	}
-
-	return float64(rand.Int63n(int64(a))), true
+	return rand.Float64(), true
 }
 
 func fop_sin(es *exprStack) (float64, bool) {

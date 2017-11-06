@@ -305,8 +305,7 @@ func (m *M) configureNotify(conf *configure.CF) {
 		return
 	}
 
-	m.NotifyCf = &notify.Conf{}
-	// RSN - defaults
+	m.NotifyCf = notify.NewCF()
 	conf.InitFromConfig(m.NotifyCf, "notify", "")
 }
 
@@ -438,6 +437,10 @@ func (m *M) whoami() {
 
 	if m.Cf.Unique != "" {
 		return
+	}
+
+	if m.Cf.Label == "" && m.Cf.Uname != "" {
+		m.Cf.Label = m.Cf.Uname
 	}
 
 	if m.Cf.Uname == "" {

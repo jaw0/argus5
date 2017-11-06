@@ -19,6 +19,7 @@ import (
 func init() {
 	api.Add(true, "darp_list", apiDarpList)
 	api.Add(true, "update", apiSetResultFor)
+	api.Add(true, "hwab_reset", apiHwabReset)
 }
 
 // so slave can configure itself
@@ -93,6 +94,25 @@ func gatherParents(all map[string]bool, m *monel.M) {
 	all[uid] = true
 	// and upwards
 	gatherParents(all, p)
+}
+
+func apiHwabReset(ctx *api.Context) {
+
+	uid := ctx.Args["obj"]
+
+	obj := Find(uid)
+	if obj == nil {
+		ctx.Send404()
+		return
+	}
+
+	if obj.p.Hwab == nil {
+		ctx.SendResponseFinal(404, "HWAB not enabled")
+		return
+	}
+
+	obj.p.Hwab.Reset()
+	ctx.SendOKFinal()
 }
 
 // ################################################################

@@ -30,6 +30,7 @@ var DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 var gizmoConfig = [
     { el: 'listnotify',   url: '/api/listnotify', args: {}, freq: 30000 },
+    { el: 'listunacked',   url: '/api/listnotify', args: {}, freq: 30000 },
     { el: 'listdown',     url: '/api/listdown',   args: {}, freq: 30000 },
     { el: 'listoverride', url: '/api/listov',     args: {}, freq: 30000 }
 ]
@@ -225,9 +226,6 @@ function Gizmo(el, url, urlargs, hasmeta, freq){
     }
 
 })()
-
-// ****************************************************************
-
 
 // ****************************************************************
 function override_init(){

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Argus</title>
+  <title>Argus - {[ .ObjTitle ]}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <link href="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/themes/base/jquery-ui.css" rel="stylesheet" type="text/css">

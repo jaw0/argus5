@@ -7,6 +7,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"regexp"
@@ -232,6 +233,9 @@ func (s *Service) ResetRateCalc() {
 
 func (s *Service) rateCalc(calcmask uint32, fval float64) (float64, bool) {
 
+	s.mon.Lock.Lock()
+	defer s.mon.Lock.Unlock()
+
 	now := clock.Nano()
 	c := &s.p.Calc
 	dt := float64(now-c.Lastt) / 1e9
@@ -334,6 +338,12 @@ func JsonPath(path string, val string) (string, error) {
 }
 
 func doExpr(exp []string, fval float64) (ret float64, rer error) {
+
+	defer func() {
+		if x := recover(); x != nil {
+			rer = errors.New("invalid expr")
+		}
+	}()
 
 	sv := fmt.Sprintf("%f", fval)
 

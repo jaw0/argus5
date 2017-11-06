@@ -483,7 +483,10 @@ function Graph(el, obj, which, darp, ctls, width){
         }
         // update graph data
         this.cs.Replace( id, data )
-        this.cs.Replace( 'supplement ' + id, data ) // will be ignored if there is no supplement
+        // will be ignored if there is no supplement
+        this.cs.Replace( 'hwab ' + id, data )
+        this.cs.Replace( 'minmax ' + id, data )
+        this.cs.Replace( 'stdev ' + id, data )
         // re-render?
         if( this.selected[id] ) this.maybeBuild()
     }

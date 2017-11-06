@@ -12,7 +12,7 @@ import (
 
 func pluckTest(t *testing.T, reg string, val string, exp string) {
 
-	got := pluck(reg, val)
+	got := Pluck(reg, val)
 	if got != exp {
 		fmt.Printf("re %s + %s -> '%s' != '%s'\n", reg, val, got, exp)
 		t.Fail()
@@ -32,7 +32,7 @@ func TestPluck(t *testing.T) {
 
 func jsonTest(t *testing.T, path string, val string, exp string) {
 
-	got, _ := jsonPath(path, val)
+	got, _ := JsonPath(path, val)
 	if got != exp {
 		fmt.Printf("path %s + %s -> '%s' != '%s'\n", path, val, got, exp)
 		t.Fail()

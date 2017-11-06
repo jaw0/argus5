@@ -136,6 +136,7 @@ func apiDump(ctx *api.Context) {
 	ctx.SendKVP("monel/Parent", fmt.Sprintf("%v", parent))
 	ctx.SendKVP("monel/Children", fmt.Sprintf("%v", children))
 	ctx.DumpStruct(&m.Cf, "monel/CF/")
+	ctx.DumpStruct(m.NotifyCf, "monel/Notify/CF/")
 	ctx.DumpStruct(&m.P, "monel/")
 
 	m.Me.Dump(ctx)

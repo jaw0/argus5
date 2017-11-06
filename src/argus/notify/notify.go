@@ -128,11 +128,19 @@ var NotifyCfDefaults = Conf{
 	Renotify:      300,
 	UnAck_Timeout: 3600,
 	Ack_On_Worse:  [argus.CRITICAL + 1]bool{int(argus.UNKNOWN): true},
+	AutoAck:       [argus.CRITICAL + 1]bool{int(argus.CLEAR): true},
 }
 
 const SECSNANO = 1000000000
 
 // ################################################################
+
+func NewCF() *Conf {
+
+	cf := Conf{}
+	cf = NotifyCfDefaults
+	return &cf
+}
 
 func NumActive() int {
 	lock.RLock()

@@ -482,10 +482,10 @@ function ChartStrip(el, opts){
 
             if( pp ){
                 C.beginPath()
-                C.moveTo( this.dx(pp.Time), this.dy(pp.Min) )
-                C.lineTo( this.dx(pp.Time), this.dy(pp.Max) )
-                C.lineTo( this.dx(p.Time),  this.dy(p.Max) )
-                C.lineTo( this.dx(p.Time),  this.dy(p.Min) )
+                C.moveTo( Math.floor(this.dx(pp.Time)), this.dy(pp.Min) )
+                C.lineTo( Math.floor(this.dx(pp.Time)), this.dy(pp.Max) )
+                C.lineTo( Math.floor(this.dx(p.Time)),  this.dy(p.Max) )
+                C.lineTo( Math.floor(this.dx(p.Time)),  this.dy(p.Min) )
                 C.closePath()
                 C.fill()
             }
@@ -817,7 +817,7 @@ function ChartStrip(el, opts){
         C.lineWidth = 1
 
         if( !this.xtics || !this.ytics ) return
-        
+
         for(i=0; i<this.ytics.length; i++){
             tic = this.ytics[i]
             y = Math.round(this.dy(tic.y))

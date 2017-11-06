@@ -95,7 +95,7 @@ func (s *Service) Config(conf *configure.CF) error {
 func (s *Service) Init() error {
 
 	if s.p.Hwab != nil {
-		s.p.Hwab.Init()
+		s.p.Hwab.Init(s)
 	}
 
 	err := s.check.Init()

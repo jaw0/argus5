@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	CONTROLSOCKET = "/var/run/argus.ctl"
+	CONTROLSOCKET = "/var/tmp/argus.ctl"
 	PROTOCOL      = "ARGUS/5.0"
 	NONCELEN      = 64
 )
