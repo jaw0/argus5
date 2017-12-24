@@ -12,6 +12,9 @@ import (
 
 func TestCompute(t *testing.T) {
 
+	x, _, _ := Parse("10 * sin (time / 13751) + (time - 1510089826) / 200 + 2 * rand - 2 * rand")
+	fmt.Printf("%v -> %s\n", x, RunExpr(x, nil))
+
 	//fmt.Printf("%v\n", Tokenize(" SUM(Top:X:Y) + Top:Bar:Baz * Top:Foo"))
 	//fmt.Printf("%v\n", Tokenize(" SUM(Top:X:Y) + Top:Bar:Baz * AVG(Top:Foo)"))
 	//fmt.Printf("%v\n", Tokenize(" SUM(Top:X:Y) + Top:Bar:Baz * Top:Foo -"))

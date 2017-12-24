@@ -753,7 +753,7 @@ function ChartStrip(el, opts){
 	    if( step >= 3600*24 && lt.hour ){
 	        // handle daylight saving time changes - resync to midnight
                 dt = (lt.hour > 12 ? lt.hour - 24 : lt.hour) * 3600
-                dt += ly.min * 60
+                dt += lt.min * 60
                 t -= dt + step
                 continue
 	    }

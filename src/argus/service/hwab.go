@@ -30,10 +30,14 @@ type HWAB struct {
 	buckets  int
 	Created  int64
 	Count    int
+	Lap      int
 	cstart   int64
 	ctotal   float64
 	ctota2   float64
 	ccount   int
+	alpha    float32
+	beta     float32
+	gamma    float32
 	yn       float32
 	dn       float32
 	A        float32
@@ -45,9 +49,9 @@ type HWAB struct {
 var dh = diag.Logger("hwab")
 
 var hwabdefaults = HwabConf{
-	Alpha:  0.005,
-	Beta:   0.0005,
-	Gamma:  0.1,
+	Alpha:  0.5,
+	Beta:   0.5,
+	Gamma:  0.25,
 	Period: 7 * 24 * 3600,
 }
 
@@ -55,6 +59,7 @@ const (
 	TWIN       = 300
 	PERIOD_MIN = 2
 	PERIOD_MAX = 30 * 24 * 3600
+	EPSILOND   = 0.0001
 )
 
 func (s *Service) HwabConfig(conf *configure.CF) error {
@@ -87,6 +92,9 @@ func (h *HWAB) make() {
 	}
 
 	h.buckets = h.cf.Period / TWIN
+	h.alpha = h.cf.Alpha / float32(h.buckets)
+	h.beta = h.cf.Beta / float32(h.buckets)
+	h.gamma = h.cf.Gamma
 
 	h.C = make([]float32, h.buckets)
 	h.D = make([]float32, h.buckets)
@@ -135,9 +143,6 @@ func (h *HWAB) AddAt(val float64, now int64) {
 
 	ave := h.ctotal / float64(h.ccount)
 	sdv := math.Sqrt(h.ctota2/float64(h.ccount) - ave*ave)
-	if sdv == 0 {
-		sdv = 0.5 * math.Sqrt(math.Abs(ave))
-	}
 
 	for h.cstart+TWIN <= now {
 		h.add(float32(ave), float32(sdv), h.cstart)
@@ -165,10 +170,13 @@ func (h *HWAB) Deviation(val float64) (float64, bool) {
 
 func (h *HWAB) Reset() {
 
+	dh.Debug("reset")
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
 	h.Created = (clock.Unix() / TWIN) * TWIN
+	h.Lap = 0
+	h.Count = 0
 
 	for i := 0; i < h.buckets; i++ {
 		h.C[i] = 0
@@ -191,30 +199,35 @@ func (h *HWAB) predict() {
 
 func (h *HWAB) add(ave float32, sdv float32, now int64) {
 
-	h.Count++
+	defer func() {
+		h.Count++
+	}()
 	age := now - h.Created
 	si := h.idx(int(age / TWIN))
 
-	if h.Count == h.buckets {
-		h.smooth()
+	if si == 0 && h.Count > 0 {
+		h.Lap++
 	}
-	if h.Count == 2*h.buckets {
+
+	if h.Lap == 1 && si == 0 && h.checkEnough() {
 		h.interpolate()
+		h.estimateAB()
+		h.smooth()
+
+	}
+	if si == 0 && h.Lap > 0 {
+		h.normalize()
 	}
 
 	//dh.Debug("now %d, ave %f, sdv %f, si %d, age %d", now, ave, sdv, si, age)
 
-	if h.Count < h.buckets {
+	if h.Lap == 0 {
 		h.bootstrap1(ave, sdv, si)
 		return
 	}
-	if h.Count < 2*h.buckets {
+	if h.Lap == 1 {
 		h.bootstrap2(ave, sdv, si)
 		return
-	}
-
-	if si == 0 {
-		h.normalize()
 	}
 
 	h.hw(ave, sdv, si)
@@ -235,6 +248,9 @@ func (h *HWAB) bootstrap1(ave float32, sdv float32, si int) {
 
 	at := ave
 	dx := sdv + fabs(ave-c)
+	if dx == 0 {
+		dx = float32(math.Sqrt(float64(ave)))
+	}
 	dt := (dx + 3*d) / 4
 
 	h.A = 0
@@ -264,7 +280,7 @@ func (h *HWAB) bootstrap2(ave float32, sdv float32, si int) {
 
 	if d == 0 {
 		// missing data - something stopped during boot phase, patch hole
-		c = ave
+		c = ave - h.A
 		d = sdv
 
 		if dp != 0 {
@@ -276,17 +292,26 @@ func (h *HWAB) bootstrap2(ave float32, sdv float32, si int) {
 	}
 
 	y := h.A + h.B + c
-	at := h.cf.Alpha*(ave-c) + (1-h.cf.Alpha)*(h.A)
-	ct := h.cf.Gamma*(ave-at) + (1-h.cf.Gamma)*c
-	dt := h.cf.Gamma*(fabs(ave-y)+sdv) + (1-h.cf.Gamma)*d
+	dx := fabs(ave-y) + sdv
+	if dx == 0 {
+		dx = float32(math.Sqrt(float64(ave)))
+	}
+
+	alpha := h.alpha
+	beta := float32(math.Sqrt(float64(h.beta)))
+	gamma := float32(0.5)
+
+	at := alpha*(ave-c) + (1-alpha)*(h.A+h.B)
+	bt := beta*(at-h.A) + (1-beta)*h.B
+	ct := gamma*(ave-at) + (1-gamma)*c
+	dt := gamma*dx + (1-gamma)*d
 
 	h.A = at
-	h.B = 0
+	h.B = bt
 	h.C[si] = ct
 	h.D[si] = dt
 
-	cn := h.C[sn]
-	h.yn = at + cn
+	h.yn = ave + c - cp + bt
 	h.dn = h.D[sn]
 
 	dh.Debug("hwab/b2 %d: a %f std %f; at %f, dt %f => %f # %f", si, ave, sdv, at, dt, h.yn, h.dn)
@@ -303,10 +328,15 @@ func (h *HWAB) hw(ave float32, sdv float32, si int) {
 	d := h.D[si]
 
 	y := h.A + h.B + c
-	at := h.cf.Alpha*(ave-c) + (1-h.cf.Alpha)*(h.A+h.B)
-	bt := h.cf.Beta*(at-h.A) + (1-h.cf.Beta)*h.B
-	ct := h.cf.Gamma*(ave-at) + (1-h.cf.Gamma)*c
-	dt := h.cf.Gamma*(fabs(ave-y)+sdv) + (1-h.cf.Gamma)*d
+	dx := fabs(ave-y) + sdv
+	if dx == 0 {
+		dx = EPSILOND
+	}
+
+	at := h.alpha*(ave-c) + (1-h.alpha)*(h.A+h.B)
+	bt := h.beta*(at-h.A) + (1-h.beta)*h.B
+	ct := h.gamma*(ave-at) + (1-h.gamma)*c
+	dt := h.gamma*dx + (1-h.gamma)*d
 
 	h.A = at
 	h.B = bt
@@ -344,6 +374,8 @@ func (h *HWAB) interpolate() {
 
 		h.C[si] = (h.C[h.idx(si-l)]*float32(r) + h.C[h.idx(si+r)]*float32(l)) / float32(l+r)
 		h.D[si] = (h.D[h.idx(si-l)]*float32(r) + h.D[h.idx(si+r)]*float32(l)) / float32(l+r)
+
+		dh.Debug("[%d][%d-%d]: %f,%f -> %f", si, l, r, h.C[h.idx(si-l)], h.C[h.idx(si+r)], h.C[si])
 	}
 }
 
@@ -362,7 +394,7 @@ func (h *HWAB) smooth() {
 			sj := h.idx(si + i)
 			w := float32(1)
 			if i == 0 {
-				w = 4
+				w = 2
 			}
 			if h.D[sj] == 0 {
 				continue
@@ -384,12 +416,49 @@ func (h *HWAB) smooth() {
 
 func (h *HWAB) normalize() {
 
-	// move a towards zero-mean
+	var ctot float32
 	for i := 0; i < h.buckets; i++ {
-		h.C[i] += h.A
+		ctot += h.C[i]
 	}
 
-	h.A = 0
+	// make C zero mean
+	cm := ctot / float32(h.buckets)
+	for i := 0; i < h.buckets; i++ {
+		h.C[i] -= cm
+	}
+	h.A += cm
+
+}
+
+// do we have enough data?
+func (h *HWAB) checkEnough() bool {
+
+	dh.Debug("check %f %f", h.D[0], h.D[h.buckets-1])
+	if h.D[0] == 0 || h.D[h.buckets-1] == 0 {
+		h.Count = 0
+		h.Lap = 0
+		return false
+	}
+	return true
+}
+
+// estimate A+B from 1st period of C
+func (h *HWAB) estimateAB() {
+
+	a := h.C[0]
+	z := h.C[h.buckets-1]
+	d := z - a
+	b := d / float32(h.buckets)
+
+	h.A += d
+	h.B += b
+
+	for i := 0; i < h.buckets; i++ {
+		h.C[i] -= b * float32(i)
+	}
+
+	dh.Debug("adjust: %f %f -> d %f, %f", a, z, d, b)
+
 }
 
 func fabs(x float32) float32 {
