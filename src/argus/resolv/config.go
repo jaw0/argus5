@@ -27,7 +27,7 @@ func (w *workstate) configure() {
 		w.addSearch(dom)
 	}
 
-	for _, ns := range cf.Nameserver {
+	for _, ns := range cf.DNS_server {
 		w.addServer(ns)
 	}
 

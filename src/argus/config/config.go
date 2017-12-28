@@ -35,7 +35,7 @@ type Config struct {
 	Control_Socket  string
 	User            string
 	Group           string
-	Nameserver      []string
+	DNS_server      []string
 	DNS_search      []string
 	DevMode         bool
 	Agent_Mode      bool
@@ -61,7 +61,7 @@ func Cf() *Config {
 func read_config(file string) error {
 
 	newcf := &Config{
-		Nameserver: []string{},
+		DNS_server: []string{},
 		DNS_search: []string{},
 		Debug:      make(map[string]bool),
 	}
