@@ -86,6 +86,8 @@ func (m *M) statsInit() {
 
 	// discard time spent while not running
 	s.Lastt = now / SECSNANO
+
+	m.statsInitMaybeRoll()
 	m.statsTransition()
 }
 
@@ -154,6 +156,8 @@ func (m *M) statsUpdateMaybeRoll() {
 		m.statsUpdate(midnite)
 		m.statsRollOver(ct, lt, midnite)
 		// A rolling log gathers no moss
+
+		m.WebTime = clock.Nano()
 	}
 	m.statsUpdate(now)
 }
@@ -183,6 +187,31 @@ func statsRollOverStat(s []statDat, t int64) []statDat {
 		s = s[:MAXSTAT]
 	}
 	return s
+}
+
+func (m *M) statsInitMaybeRoll() {
+
+	now := clock.Unix()
+	s := &m.P.Stats
+	ct := time.Unix(now, 0).Local()
+	ld := time.Unix(s.Daily[0].Start/SECSNANO, 0).Local()
+	lm := time.Unix(s.Monthly[0].Start/SECSNANO, 0).Local()
+	ly := time.Unix(s.Yearly[0].Start/SECSNANO, 0).Local()
+
+	cty, ctm, ctd := ct.Date()
+	ldy, ldm, ldd := ld.Date()
+	lmy, lmm, _ := lm.Date()
+	lyy, _, _ := ly.Date()
+
+	if ctd != ldd || ctm != ldm || cty != ldy {
+		m.P.Stats.Daily = statsRollOverStat(m.P.Stats.Daily, now)
+	}
+	if ctm != lmm || cty != lmy {
+		m.P.Stats.Monthly = statsRollOverStat(m.P.Stats.Monthly, now)
+	}
+	if cty != lyy {
+		m.P.Stats.Yearly = statsRollOverStat(m.P.Stats.Yearly, now)
+	}
 }
 
 // ################################################################
