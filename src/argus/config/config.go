@@ -8,8 +8,7 @@ package config
 import (
 	"fmt"
 
-	"accfg"
-
+	"argus/accfg"
 	"argus/diag"
 )
 

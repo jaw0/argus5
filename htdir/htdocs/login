@@ -7,7 +7,8 @@
     <tr><th>Pass</th><td><input type=password name=pass value="{[ .Q.pass ]}"></td></tr>
     <tr><td></td><td><input type=Submit value=Login></td></tr>
   {[if .Q.fail ]}<tr><th colspan=3 class=authfail>Authentication failed.</th></tr>{[ end ]}
-    <tr><td colspan=3><tt>Unauthorized Access Prohibited!</tt></td></tr>
+    <tr><td colspan=3 class=accessprohibited><tt>Unauthorized Access Prohibited!</tt></td></tr>
+    {[if .Login_Notice ]}<tr><td colspan=3 class=loginnotice><tt>{[ .Login_Notice ]}</tt></td></tr>{[ end ]}
   </table>
   </form>
 

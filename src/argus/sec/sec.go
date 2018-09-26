@@ -115,9 +115,9 @@ func CertExpiresWarn(file string, cert *tls.Certificate, chkname string) {
 		}
 	}
 
-	// is it expired?
 	dl.Debug("cert %s expires %s", file, expire.Format("2006-01-02 15:04"))
 
+	// is it expired?
 	if expire.Before(now) {
 		dl.Problem("cert expired! '%s'", file)
 	}

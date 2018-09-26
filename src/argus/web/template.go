@@ -26,6 +26,7 @@ type WebConf struct {
 	Header          string
 	Header_Branding string
 	Footer          string
+	Login_Notice    string
 }
 
 var webConf = WebConf{}
@@ -139,6 +140,7 @@ func serveTemplate(tm map[string]*template.Template, devmode bool, ctx *Context)
 		"Header":          template.HTML(webConf.Header),
 		"Header_Branding": template.HTML(webConf.Header_Branding),
 		"Footer":          template.HTML(webConf.Footer),
+		"Login_Notice":    template.HTML(webConf.Login_Notice),
 		"Host":            ctx.R.Host,
 		"Token":           ctx.XSRFToken,
 		"DevMode":         devmode,

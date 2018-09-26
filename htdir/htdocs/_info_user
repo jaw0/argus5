@@ -4,6 +4,7 @@
     <tr><td align=left>
            <span class=objectname>{[ .ObjTitle ]}</span>
         </td>
+        {[if .User ]}
         <td align=right>
            <i id=spinnericon class="fa fa-spinner fa-pulse"></i>
            <a class=topnav href="/view/home?obj={[ .Home ]}" title="Home"><i class="fa fa-home"></i></a>
@@ -14,7 +15,9 @@
            <i id=sirenofficon class="fa fa-bell-slash-o" style="display:none;"></i>
            <span class=username>User: <tt>{[ .User ]}</tt></span>
            <a class=topnav href="/logout" title="Log Out"><i class="fa fa-user-o fa-sm"></i></a>
-    </td></tr>
+      </td>
+      {[ end ]}
+    </tr>
   </table>
 </td></tr>
 
