@@ -32,6 +32,7 @@ var dl = diag.Logger("users")
 func init() {
 	api.Add(true, "setuser", apiSetUser)
 	api.Add(true, "getuser", apiGetUser)
+	api.Add(true, "listusers", apiListUsers)
 }
 
 func Get(name string) *User {
@@ -57,6 +58,24 @@ func (user *User) Update() {
 
 	allusers[user.Name] = &nuser
 	save()
+}
+
+func List() []string {
+
+	lock.Lock()
+	defer lock.Unlock()
+
+	if len(allusers) == 0 {
+		load()
+	}
+
+	users := make([]string, 0, len(allusers))
+
+	for k := range allusers {
+		users = append(users, k)
+	}
+
+	return users
 }
 
 func (user *User) CheckPasswd(pass string) bool {
@@ -169,5 +188,18 @@ func apiGetUser(ctx *api.Context) {
 
 	ctx.SendOK()
 	ctx.DumpStruct(user, "")
+	ctx.SendFinal()
+}
+
+func apiListUsers(ctx *api.Context) {
+
+	users := List()
+
+	ctx.SendOK()
+	for _, u := range users {
+		ctx.Send(u)
+		ctx.Send("\n")
+	}
+
 	ctx.SendFinal()
 }
