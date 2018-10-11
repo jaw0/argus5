@@ -6,5 +6,9 @@
 package argus
 
 // about argus
-var Version = "X5.X(experimental)"
-var URL = "http://www.argus-monitoring.com"
+const Version = "X5.X(experimental)"
+const URL = "http://www.argus-monitoring.com"
+
+// defaults
+const Htdir = "/usr/local/share/argus/htdir" // see also: Makefile
+const ControlSocket = "/var/tmp/argus.ctl"

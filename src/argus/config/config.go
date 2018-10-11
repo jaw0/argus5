@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"argus/accfg"
+	"argus/argus"
 	"argus/diag"
 )
 
@@ -43,7 +44,9 @@ type Config struct {
 	Debug           map[string]bool
 }
 
-var cf *Config = &Config{}
+var cf *Config = &Config{
+	Htdir: argus.Htdir,
+}
 
 func Load(file string) {
 
@@ -60,9 +63,11 @@ func Cf() *Config {
 func read_config(file string) error {
 
 	newcf := &Config{
-		DNS_server: []string{},
-		DNS_search: []string{},
-		Debug:      make(map[string]bool),
+		DNS_server:     []string{},
+		DNS_search:     []string{},
+		Debug:          make(map[string]bool),
+		Htdir:          argus.Htdir,
+		Control_Socket: argus.ControlSocket,
 	}
 
 	err := accfg.Read(file, newcf)

@@ -6,7 +6,8 @@
 # where should argus install?
 INSTALL_BIN   = /usr/local/bin
 INSTALL_SBIN  = /usr/local/sbin
-INSTALL_HTDIR = /etc/argus/htdir
+# see also src/argus/conf.go
+INSTALL_HTDIR = /usr/local/share/argus/htdir
 
 ################################################################
 
@@ -26,9 +27,9 @@ src/.deps: deps
 	touch src/.deps
 
 install: all
+	-mkdir -p $(INSTALL_BIN) $(INSTALL_SBIN) $(INSTALL_HTDIR)
 	cp bin/argusd $(INSTALL_SBIN)
 	cp bin/argusctl $(INSTALL_BIN)
-	-mkdir -p $(INSTALL_HTDIR)
 	cp -R htdir/* $(INSTALL_HTDIR)
 
 clean:
@@ -36,4 +37,3 @@ clean:
 	-rm -rf pkg/*
 	-rm -f bin/*
 	-rm -f src/.deps
-

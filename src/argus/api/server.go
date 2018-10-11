@@ -19,9 +19,8 @@ import (
 )
 
 const (
-	CONTROLSOCKET = "/var/tmp/argus.ctl"
-	PROTOCOL      = "ARGUS/5.0"
-	NONCELEN      = 64
+	PROTOCOL = "ARGUS/5.0"
+	NONCELEN = 64
 )
 
 type Serverer interface {
@@ -39,11 +38,7 @@ var apiListener []*listenSet
 func Init() {
 
 	cf := config.Cf()
-
-	ctl := CONTROLSOCKET
-	if cf.Control_Socket != "" {
-		ctl = cf.Control_Socket
-	}
+	ctl := cf.Control_Socket
 
 	os.Remove(ctl)
 	ServerNew(nil, "api", "unix", ctl)
