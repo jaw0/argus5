@@ -50,6 +50,7 @@ type Conf struct {
 	Unpack       string
 	Expr         string
 	JPath        string
+	XPath        string
 	Gr_what      string // only 'elapsed' is supported
 	Testing      *argus.Schedule
 	Checking     *argus.Schedule

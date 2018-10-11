@@ -6,6 +6,7 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ChrisTrenkamp/goxpath"
+	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
 	"github.com/uknth/jsonpath"
 
 	"argus/argus"
@@ -149,6 +152,15 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 		val, err = JsonPath(s.Cf.JPath, val)
 		if err != nil {
 			diag.Problem("invalid json/jsonpath '%s': %v", s.Cf.JPath, err)
+		}
+		valtype = "string"
+	}
+
+	if s.Cf.XPath != "" && valtype != "" {
+		var err error
+		val, err = XPath(s.Cf.XPath, val)
+		if err != nil {
+			diag.Problem("invalid xml/xpath '%s': %v", s.Cf.XPath, err)
 		}
 		valtype = "string"
 	}
@@ -330,6 +342,26 @@ func JsonPath(path string, val string) (string, error) {
 
 	res, err := jsonpath.JsonPathLookup(jdat, path)
 
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%v", res), nil
+}
+
+func XPath(path string, val string) (string, error) {
+
+	xTree, err := xmltree.ParseXML(bytes.NewBufferString(val))
+	if err != nil {
+		return "", err
+	}
+
+	xpExec, err := goxpath.Parse(path)
+	if err != nil {
+		return "", err
+	}
+
+	res, err := xpExec.ExecNum(xTree)
 	if err != nil {
 		return "", err
 	}
