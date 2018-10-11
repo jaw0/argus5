@@ -18,7 +18,7 @@ func TestResolv(t *testing.T) {
 	Init()
 	defer Stop()
 
-	ip := New("www.google.com.")
+	ip := New("www.google.com.", 4)
 
 	for {
 		addr, _, fail := ip.Addr()

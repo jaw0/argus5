@@ -29,6 +29,14 @@ type IP struct {
 	ipv     int
 }
 
+// for testing
+func New(name string, ver int) *IP {
+
+	ip := &IP{name: name, ipv: ver, ipvpref: []int{ver}}
+	lookup(name)
+	return ip
+}
+
 func Config(conf *configure.CF) (*IP, error) {
 
 	ip := &IP{}
