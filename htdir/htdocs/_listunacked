@@ -1,0 +1,15 @@
+
+
+<h3>Notifications</h3>
+<table cellspacing=0 id=listunacked>
+  <tr v-for="n in list" v-bind:class="[n.OvStatus_sev]" v-if="n.IsActive && n.CanAck">
+    <td><span>
+        <a class="nbutton" v-bind:onclick="'notify_ack('+ n.IdNo +');'">
+        <i class="fa fa-stop-circle"></i> Ack</a></span></td>
+
+    <td onclick="notify_show(this);" v-bind:data-idno="n.IdNo">{{ n.IdNo }}</td>
+    <td>{{ n.Created_sht }}</td>
+    <td onclick="notify_show(this);" v-bind:data-idno="n.IdNo">{{ n.Message }}</td>
+  </tr>
+</table>
+

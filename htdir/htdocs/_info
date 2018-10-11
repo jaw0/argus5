@@ -2,9 +2,9 @@
 <table id=statusinfo><tr><td valign=top>
   <table id=statusinfobuttons>
     <tr v-if="deco.canOverride && !mon.override"><td><a onclick="override_show();" title="Override" id=overridebutton>
-        <i class="fa fa-flag-o"></i></a></td></tr>
-    <tr v-if="deco.canCheckNow"><td><a onclick="checknow();" title="Check Now"><i class="fa fa-refresh"></a></i></td></tr>
-    <tr v-for="p in deco.parent"><td><a v-bind:href="p.PageUrl" v-bind:title="p.Unique"><i class="fa fa-level-up"></i></a></td></tr>
+        <i class="fa fa-pause"></i></a></td></tr>
+    <tr v-if="deco.canCheckNow"><td><a onclick="checknow();" title="Check Now"><i class="fa fa-refresh"></i></a></td></tr>
+    <tr v-for="p in deco.parent"><td><a v-bind:href="p.PageUrl" v-bind:title="p.Unique"><i class="fa fa-step-backward"></i></a></td></tr>
   </table>
 </td><td valign=top>
   <table>
