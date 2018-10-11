@@ -21,19 +21,26 @@ func (ctx *Context) DumpStruct(obj interface{}, prefix string) {
 		val = val.Elem()
 	}
 
-	for i := 0; i < val.NumField(); i++ {
+	switch val.Kind() {
+	case reflect.Struct:
 
-		t := val.Type().Field(i)
-		v := val.Field(i)
+		for i := 0; i < val.NumField(); i++ {
 
-		vs := fmt.Sprintf("%v", v)
+			t := val.Type().Field(i)
+			v := val.Field(i)
 
-		if len(vs) > MAXLEN {
-			vs = fmt.Sprintf("<large object, type %s>", t.Type.String())
+			vs := fmt.Sprintf("%v", v)
+
+			if len(vs) > MAXLEN {
+				vs = fmt.Sprintf("<large object, type %s>", t.Type.String())
+			}
+
+			name := prefix + t.Name
+
+			ctx.SendKVP(name, vs)
 		}
 
-		name := prefix + t.Name
-
-		ctx.SendKVP(name, vs)
+	default:
+		ctx.SendKVP(prefix, fmt.Sprintf("%v", val))
 	}
 }
