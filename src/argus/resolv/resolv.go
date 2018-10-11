@@ -45,7 +45,7 @@ const (
 	QUERYTIMEOUT = int64(2 * time.Second)
 	SERVERDEAD   = int64(10 * time.Second)
 	TOOLONG      = int64(300 * time.Second)
-	SENDDELAY    = time.Millisecond // do not kill friendly nameserevr
+	SENDDELAY    = time.Millisecond // do not kill friendly nameserver
 	TTL_MIN      = 60
 	TTL_MAX      = 1209600 // 2 weeks
 	TTL_ERR      = int64(60 * time.Second)
