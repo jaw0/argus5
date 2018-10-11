@@ -81,7 +81,7 @@ func Start() *Server {
 	}
 
 	if cf.Htdir != "" && doWeb {
-		// server static assets
+		// serve static assets
 		dir := cf.Htdir + "/static"
 		dl.Debug("serving static on %s", dir)
 		Mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
