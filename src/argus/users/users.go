@@ -32,6 +32,7 @@ var dl = diag.Logger("users")
 func init() {
 	api.Add(true, "setuser", apiSetUser)
 	api.Add(true, "getuser", apiGetUser)
+	api.Add(true, "deluser", apiDelUser)
 	api.Add(true, "listusers", apiListUsers)
 }
 
@@ -57,6 +58,14 @@ func (user *User) Update() {
 	nuser = *user
 
 	allusers[user.Name] = &nuser
+	save()
+}
+
+func (user *User) remove() {
+	lock.Lock()
+	defer lock.Unlock()
+
+	delete(allusers, user.Name)
 	save()
 }
 
@@ -189,6 +198,24 @@ func apiGetUser(ctx *api.Context) {
 	ctx.SendOK()
 	argus.Dump(ctx, "", user)
 	ctx.SendFinal()
+}
+
+func apiDelUser(ctx *api.Context) {
+
+	name := ctx.Args["user"]
+	if name == "" {
+		ctx.SendResponseFinal(500, "must specify user")
+		return
+	}
+
+	user := Get(name)
+	dl.Debug("got %#v", user)
+
+	if user != nil {
+		user.remove()
+	}
+
+	ctx.SendOKFinal()
 }
 
 func apiListUsers(ctx *api.Context) {
