@@ -256,9 +256,10 @@ table#loginform {
 }
 #dumpinner {
     font-family:	monospace;
-
 }
-
+.dumpvalue {
+    padding-left:	20px;
+}
 
 /****************************************************************/
 

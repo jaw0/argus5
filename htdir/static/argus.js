@@ -516,6 +516,7 @@ function dump_success(r){
 
     argus.log("dump success")
     spinner_off()
+    convert_dump(r)
 
     var app = new Vue({
         el: '#dumpinner',
@@ -714,6 +715,21 @@ function convert_data(o){
 
     }
     return o
+}
+
+function convert_dump(o){
+    var d = o.Dump
+    var i, v
+
+    for(i=0; i<d.length; i++){
+        v = d[i].V
+
+        if( v > 1500000000000000000 & v < 3000000000000000000 ){
+            d[i].V = date_format(v/1000000)
+        }else if( v > 1500000000 & v < 3000000000){
+            d[i].V = date_format(v*1000)
+        }
+    }
 }
 
 

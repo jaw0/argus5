@@ -43,6 +43,8 @@ func Dump(dx Dumper, prefix string, obj interface{}) {
 
 			dx.Dump(name, vs)
 		}
+	case reflect.Invalid:
+		dx.Dump(prefix, "<nil>")
 
 	default:
 		dx.Dump(prefix, fmt.Sprintf("%v", val))
