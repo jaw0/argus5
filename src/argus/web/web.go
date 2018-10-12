@@ -84,11 +84,24 @@ func Start() *Server {
 		// serve static assets
 		dir := cf.Htdir + "/static"
 		dl.Debug("serving static on %s", dir)
-		Mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
 
+		if cf.DevMode {
+			Mux.HandleFunc("/static/", devStatic(http.StripPrefix("/static/", http.FileServer(http.Dir(dir)))))
+		} else {
+			Mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
+		}
 	}
 
 	return s
+}
+
+func devStatic(h http.Handler) func(http.ResponseWriter, *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		hdr := w.Header()
+		hdr.Set("Cache-Control", "no-cache")
+		h.ServeHTTP(w, r)
+	}
 }
 
 func (s *Server) httpServer(port int) *http.Server {
