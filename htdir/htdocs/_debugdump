@@ -1,0 +1,10 @@
+<div id="dumpouter" style="display:none;">
+  <div id="dumpinner">
+
+    <i class="buttdismiss fa fa-lg fa-times" onclick="dump_dismiss();" style="float:right;"></i>
+
+    <table cellspacing=0>
+        <tr v-for="r in Dump"><td class=dumpkey>{{ r.K }}</td><td class=dumpvalue>{{ r.V }}</td></tr>
+    </table>
+  </div>
+</div>

@@ -1,9 +1,9 @@
-// Copyright (c) 2017
+// Copyright (c) 2018
 // Author: Jeff Weisberg <jaw @ tcp4me.com>
-// Created: 2017-Sep-18 22:16 (EDT)
-// Function: debugging
+// Created: 2018-Oct-12 14:06 (EDT)
+// Function: debugging dump
 
-package api
+package argus
 
 import (
 	"fmt"
@@ -12,7 +12,11 @@ import (
 
 const MAXLEN = 200
 
-func (ctx *Context) DumpStruct(obj interface{}, prefix string) {
+type Dumper interface {
+	Dump(string, string)
+}
+
+func Dump(dx Dumper, prefix string, obj interface{}) {
 
 	var val = reflect.ValueOf(obj)
 
@@ -35,12 +39,12 @@ func (ctx *Context) DumpStruct(obj interface{}, prefix string) {
 				vs = fmt.Sprintf("<large object, type %s>", t.Type.String())
 			}
 
-			name := prefix + t.Name
+			name := prefix + "/" + t.Name
 
-			ctx.SendKVP(name, vs)
+			dx.Dump(name, vs)
 		}
 
 	default:
-		ctx.SendKVP(prefix, fmt.Sprintf("%v", val))
+		dx.Dump(prefix, fmt.Sprintf("%v", val))
 	}
 }

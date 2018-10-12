@@ -376,8 +376,8 @@ func checkIntValue(s *service.Service, n int) {
 
 func (t *DNS) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/ip/CF/":  &t.Ip.Cf,
-		"service/dns/CF/": &t.Cf,
+		"service/ip/CF":  &t.Ip.Cf,
+		"service/dns/CF": &t.Cf,
 	}
 }
 func (t *DNS) WebJson(md map[string]interface{}) {

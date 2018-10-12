@@ -92,7 +92,7 @@ func (w *Watch) DoneConfig() {
 
 func (w *Watch) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/darpwatch/CF/": w.Cf,
+		"service/darpwatch/CF": w.Cf,
 	}
 }
 func (w *Watch) WebJson(md map[string]interface{}) {

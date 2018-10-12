@@ -187,7 +187,7 @@ func apiGetUser(ctx *api.Context) {
 	}
 
 	ctx.SendOK()
-	ctx.DumpStruct(user, "")
+	argus.Dump(ctx, "", user)
 	ctx.SendFinal()
 }
 

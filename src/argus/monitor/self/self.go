@@ -98,7 +98,7 @@ func (c *Self) DoneConfig() {
 
 func (c *Self) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/self/CF/": c.Cf,
+		"service/self/CF": c.Cf,
 	}
 }
 func (c *Self) WebJson(md map[string]interface{}) {

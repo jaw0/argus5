@@ -286,8 +286,8 @@ func protoName(name string) string {
 
 func (u *UDP) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/ip/CF/":  &u.Ip.Cf,
-		"service/udp/CF/": &u.Cf,
+		"service/ip/CF":  &u.Ip.Cf,
+		"service/udp/CF": &u.Cf,
 	}
 }
 func (u *UDP) WebJson(md map[string]interface{}) {

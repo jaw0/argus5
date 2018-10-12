@@ -139,7 +139,7 @@ func (c *Compute) addDepends(m *monel.M) {
 
 func (c *Compute) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/compute/CF/": c.Cf,
+		"service/compute/CF": c.Cf,
 	}
 }
 func (c *Compute) WebJson(md map[string]interface{}) {

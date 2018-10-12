@@ -6,7 +6,7 @@
 package group
 
 import (
-	"argus/api"
+	"argus/argus"
 	"argus/configure"
 	"argus/diag"
 	"argus/monel"
@@ -76,7 +76,7 @@ func (g *Group) Self() *monel.M {
 	return g.mon
 }
 
-func (g *Group) Dump(ctx *api.Context) {
+func (g *Group) Dump(dx argus.Dumper) {
 }
 func (g *Group) CheckNow() {
 }

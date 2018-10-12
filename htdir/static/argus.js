@@ -492,8 +492,52 @@ function notify_ack(idno){
 
 }
 
-
 // ****************************************************************
+
+
+
+function dump_show(elem){
+
+    var args = { obj: objname }
+    spinner_on()
+
+    $.ajax({
+        type:	    'POST',
+        url:	    '/api/dump',
+        data:       args,
+        dataType:   'json',
+        timeout:    5000,
+        success:    dump_success,
+        error:      ajax_fail
+    });
+}
+
+function dump_success(r){
+
+    argus.log("dump success")
+    spinner_off()
+
+    var app = new Vue({
+        el: '#dumpinner',
+        data: r
+    })
+
+    dump_display()
+}
+
+function dump_display(){
+    escape_key(dump_dismiss)
+    $('#dumpinner').hide()
+    $('#dumpouter').fadeIn()
+    $('#dumpinner').slideDown()
+}
+
+function dump_dismiss(){
+    $('#dumpinner').slideUp()
+    $('#dumpouter').fadeOut()
+}
+
+//****************************************************************
 
 function lofgile_show(elem){
 

@@ -177,9 +177,9 @@ func (t *SNMP) DoneConfig() {
 }
 func (t *SNMP) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/ip/CF":    &t.Ip.Cf,
-		"service/snmp/CF/": &t.Cf,
-		"service/snmp/": &struct {
+		"service/ip/CF":   &t.Ip.Cf,
+		"service/snmp/CF": &t.Cf,
+		"service/snmp": &struct {
 			oid     string
 			baseOid string
 			idxDesc string

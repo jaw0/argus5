@@ -274,6 +274,7 @@ func (m *M) webDecor(creds []string, md map[string]interface{}) {
 	md["canOverride"] = m.Cf.Overridable && argus.ACLPermitsUser(m.Cf.ACL_Override, creds)
 	md["canAnnotate"] = argus.ACLPermitsUser(m.Cf.ACL_Annotate, creds)
 	md["canCheckNow"] = argus.ACLPermitsUser(m.Cf.ACL_CheckNow, creds)
+	md["canSeeAbout"] = argus.ACLPermitsUser(m.Cf.ACL_About, creds)
 
 	var parent []objectDescr
 

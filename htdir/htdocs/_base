@@ -43,6 +43,7 @@
 
 {[template "_notify"]}
 {[template "_lofgile"]}
+
 <script>
     argus_onload()
 </script>

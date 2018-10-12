@@ -178,7 +178,7 @@ table#loginform {
 	font-size:		12px;
 }
 
-#notifydetailouter, #lofgileouter {
+#notifydetailouter, #lofgileouter, #dumpouter {
     background-color: 	rgba(0, 0, 0, 0.5);
     width:		100%;
     height:		100%;
@@ -208,7 +208,7 @@ table#loginform {
     background-color:	#eff;
 }
 
-#notifydetailinner, #lofgileinner {
+#notifydetailinner, #lofgileinner, #dumpinner {
     margin-left:	10px;
     margin-top:		10px;
     margin-right:	10px;
@@ -251,6 +251,15 @@ table#loginform {
     cursor:			pointer;
 }
 
+#dumpinner tr:nth-child(even) {
+    background-color:		#f8f8f4;
+}
+#dumpinner {
+    font-family:	monospace;
+
+}
+
+
 /****************************************************************/
 
 pre {
@@ -261,7 +270,7 @@ pre {
 }
 
 input[name=url] {
-    font-family:	monospaced;
+    font-family:	monospace;
     background: 	#ffe;
 }
 input[type=text], input[type=password] {

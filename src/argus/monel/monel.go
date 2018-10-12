@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"sync"
 
-	"argus/api"
 	"argus/argus"
 	"argus/clock"
 	"argus/configure"
@@ -38,7 +37,7 @@ type Moneler interface {
 	WebJson(map[string]interface{})
 	WebMeta(map[string]interface{})
 	Config(*configure.CF) error
-	Dump(*api.Context)
+	Dump(argus.Dumper)
 	CheckNow()
 	Init() error
 	DoneConfig()

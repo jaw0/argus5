@@ -270,7 +270,7 @@ func (a *Agent) DoneConfig() {
 }
 func (a *Agent) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/agent/CF/": a.Cf,
+		"service/agent/CF": a.Cf,
 	}
 }
 func (a *Agent) WebJson(md map[string]interface{}) {

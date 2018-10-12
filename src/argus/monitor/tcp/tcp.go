@@ -304,8 +304,8 @@ func protoName(name string) string {
 
 func (t *TCP) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/ip/CF":   &t.Ip.Cf,
-		"service/tcp/CF/": &t.Cf,
+		"service/ip/CF":  &t.Ip.Cf,
+		"service/tcp/CF": &t.Cf,
 	}
 }
 func (t *TCP) WebJson(md map[string]interface{}) {

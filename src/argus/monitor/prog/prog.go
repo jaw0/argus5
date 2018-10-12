@@ -123,7 +123,7 @@ func (p *Prog) RunProg() (string, bool) {
 
 func (p *Prog) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/prog/CF/": p.Cf,
+		"service/prog/CF": p.Cf,
 	}
 }
 func (p *Prog) WebJson(md map[string]interface{}) {

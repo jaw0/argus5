@@ -282,6 +282,11 @@ func (ctx *Context) Send(txt string) {
 	ctx.Conn.Write([]byte(txt))
 }
 
+// satisfy the debugging Dump interface
+func (ctx *Context) Dump(key string, val string) {
+	ctx.SendKVP(key, val)
+}
+
 // ################################################################
 
 func init() {

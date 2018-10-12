@@ -284,8 +284,8 @@ func processResult(uw map[string][]*service.Service, line string) {
 
 func (p *Ping) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/ip/CF/":   &p.Ip.Cf,
-		"service/ping/CF/": &p.Cf,
+		"service/ip/CF":   &p.Ip.Cf,
+		"service/ping/CF": &p.Cf,
 	}
 }
 func (p *Ping) WebJson(md map[string]interface{}) {

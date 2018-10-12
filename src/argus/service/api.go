@@ -117,16 +117,16 @@ func apiHwabReset(ctx *api.Context) {
 
 // ################################################################
 
-func (s *Service) Dump(ctx *api.Context) {
+func (s *Service) Dump(dx argus.Dumper) {
 
-	ctx.SendKVP("service/Lasttest", fmt.Sprintf("%d", s.Lasttest))
-	ctx.SendKVP("service/Started", fmt.Sprintf("%d", s.Started))
-	ctx.SendKVP("service/Tries", fmt.Sprintf("%d", s.Tries))
-	ctx.DumpStruct(&s.Cf, "service/CF/")
-	ctx.DumpStruct(&s.p, "service/")
+	dx.Dump("service/Lasttest", fmt.Sprintf("%d", s.Lasttest))
+	dx.Dump("service/Started", fmt.Sprintf("%d", s.Started))
+	dx.Dump("service/Tries", fmt.Sprintf("%d", s.Tries))
+	argus.Dump(dx, "service/CF", &s.Cf)
+	argus.Dump(dx, "service", &s.p)
 
 	cm := s.check.DumpInfo()
 	for pre, d := range cm {
-		ctx.DumpStruct(d, pre)
+		argus.Dump(dx, pre, d)
 	}
 }

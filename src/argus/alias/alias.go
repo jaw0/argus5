@@ -8,7 +8,7 @@ package alias
 import (
 	"errors"
 
-	"argus/api"
+	"argus/argus"
 	"argus/configure"
 	"argus/diag"
 	"argus/monel"
@@ -124,8 +124,8 @@ func (a *Alias) WebJson(md map[string]interface{}) {
 }
 func (a *Alias) WebMeta(md map[string]interface{}) {
 }
-func (a *Alias) Dump(ctx *api.Context) {
-	ctx.SendKVP("alias/target", a.Target)
+func (a *Alias) Dump(dx argus.Dumper) {
+	argus.Dump(dx, "alias/target", a.Target)
 }
 
 func (a *Alias) CheckNow() {
