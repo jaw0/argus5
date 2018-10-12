@@ -39,9 +39,12 @@ func Dump(dx Dumper, prefix string, obj interface{}) {
 				vs = fmt.Sprintf("<large object, type %s>", t.Type.String())
 			}
 
-			name := prefix + "/" + t.Name
-
-			dx.Dump(name, vs)
+			if prefix == "" {
+				dx.Dump(t.Name, vs)
+			} else {
+				name := prefix + "/" + t.Name
+				dx.Dump(name, vs)
+			}
 		}
 	case reflect.Invalid:
 		dx.Dump(prefix, "<nil>")
