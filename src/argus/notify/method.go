@@ -97,8 +97,10 @@ func (m *Method) transmit(dst string, addr string, notes []*N) {
 
 	dat := map[string]interface{}{
 		"MAILFROM": globalDefaults.Mail_From,
+		"SENDER":   globalDefaults.Mail_From,
 		"MAILTO":   addr,
 		"ADDR":     addr,
+		"RCPT":     addr,
 		"SUBJECT":  subj,
 	}
 
