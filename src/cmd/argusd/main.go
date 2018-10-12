@@ -386,8 +386,8 @@ func apiStatus(ctx *api.Context) {
 	ctx.SendKVP("services", service.NService.String())
 	ctx.SendKVP("alerts", notify.NActive.String())
 	ctx.SendKVP("uptime", argus.Elapsed(clock.Unix()-starttime))
-	ctx.SendKVP("monrate", fmt.Sprintf("%.2f per second", monrate.Value()))
-	ctx.SendKVP("idle", fmt.Sprintf("%.2f%%", 100*cpurate.Value()))
+	ctx.SendKVP("monrate", fmt.Sprintf("%.2f %.2f %.2f per second", monrate[0].Value(), monrate[1].Value(), monrate[2].Value()))
+	ctx.SendKVP("idle", fmt.Sprintf("%.2f%% %.2f%% %.2f%%", 100*cpurate[0].Value(), 100*cpurate[1].Value(), 100*cpurate[2].Value()))
 
 	// RSN - darp info
 

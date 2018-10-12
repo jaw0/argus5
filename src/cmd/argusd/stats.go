@@ -13,29 +13,36 @@ import (
 	"argus/clock"
 )
 
-const LAMBDA = 10
-const DELAY = 30 * time.Second
+type taUsage struct {
+	utime int64
+	stime int64
+}
 
-var monrate = expvar.NewFloat("monrate")
-var cpurate = expvar.NewFloat("cpurate")
+var LAMBDA = []float64{6, 30, 90}
+
+const DELAY = 10 * time.Second
+
+var monrate = []*expvar.Float{expvar.NewFloat("monrate"), expvar.NewFloat("monrate5"), expvar.NewFloat("monrate15")}
+var cpurate = []*expvar.Float{expvar.NewFloat("cpurate"), expvar.NewFloat("cpurate5"), expvar.NewFloat("cpurate15")}
 var uptime = expvar.NewInt("uptime")
 
 func statsCollector() {
 
 	runs := expvar.Get("runs").(*expvar.Int)
-	lambda := 0.0
+	lambda := []float64{0, 0, 0}
 	var prun int64
 	var mr float64
 	idle := 1.0
-	var pusage syscall.Rusage
-	syscall.Getrusage(0, &pusage)
+	pusage := getUsage()
 
 	for {
 		time.Sleep(DELAY)
 
-		lambda++
-		if lambda > LAMBDA {
-			lambda = LAMBDA
+		for i := range lambda {
+			lambda[i]++
+			if lambda[i] > LAMBDA[i] {
+				lambda[i] = LAMBDA[i]
+			}
 		}
 
 		// uptime
@@ -51,18 +58,17 @@ func statsCollector() {
 			mr = cmr
 		}
 
-		mr = (lambda*mr + cmr) / (lambda + 1)
-		monrate.Set(mr)
-
 		// cpu/idle
-		var usage syscall.Rusage
-		syscall.Getrusage(0, &usage)
-		dutime := usage.Utime.Nano() - pusage.Utime.Nano()
-		dstime := usage.Stime.Nano() - pusage.Stime.Nano()
-		pusage = usage
+		curr := getUsage()
 
-		dl.Debug("usage: u %d, s %d", dutime, dstime)
+		dutime := curr.utime - pusage.utime
+		dstime := curr.stime - pusage.stime
+
 		cidle := float64(int64(DELAY)-dutime-dstime) / float64(DELAY)
+		dl.Debug("usage: u %d, s %d; %v", dutime, dstime, cidle)
+
+		pusage = curr
+
 		if cidle < 0 {
 			cidle = 0
 		}
@@ -70,8 +76,27 @@ func statsCollector() {
 			cidle = 1
 		}
 
-		idle = (lambda*idle + cidle) / (lambda + 1)
-		cpurate.Set(idle)
+		for i, l := range lambda {
 
+			mr = (l*mr + cmr) / (l + 1)
+			monrate[i].Set(mr)
+
+			idle = (l*idle + cidle) / (l + 1)
+			cpurate[i].Set(idle)
+
+			dl.Debug("L %v, mon %v idle %v", l, mr, idle)
+		}
+	}
+}
+
+func getUsage() taUsage {
+
+	var self, childn syscall.Rusage
+	syscall.Getrusage(0, &self)
+	syscall.Getrusage(-1, &childn)
+
+	return taUsage{
+		utime: self.Utime.Nano() + childn.Utime.Nano(),
+		stime: self.Stime.Nano() + childn.Stime.Nano(),
 	}
 }
