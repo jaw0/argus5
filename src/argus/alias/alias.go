@@ -42,7 +42,7 @@ func (a *Alias) Config(conf *configure.CF) error {
 
 	//conf.InitFromConfig(&a.cf, "alias", "")
 	a.AName = conf.Name
-	a.Target = conf.Extra
+	a.Target = conf.Extra[0]
 
 	if a.Target == "" {
 		return errors.New("invalid alias - target not specified")

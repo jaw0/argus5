@@ -35,7 +35,7 @@ var confconf = map[string]*readConf{
 	"service": &readConf{narg: 1, onel: true, level: 2},
 	"method":  &readConf{narg: 1, onel: true, level: 1, isInfo: true},
 	"snmpoid": &readConf{onel: true, level: 1, isInfo: true},
-	"darp":    &readConf{narg: 0, level: 1, isInfo: true},
+	"darp":    &readConf{narg: 1, level: 1, isInfo: true},
 	"agent":   &readConf{narg: 2, level: 1, isInfo: true},
 	"resolv":  &readConf{},
 }
@@ -180,40 +180,48 @@ func parseSpec(f *Files, pcf *configure.CF, wrcf *readConf, spec string) *config
 	word := strings.ToLower(spec[:delim])
 	spec = strings.TrimSpace(spec[delim+1:])
 
-	var arg1, arg2 string
+	var args []string
 
 	if spec != "" {
 		if wrcf.narg == 1 {
-			arg1 = unquote(spec)
+			args = []string{unquote(spec)}
 		} else {
-			if spec[0] == '"' {
-				e := strings.IndexByte(spec[1:], '"') + 1
-				if e != 0 {
-					arg1 = unquote(spec[0 : e+1])
-
-					if e < len(spec)-1 {
-						arg2 = unquote(spec[e+1:])
-					}
-				}
-			} else {
-				e := strings.Index(spec, " \t")
-
-				if e != -1 {
-					arg1 = strings.TrimSpace(spec[:e])
-					arg2 = strings.TrimSpace(spec[e:])
-				} else {
-					arg1 = strings.TrimSpace(spec)
-				}
+			for spec != "" {
+				var arg string
+				arg, spec = nextArg(spec)
+				args = append(args, arg)
 			}
 		}
 	}
 
-	cf := configure.NewCF(word, arg1, pcf)
+	cf := configure.NewCF(word, args[0], pcf)
 	cf.File = f.CurrFile()
 	cf.Line = f.CurrLine()
-	cf.Extra = arg2
+	if len(args) > 1 {
+		cf.Extra = args[1:]
+	}
 
 	return cf
+}
+
+func nextArg(spec string) (string, string) {
+
+	if spec[0] == '"' {
+		e := strings.IndexByte(spec[1:], '"') + 1
+		if e == 0 {
+			// no end "
+			return spec[1:], ""
+		}
+
+		return unquote(spec[0 : e+1]), strings.TrimSpace(spec[e+1:])
+	}
+
+	e := strings.Index(spec, " \t")
+	if e == -1 {
+		// one arg
+		return strings.TrimSpace(spec), ""
+	}
+	return strings.TrimSpace(spec[:e]), strings.TrimSpace(spec[e:])
 }
 
 func unquote(s string) string {

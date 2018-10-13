@@ -24,7 +24,7 @@ type CF struct {
 	parent *CF
 	Type   string // service, group, alias
 	Name   string // group name, monitor name
-	Extra  string
+	Extra  []string
 	File   string // start of the block
 	Line   int
 	Param  map[string]*CFV

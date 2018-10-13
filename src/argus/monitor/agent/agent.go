@@ -295,10 +295,18 @@ func NewAgent(conf *configure.CF) error {
 		commands[name] = cmd
 	}
 
-	if cmd.MCf[conf.Extra] != nil {
-		return fmt.Errorf("redefinition of agent %s %s", conf.Name, conf.Extra)
+	oslist := conf.Extra
+	if len(oslist) == 0 {
+		oslist = []string{""}
 	}
 
-	cmd.MCf[conf.Extra] = cf
+	for _, os := range oslist {
+		if cmd.MCf[os] != nil {
+			return fmt.Errorf("redefinition of agent %s %s", conf.Name, os)
+		}
+
+		cmd.MCf[os] = cf
+	}
+
 	return nil
 }

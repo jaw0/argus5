@@ -7,6 +7,7 @@ package resolv
 
 import (
 	"expvar"
+	"math/rand"
 	"net"
 	"sync"
 	"time"
@@ -320,6 +321,7 @@ type pendQ struct {
 type workstate struct {
 	nqueries int
 	qid      int
+	white    int
 	search   []string
 	server   []*net.UDPAddr
 	nsn      int
@@ -344,6 +346,8 @@ func worker() {
 
 	reschan := make(chan *result, MAXQUERIES)
 	w := &workstate{
+		qid:     rand.Intn(65535),
+		white:   rand.Intn(65535),
 		pending: make(map[int]*pendQ),
 		lastrcv: clock.Nano(),
 		sock:    sock,
@@ -440,15 +444,14 @@ func (w *workstate) nextqid() int {
 	for {
 		w.qid = lfsr.Next16(w.qid)
 
-		if w.qid == 0 {
-			w.qid++
+		if w.qid == 1 {
+			w.white = rand.Intn(65535)
 		}
-		if w.pending[w.qid] == nil {
-			break
+		id := w.qid ^ w.white
+		if w.pending[id] == nil {
+			return id
 		}
 	}
-
-	return w.qid
 }
 
 func (w *workstate) timeouts() {

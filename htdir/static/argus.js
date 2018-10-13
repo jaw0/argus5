@@ -39,6 +39,7 @@ var gizmoConfig = [
 var webtime = 0
 var jsondata
 var jsonnotify
+var jsondump
 var gizmo = {}
 
 function argus_onload(){
@@ -518,9 +519,17 @@ function dump_success(r){
     spinner_off()
     convert_dump(r)
 
+    if( jsondump != null ){
+        // copy data into existing vue
+        copy_data(r, jsondump)
+        dump_display()
+        return
+    }
+
+    jsondump = r
     var app = new Vue({
         el: '#dumpinner',
-        data: r
+        data: jsondump
     })
 
     dump_display()
