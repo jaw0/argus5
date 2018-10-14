@@ -8,10 +8,12 @@ package sched
 import (
 	"expvar"
 	"math/rand"
+	"runtime"
 	"sort"
 	"sync"
 	"time"
 
+	"argus/argus"
 	"argus/clock"
 	"argus/config"
 	"argus/diag"
@@ -40,7 +42,8 @@ type Starter interface {
 
 const (
 	MINWORKER = 2
-	MAXWORKER = 100 // override in config file
+	NUMWORKER = 100 // override in config file
+	MAXWORKER = 10000
 	QUEUELEN  = 1000
 )
 
@@ -53,6 +56,7 @@ var NRun = expvar.NewInt("runs")
 var SchedQueue = expvar.NewInt("schedqueue")
 var SchedIdle = expvar.NewInt("workidle")
 var WorkQueue = expvar.NewInt("workqueue")
+var WorkDefer = expvar.NewInt("workdefer")
 
 func New(cf *Conf, obj Starter) *D {
 
@@ -139,8 +143,14 @@ func (d *D) ASAP() {
 	case workchan <- d:
 		break
 	default:
+		WorkDefer.Add(1)
 		d.ReSchedule(1)
 	}
+}
+
+func startWorker(dev bool) {
+	done.Add(1)
+	go worker(dev)
 }
 
 func Init() {
@@ -152,16 +162,20 @@ func Init() {
 	nwork := cf.Mon_maxrun
 
 	if nwork == 0 {
-		nwork = MAXWORKER
+		nwork = NUMWORKER
 	}
 	if nwork < MINWORKER {
 		nwork = MINWORKER
 	}
+	if nwork > MAXWORKER {
+		nwork = MAXWORKER
+	}
 
 	for i := 0; i < nwork; i++ {
-		done.Add(1)
-		go worker(cf.DevMode)
+		startWorker(cf.DevMode)
 	}
+
+	go autotune(nwork, cf.Mon_maxrun, cf.DevMode)
 }
 
 func Stop() {
@@ -193,7 +207,7 @@ var schedule []*te
 func mainloop() {
 
 	defer done.Done()
-	tock := time.NewTicker(time.Second)
+	tock := time.NewTicker(time.Second / 10)
 	defer tock.Stop()
 
 	for {
@@ -319,9 +333,11 @@ func dispatch() {
 			select {
 			case workchan <- d:
 				delete(schedule[i].todo, d)
+				runtime.Gosched()
 			default:
 				// queue full - take a break...
 				schedule = schedule[i:]
+				WorkDefer.Add(1)
 				return
 			}
 		}
@@ -336,5 +352,60 @@ func amIdle(y bool) {
 		SchedIdle.Add(1)
 	} else {
 		SchedIdle.Add(-1)
+	}
+}
+
+// increase number of workers if needed
+// if user set mon_maxrun, only issue a warning, do not actually adjust
+func autotune(nwork int, max int, dev bool) {
+
+	const MINLIM = 60
+	const MAXLIM = 600
+	const SEC = 10
+
+	ovlim := MINLIM
+	ovct := 0
+	pdeferd := WorkDefer.Value()
+
+	time.Sleep(60 * time.Second)
+
+	for {
+		time.Sleep(SEC * time.Second)
+
+		deferd := WorkDefer.Value()
+
+		// no idle workers? queues full?
+		if deferd == pdeferd {
+			if ovct == 0 && ovlim < MAXLIM {
+				ovlim++
+			}
+			if ovct > 0 {
+				ovct -= SEC
+			}
+			continue
+		}
+
+		pdeferd = deferd
+		ovct += SEC
+
+		if ovct < ovlim {
+			continue
+		}
+
+		if nwork < MAXWORKER && max == 0 {
+			more := nwork / 10
+			for i := 0; i < more; i++ {
+				startWorker(dev)
+				nwork++
+			}
+
+			dl.Verbose("increasing number of workers: %d", nwork)
+		} else {
+			dl.Problem("argus overload - frequency, mon_maxrun, or faster server")
+			argus.ConfigWarning("", 0, "argus overload - frequency, mon_maxrun, or faster server")
+			return
+		}
+
+		ovct = 0
 	}
 }
