@@ -18,9 +18,9 @@ type taUsage struct {
 	stime int64
 }
 
-var LAMBDA = []float64{6, 30, 90}
+const DELAY = 10
 
-const DELAY = 10 * time.Second
+var LAMBDA = []float64{60 / DELAY, 300 / DELAY, 900 / DELAY}
 
 var monrate = []*expvar.Float{expvar.NewFloat("monrate"), expvar.NewFloat("monrate5"), expvar.NewFloat("monrate15")}
 var cpurate = []*expvar.Float{expvar.NewFloat("cpurate"), expvar.NewFloat("cpurate5"), expvar.NewFloat("cpurate15")}
@@ -31,19 +31,10 @@ func statsCollector() {
 	runs := expvar.Get("runs").(*expvar.Int)
 	lambda := []float64{0, 0, 0}
 	var prun int64
-	var mr float64
-	idle := 1.0
 	pusage := getUsage()
 
 	for {
-		time.Sleep(DELAY)
-
-		for i := range lambda {
-			lambda[i]++
-			if lambda[i] > LAMBDA[i] {
-				lambda[i] = LAMBDA[i]
-			}
-		}
+		time.Sleep(DELAY * time.Second)
 
 		// uptime
 		uptime.Set(clock.Unix() - starttime)
@@ -52,11 +43,7 @@ func statsCollector() {
 		crun := runs.Value()
 		drun := crun - prun
 		prun = crun
-		cmr := float64(drun) / 30
-
-		if mr == 0 {
-			mr = cmr
-		}
+		cmr := float64(drun) / DELAY
 
 		// cpu/idle
 		curr := getUsage()
@@ -64,7 +51,7 @@ func statsCollector() {
 		dutime := curr.utime - pusage.utime
 		dstime := curr.stime - pusage.stime
 
-		cidle := float64(int64(DELAY)-dutime-dstime) / float64(DELAY)
+		cidle := float64(int64(DELAY*time.Second)-dutime-dstime) / float64(DELAY*time.Second)
 		dl.Debug("usage: u %d, s %d; %v", dutime, dstime, cidle)
 
 		pusage = curr
@@ -78,13 +65,19 @@ func statsCollector() {
 
 		for i, l := range lambda {
 
-			mr = (l*mr + cmr) / (l + 1)
+			mr := (l*monrate[i].Value() + cmr) / (l + 1)
 			monrate[i].Set(mr)
 
-			idle = (l*idle + cidle) / (l + 1)
+			idle := (l*cpurate[i].Value() + cidle) / (l + 1)
 			cpurate[i].Set(idle)
 
-			dl.Debug("L %v, mon %v idle %v", l, mr, idle)
+			dl.Debug("L %v, mon %v -> %v idle %v -> %v", l, cmr, mr, cidle, idle)
+		}
+
+		for i := range lambda {
+			if lambda[i] < LAMBDA[i] {
+				lambda[i]++
+			}
 		}
 	}
 }
