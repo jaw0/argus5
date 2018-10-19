@@ -266,6 +266,9 @@ func (a *Agent) Init() error {
 	return nil
 }
 
+func (a *Agent) Priority() bool {
+	return false
+}
 func (a *Agent) Recycle() {
 }
 func (a *Agent) Abort() {

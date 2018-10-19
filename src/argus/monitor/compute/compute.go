@@ -98,6 +98,9 @@ func (c *Compute) Recycle() {
 		s.RemoveAlsoRun(c.S)
 	}
 }
+func (c *Compute) Priority() bool {
+	return true
+}
 
 func (c *Compute) Abort() {
 }

@@ -121,6 +121,7 @@ func (s *Service) Init() error {
 	s.sched = sched.New(&sched.Conf{
 		Freq: s.Cf.Frequency,
 		Auto: true,
+		Prio: s.check.Priority(),
 		Text: s.mon.Unique(),
 	}, s)
 

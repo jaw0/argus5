@@ -43,6 +43,9 @@ func (d *D) Init() error {
 func (d *D) Hostname() string {
 	return ""
 }
+func (d *D) Priority() bool {
+	return true
+}
 func (d *D) Recycle() {
 }
 func (d *D) DoneConfig() {

@@ -123,6 +123,9 @@ func (t *TCP) Init() error {
 	//dl.Debug("tcp init: %#v", t)
 	return nil
 }
+func (t *TCP) Priority() bool {
+	return false
+}
 
 func (t *TCP) Hostname() string {
 	return t.Ip.Hostname()

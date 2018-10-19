@@ -133,6 +133,9 @@ func (d *DB) Init() error {
 func (d *DB) Hostname() string {
 	return ""
 }
+func (d *DB) Priority() bool {
+	return false
+}
 func (d *DB) Recycle() {
 }
 func (d *DB) Abort() {

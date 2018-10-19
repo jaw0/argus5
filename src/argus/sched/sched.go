@@ -19,17 +19,26 @@ import (
 	"argus/diag"
 )
 
+const (
+	PRIO_NONE    = 0
+	PRIO_EXPRESS = 1
+	PRIO_HIGH    = 2
+)
+
 type Conf struct {
 	Freq  int
 	Phase int
 	Auto  bool
+	Prio  bool // true=high prio; false=auto
 	Text  string
 }
 
 type D struct {
 	freq  int
 	phase int
+	prio  int
 	auto  bool
+	xdt   int
 	text  string
 	when  int64
 	obj   Starter
@@ -41,22 +50,35 @@ type Starter interface {
 }
 
 const (
-	MINWORKER = 2
-	NUMWORKER = 100 // override in config file
-	MAXWORKER = 10000
-	QUEUELEN  = 1000
+	MINWORKER     = 2
+	MINEXPRESS    = 2
+	NUMWORKER     = 100 // override in config file
+	MAXWORKER     = 10000
+	QUEUELEN      = 1000
+	EXPRLEN       = 1000
+	PRIOLEN       = 10
+	EXPRESS_LIMIT = 50 // millisecs. RSN - autotune
 )
 
 var schedchan = make(chan *D, QUEUELEN)
 var workchan = make(chan *D, QUEUELEN)
+var expresschan = make(chan *D, EXPRLEN)
+var priochan = make(chan *D, PRIOLEN)
 var stopchan = make(chan struct{})
 var done sync.WaitGroup
 var dl = diag.Logger("sched")
+
 var NRun = expvar.NewInt("runs")
-var SchedQueue = expvar.NewInt("schedqueue")
+var PrioRun = expvar.NewInt("runsprio")
+var ExprRun = expvar.NewInt("runsexpress")
 var SchedIdle = expvar.NewInt("workidle")
+var SchedQueue = expvar.NewInt("schedqueue")
 var WorkQueue = expvar.NewInt("workqueue")
+var PrioQueue = expvar.NewInt("workqueueprio")
+var ExprQueue = expvar.NewInt("workqueueexpress")
 var WorkDefer = expvar.NewInt("workdefer")
+var ExprDefer = expvar.NewInt("workdeferexpress")
+var PrioDefer = expvar.NewInt("workdeferprio")
 
 func New(cf *Conf, obj Starter) *D {
 
@@ -73,7 +95,11 @@ func New(cf *Conf, obj Starter) *D {
 		obj:   obj,
 	}
 
-	d.ReSchedule(0)
+	if cf.Prio {
+		d.prio = PRIO_HIGH
+	}
+
+	d.ReSchedule(0, 0)
 	return d
 }
 
@@ -83,6 +109,7 @@ func At(unix int64, text string, f func()) {
 		when: unix,
 		text: text,
 		auto: false,
+		prio: PRIO_HIGH,
 		obj:  Func(f),
 	}
 	schedchan <- d
@@ -103,7 +130,30 @@ func (f schedFunc) Start() {
 	f.f()
 }
 
-func (d *D) ReSchedule(delay int) {
+func (d *D) ReSchedule(delay int, exp int) {
+
+	// prioritize based on expected runtime
+	if d.xdt == 0 {
+		d.xdt = exp
+	}
+	d.xdt = (3*d.xdt + exp) / 4
+
+	if d.prio != PRIO_HIGH {
+		switch {
+		case d.xdt == 0:
+			// initial scheduling, no runtime data, no priority
+			d.prio = PRIO_NONE
+		case d.xdt < EXPRESS_LIMIT:
+			d.prio = PRIO_EXPRESS
+		default:
+			d.prio = PRIO_NONE
+		}
+	}
+
+	d.ReScheduleSamePrio(delay)
+}
+
+func (d *D) ReScheduleSamePrio(delay int) {
 
 	now := clock.Unix()
 
@@ -135,22 +185,50 @@ func (d *D) Remove() {
 	schedchan <- d
 }
 
+func (d *D) sendWork() bool {
+
+	switch d.prio {
+	case PRIO_HIGH:
+		select {
+		case priochan <- d:
+			PrioRun.Add(1)
+			return true
+		default:
+		}
+		PrioDefer.Add(1)
+		fallthrough
+	case PRIO_EXPRESS:
+		select {
+		case expresschan <- d:
+			ExprRun.Add(1)
+			return true
+		default:
+		}
+		ExprDefer.Add(1)
+		fallthrough
+	default:
+		select {
+		case workchan <- d:
+			return true
+		default:
+			return false
+		}
+	}
+}
+
 func (d *D) ASAP() {
 
 	// if the work queue has room, send it straight in
 	// otherwise, reschedule it
-	select {
-	case workchan <- d:
-		break
-	default:
+	if !d.sendWork() {
 		WorkDefer.Add(1)
-		d.ReSchedule(1)
+		d.ReScheduleSamePrio(1)
 	}
 }
 
-func startWorker(dev bool) {
+func startWorker(dev bool, ch chan *D) {
 	done.Add(1)
-	go worker(dev)
+	go worker(dev, ch)
 }
 
 func Init() {
@@ -172,10 +250,21 @@ func Init() {
 	}
 
 	for i := 0; i < nwork; i++ {
-		startWorker(cf.DevMode)
+		startWorker(cf.DevMode, workchan)
 	}
 
-	go autotune(nwork, cf.Mon_maxrun, cf.DevMode)
+	nexpr := nwork / 10
+	if nexpr < MINEXPRESS {
+		nexpr = MINEXPRESS
+	}
+	for i := 0; i < nexpr; i++ {
+		startWorker(cf.DevMode, expresschan)
+	}
+
+	startWorker(cf.DevMode, priochan)
+	startWorker(cf.DevMode, priochan)
+
+	go autotune(nwork, nexpr, cf.Mon_maxrun, cf.DevMode)
 }
 
 func Stop() {
@@ -236,23 +325,23 @@ func mainloop() {
 	}
 }
 
-func worker(devmode bool) {
+func worker(devmode bool, work chan *D) {
 
 	defer done.Done()
 
 	for {
 		amIdle(true)
-		WorkQueue.Set(int64(len(workchan)))
+		WorkQueue.Set(int64(len(workchan) + len(expresschan) + len(priochan)))
+		ExprQueue.Set(int64(len(expresschan)))
+		PrioQueue.Set(int64(len(priochan)))
 
 		select {
-		//case <-stopchan:
-		//	return
-		case d := <-workchan:
+		case d := <-work:
 			amIdle(false)
 			d.run(devmode)
 
 			if d.auto {
-				d.ReSchedule(0)
+				d.ReScheduleSamePrio(0)
 			}
 		}
 	}
@@ -329,12 +418,14 @@ func dispatch() {
 
 		for d, _ := range schedule[i].todo {
 			d.locte = nil
-			WorkQueue.Set(int64(len(workchan)))
-			select {
-			case workchan <- d:
+			WorkQueue.Set(int64(len(workchan) + len(expresschan) + len(priochan)))
+			ExprQueue.Set(int64(len(expresschan)))
+			PrioQueue.Set(int64(len(priochan)))
+
+			if d.sendWork() {
 				delete(schedule[i].todo, d)
 				runtime.Gosched()
-			default:
+			} else {
 				// queue full - take a break...
 				schedule = schedule[i:]
 				WorkDefer.Add(1)
@@ -357,7 +448,7 @@ func amIdle(y bool) {
 
 // increase number of workers if needed
 // if user set mon_maxrun, only issue a warning, do not actually adjust
-func autotune(nwork int, max int, dev bool) {
+func autotune(nwork int, nexpr int, max int, dev bool) {
 
 	const MINLIM = 60
 	const MAXLIM = 600
@@ -366,6 +457,7 @@ func autotune(nwork int, max int, dev bool) {
 	ovlim := MINLIM
 	ovct := 0
 	pdeferd := WorkDefer.Value()
+	pexpdfr := ExprDefer.Value()
 
 	time.Sleep(60 * time.Second)
 
@@ -373,6 +465,7 @@ func autotune(nwork int, max int, dev bool) {
 		time.Sleep(SEC * time.Second)
 
 		deferd := WorkDefer.Value()
+		expdfr := ExprDefer.Value()
 
 		// no idle workers? queues full?
 		if deferd == pdeferd {
@@ -385,7 +478,10 @@ func autotune(nwork int, max int, dev bool) {
 			continue
 		}
 
+		exprok := pexpdfr == expdfr
+
 		pdeferd = deferd
+		pexpdfr = expdfr
 		ovct += SEC
 
 		if ovct < ovlim {
@@ -395,11 +491,19 @@ func autotune(nwork int, max int, dev bool) {
 		if nwork < MAXWORKER && max == 0 {
 			more := nwork / 5
 			for i := 0; i < more; i++ {
-				startWorker(dev)
+				startWorker(dev, workchan)
 				nwork++
 			}
 
-			dl.Verbose("increasing number of workers: %d", nwork)
+			if !exprok {
+				more = (more + 5) / 10
+				for i := 0; i < more; i++ {
+					startWorker(dev, expresschan)
+					nexpr++
+				}
+			}
+
+			dl.Verbose("increasing number of workers: %d + %d", nwork, nexpr)
 		} else {
 			dl.Problem("argus overload - frequency, mon_maxrun, or faster server")
 			argus.ConfigWarning("", 0, "argus overload - frequency, mon_maxrun, or faster server")

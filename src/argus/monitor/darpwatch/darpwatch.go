@@ -81,6 +81,9 @@ func (w *Watch) Start(s *service.Service) {
 func (w *Watch) Init() error {
 	return nil
 }
+func (c *Watch) Priority() bool {
+	return true
+}
 
 func (w *Watch) Recycle() {
 }

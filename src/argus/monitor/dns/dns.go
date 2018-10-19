@@ -220,6 +220,9 @@ func (d *DNS) nextQid() {
 func (d *DNS) Init() error {
 	return nil
 }
+func (d *DNS) Priority() bool {
+	return false
+}
 
 func (d *DNS) Hostname() string {
 	return d.Ip.Hostname()

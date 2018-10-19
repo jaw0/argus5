@@ -106,6 +106,9 @@ func (p *Ping) Init() error {
 func (p *Ping) Hostname() string {
 	return p.Ip.Hostname()
 }
+func (p *Ping) Priority() bool {
+	return true
+}
 func (p *Ping) Recycle() {
 }
 func (p *Ping) Abort() {

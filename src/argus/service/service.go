@@ -31,6 +31,7 @@ type Monitor interface {
 	DumpInfo() map[string]interface{}
 	WebJson(map[string]interface{})
 	Hostname() string
+	Priority() bool
 }
 
 type Conf struct {
@@ -174,7 +175,7 @@ func (s *Service) Start() {
 		}
 
 		s.mon.Debug("not starting")
-		s.reschedule()
+		s.reschedule(0)
 		return
 	}
 
@@ -190,16 +191,17 @@ func (s *Service) JoinMulti() bool {
 	}
 
 	s.mon.Debug("joining multi-start")
-	s.reschedule()
+	s.reschedule(0)
 	return true
 }
 
 func (s *Service) Done() {
 
+	now := clock.Nano()
 	s.mon.Lock.Lock()
-	s.reschedule()
+	s.reschedule(int(now - s.Started))
 	s.running = false
-	s.Lasttest = clock.Nano()
+	s.Lasttest = now
 
 	alsorun := s.alsoRun
 	s.mon.Lock.Unlock()
@@ -313,12 +315,12 @@ func (s *Service) setResultForL(id string, status argus.Status, result string, r
 
 // ################################################################
 
-func (s *Service) reschedule() {
+func (s *Service) reschedule(dt int) {
 
 	if s.Tries != 0 && s.Cf.Retrydelay != 0 {
-		s.sched.ReSchedule(s.Cf.Retrydelay)
+		s.sched.ReSchedule(s.Cf.Retrydelay, dt/1000000)
 	} else {
-		s.sched.ReSchedule(s.Cf.Frequency)
+		s.sched.ReSchedule(s.Cf.Frequency, dt/1000000)
 	}
 }
 

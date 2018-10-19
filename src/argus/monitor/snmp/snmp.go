@@ -167,6 +167,9 @@ func (t *SNMP) Config(conf *configure.CF, s *service.Service) error {
 func (t *SNMP) Init() error {
 	return nil
 }
+func (t *SNMP) Priority() bool {
+	return false
+}
 func (t *SNMP) Hostname() string {
 	return t.Ip.Hostname()
 }

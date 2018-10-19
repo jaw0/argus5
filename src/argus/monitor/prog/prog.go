@@ -67,6 +67,9 @@ func (p *Prog) Hostname() string {
 func (p *Prog) Init() error {
 	return nil
 }
+func (p *Prog) Priority() bool {
+	return false
+}
 
 func (p *Prog) Recycle() {
 }

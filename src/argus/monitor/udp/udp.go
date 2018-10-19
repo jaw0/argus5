@@ -124,6 +124,9 @@ func (t *UDP) Config(conf *configure.CF, s *service.Service) error {
 func (t *UDP) Init() error {
 	return nil
 }
+func (t *UDP) Priority() bool {
+	return false
+}
 func (t *UDP) Hostname() string {
 	return t.Ip.Hostname()
 }

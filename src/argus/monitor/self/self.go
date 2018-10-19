@@ -88,7 +88,9 @@ func (c *Self) Start(s *service.Service) {
 func (c *Self) Init() error {
 	return nil
 }
-
+func (c *Self) Priority() bool {
+	return true
+}
 func (c *Self) Recycle() {
 }
 func (c *Self) Abort() {
