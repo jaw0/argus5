@@ -41,11 +41,12 @@ type Conf struct {
 }
 
 type Agent struct {
-	S   *service.Service
-	Cf  Conf
-	Ip  *resolv.IP
-	cmd *Command
-	os  string
+	S    *service.Service
+	Cf   Conf
+	Ip   *resolv.IP
+	Addr string // for debugging
+	cmd  *Command
+	os   string
 }
 
 var dl = diag.Logger("agent")
@@ -235,7 +236,9 @@ func (a *Agent) Connect() (*client.Conn, bool) {
 		return nil, true
 	}
 
+	a.Ip.WillNeedIn(a.S.Cf.Frequency)
 	addrport := fmt.Sprintf("%s:%d", addr, a.Cf.Agent_Port)
+	a.Addr = addrport
 
 	a.S.Debug("connecting to tcp %s", addrport)
 
@@ -249,6 +252,7 @@ func (a *Agent) Connect() (*client.Conn, bool) {
 	if err != nil {
 		a.S.Fail("connect failed")
 		a.S.Debug("connect failed: %v", err)
+		a.Ip.TryAnother()
 		return nil, true
 	}
 
@@ -270,7 +274,10 @@ func (a *Agent) DoneConfig() {
 }
 func (a *Agent) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/agent/CF": a.Cf,
+		"service/ip/CF":      &a.Ip.Cf,
+		"service/ip/FQDN":    &a.Ip.Fqdn,
+		"service/agent/CF":   a.Cf,
+		"service/agent/addr": a.Addr,
 	}
 }
 func (a *Agent) WebJson(md map[string]interface{}) {

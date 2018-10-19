@@ -31,10 +31,11 @@ type Conf struct {
 }
 
 type DNS struct {
-	S   *service.Service
-	Cf  Conf
-	Ip  *resolv.IP
-	msg *dns.Msg
+	S    *service.Service
+	Cf   Conf
+	Ip   *resolv.IP
+	Addr string // for debugging
+	msg  *dns.Msg
 }
 
 var dl = diag.Logger("dns")
@@ -247,7 +248,9 @@ func (d *DNS) Start(s *service.Service) {
 		return
 	}
 
+	d.Ip.WillNeedIn(s.Cf.Frequency)
 	addrport := fmt.Sprintf("%s:%d", addr, d.Cf.Port)
+	d.Addr = addrport
 	s.Debug("connecting to %s/%s", d.Cf.Proto, addrport)
 
 	d.nextQid()
@@ -263,6 +266,7 @@ func (d *DNS) Start(s *service.Service) {
 	if resp == nil {
 		s.Debug("error: %v", err)
 		s.Fail("dns query failed")
+		d.Ip.TryAnother()
 		return
 	}
 	if err != nil {
@@ -376,8 +380,10 @@ func checkIntValue(s *service.Service, n int) {
 
 func (t *DNS) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/ip/CF":  &t.Ip.Cf,
-		"service/dns/CF": &t.Cf,
+		"service/ip/CF":    &t.Ip.Cf,
+		"service/ip/FQDN":  &t.Ip.Fqdn,
+		"service/dns/CF":   &t.Cf,
+		"service/dns/addr": &t.Addr,
 	}
 }
 func (t *DNS) WebJson(md map[string]interface{}) {

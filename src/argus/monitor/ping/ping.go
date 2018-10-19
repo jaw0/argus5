@@ -133,12 +133,14 @@ func (p *Ping) Start(s *service.Service) {
 		return
 	}
 
+	p.Ip.WillNeedIn(s.Cf.Frequency)
 	PingQueue.Set(int64(len(pingChan)))
 	PingIdle.Set(int64(numIdle()))
 	// RSN - more workers?
 
 	// send it off to worker
 	pingChan <- pingWork{addr, s}
+
 }
 
 /*

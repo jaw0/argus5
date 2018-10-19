@@ -9,10 +9,13 @@ import (
 	"errors"
 	"net"
 	"strings"
+	"time"
 
 	"argus/clock"
 	"argus/configure"
 )
+
+const TOOLONG = int64(300 * time.Second)
 
 type Conf struct {
 	Hostname  string
@@ -22,24 +25,27 @@ type Conf struct {
 
 type IP struct {
 	Cf      Conf
+	Fqdn    string
 	name    string
-	cache   *cacheE
+	cache   *cacheResult
 	ipvpref []int
 	asis    bool
 	ipv     int
+	idx     int
+	created int64
 }
 
 // for testing
-func New(name string, ver int) *IP {
+func New(name string, ver []int) *IP {
 
-	ip := &IP{name: name, ipv: ver, ipvpref: []int{ver}}
-	lookup(name)
+	ip := &IP{name: name, ipvpref: ver, created: clock.Nano()}
+	Request(name, ip.ipvpref)
 	return ip
 }
 
 func Config(conf *configure.CF) (*IP, error) {
 
-	ip := &IP{}
+	ip := &IP{created: clock.Nano()}
 	conf.InitFromConfig(&ip.Cf, "ip", "")
 
 	if ip.Cf.Hostname == "" && ip.Cf.Hostname_ != "" {
@@ -51,6 +57,10 @@ func Config(conf *configure.CF) (*IP, error) {
 		return nil, errors.New("hostname not specified")
 	}
 	name := ip.Cf.Hostname
+
+	if name == "localhost" {
+		name = "127.0.0.1"
+	}
 
 	// check for dotted quad / cologned octopus
 	ipp := net.ParseIP(name)
@@ -90,7 +100,7 @@ func Config(conf *configure.CF) (*IP, error) {
 
 	name = strings.ToLower(name)
 	ip.name = name
-	lookup(name)
+	Request(name, ip.ipvpref)
 
 	return ip, nil
 }
@@ -101,63 +111,61 @@ func (a *IP) Addr() (string, int, bool) {
 		return a.name, a.ipv, false
 	}
 
-	e := a.cache
-	if e == nil {
-		e = getCache(a.name)
+	now := clock.Nano()
+	e := Get(a.useName())
+	if e != nil {
+		a.cache = e
 	}
+	e = a.cache
 
 	if e == nil {
-		lookup(a.name)
+		Request(a.name, a.ipvpref)
+
+		if a.created+TOOLONG < now {
+			return "", 0, true
+		}
 		return "", 0, false
 	}
 
-	now := clock.Nano()
-	e.lock.RLock()
-	defer e.lock.RUnlock()
-
-	if e.expire < clock.Nano() && !e.underway {
-		lookup(a.name)
+	if e.expires <= now {
+		dl.Debug("expired %s; %v", e.fqdn, e)
+		e.Refresh(0)
+	}
+	if a.Fqdn == "" && e.fqdn != "" {
+		a.Fqdn = e.fqdn
 	}
 
-	if len(e.result) > 0 && len(a.ipvpref) == 0 {
-		// no preference - return first result
-		r := e.result[0]
-		return r.addr, r.ipv, false
-	}
-
-	var a4 []string
-	var a6 []string
-
-	for i, _ := range e.result {
-		r := &e.result[i]
-
-		switch r.ipv {
-		case 4:
-			a4 = append(a4, r.addr)
-		case 6:
-			a6 = append(a6, r.addr)
-		}
+	idx := a.idx
+	aln := len(e.addrv4) + len(e.addrv6)
+	if aln > 0 {
+		idx %= aln
 	}
 
 	for _, pref := range a.ipvpref {
-		// return first result matching configured preference
+
 		switch pref {
 		case 4:
-			if len(a4) > 0 {
-				return a4[0], 4, false
+			if len(a.ipvpref) == 1 && len(e.addrv4) > 0 {
+				idx %= len(e.addrv4)
+			}
+			if idx >= len(e.addrv4) {
+				idx -= len(e.addrv4)
+			} else {
+				return e.addrv4[idx], 4, false
 			}
 		case 6:
-			if len(a6) > 0 {
-				return a6[0], 6, false
+			if len(a.ipvpref) == 1 && len(e.addrv6) > 0 {
+				idx %= len(e.addrv6)
+			}
+			if idx >= len(e.addrv6) {
+				idx -= len(e.addrv6)
+			} else {
+				return e.addrv6[idx], 6, false
 			}
 		}
 	}
 
-	if e.created+TOOLONG < now {
-		return "", 0, true
-	}
-
-	return "", 0, false
+	return "", 0, true
 }
 
 // return ipv6 addrs with brackets
@@ -178,6 +186,7 @@ func (a *IP) AddrWB() (string, bool) {
 func (ip *IP) confPref() {
 
 	if ip.Cf.IPVersion == "" {
+		ip.ipvpref = []int{4, 6}
 		return
 	}
 
@@ -195,17 +204,30 @@ func (ip *IP) confPref() {
 
 func (a *IP) WillNeedIn(secs int) {
 
+	if a.asis {
+		return
+	}
+
+	e := a.cache
+	if e != nil {
+		e.Refresh(secs)
+	} else {
+		Request(a.useName(), a.ipvpref)
+	}
+}
+
+func (a *IP) useName() string {
+	if a.Fqdn != "" {
+		return a.Fqdn
+	}
+	if a.cache != nil && a.cache.fqdn != "" {
+		return a.cache.fqdn
+	}
+	return a.name
 }
 
 func (a *IP) TryAnother() {
-
-}
-
-func (a *IP) IsValid() {
-
-}
-
-func (a *IP) IsTimedOut() {
+	a.idx++
 
 }
 

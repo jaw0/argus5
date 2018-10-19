@@ -130,6 +130,10 @@ func main() {
 		}
 	}
 
+	if cf.DevMode {
+		api.Add(true, "trace", apiTrace)
+	}
+
 	// prepare web serving
 	web.Configured()
 	api.Init()           // start local api server
@@ -366,6 +370,11 @@ func mkdir(dir string) error {
 func apiHup(ctx *api.Context) {
 
 	sigchan <- syscall.SIGHUP
+	ctx.SendOKFinal()
+}
+
+func apiTrace(ctx *api.Context) {
+	dl.Bug("trace request")
 	ctx.SendOKFinal()
 }
 

@@ -35,6 +35,7 @@ type TCP struct {
 	S      *service.Service
 	Cf     Conf
 	Ip     *resolv.IP
+	Addr   string // for debugging
 	ToSend string
 	FSend  Packeter
 }
@@ -264,7 +265,9 @@ func (t *TCP) Connect() (net.Conn, bool) {
 		return nil, true
 	}
 
+	t.Ip.WillNeedIn(t.S.Cf.Frequency)
 	addrport := fmt.Sprintf("%s:%d", addr, t.Cf.Port)
+	t.Addr = addrport
 
 	t.S.Debug("connecting to tcp %s", addrport)
 	timeout := time.Duration(t.S.Cf.Timeout) * time.Second
@@ -273,6 +276,7 @@ func (t *TCP) Connect() (net.Conn, bool) {
 	if err != nil {
 		t.S.Fail("connect failed")
 		t.S.Debug("connect failed: %v", err)
+		t.Ip.TryAnother()
 		return nil, true
 	}
 
@@ -304,8 +308,10 @@ func protoName(name string) string {
 
 func (t *TCP) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/ip/CF":  &t.Ip.Cf,
-		"service/tcp/CF": &t.Cf,
+		"service/ip/CF":    &t.Ip.Cf,
+		"service/ip/FQDN":  &t.Ip.Fqdn,
+		"service/tcp/CF":   &t.Cf,
+		"service/tcp/addr": t.Addr,
 	}
 }
 func (t *TCP) WebJson(md map[string]interface{}) {

@@ -393,7 +393,7 @@ func autotune(nwork int, max int, dev bool) {
 		}
 
 		if nwork < MAXWORKER && max == 0 {
-			more := nwork / 10
+			more := nwork / 5
 			for i := 0; i < more; i++ {
 				startWorker(dev)
 				nwork++

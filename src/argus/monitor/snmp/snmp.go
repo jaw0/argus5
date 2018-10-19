@@ -37,6 +37,7 @@ type SNMP struct {
 	S       *service.Service
 	Cf      Conf
 	Ip      *resolv.IP
+	Addr    string   // for debugging
 	oid     string   // actual oid to monitor
 	baseOid string   // oid of table (ifInOctets)
 	idxDesc string   // description "Serial1/0"
@@ -178,6 +179,8 @@ func (t *SNMP) DoneConfig() {
 func (t *SNMP) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
 		"service/ip/CF":   &t.Ip.Cf,
+		"service/ip/FQDN": &t.Ip.Fqdn,
+		"service/ip/addr": t.Addr,
 		"service/snmp/CF": &t.Cf,
 		"service/snmp": &struct {
 			oid     string
@@ -230,6 +233,7 @@ func (t *SNMP) Start(s *service.Service) {
 	if err != nil {
 		s.Debug("get failed: %v", err)
 		s.Fail("snmp get failed")
+		t.Ip.TryAnother()
 		return
 	}
 
@@ -352,6 +356,9 @@ func (t *SNMP) snmpClient() *gosnmp.GoSNMP {
 		t.S.Debug("hostname still resolving")
 		return nil
 	}
+
+	t.Ip.WillNeedIn(t.S.Cf.Frequency)
+	t.Addr = addr
 
 	client := &gosnmp.GoSNMP{
 		Target:    addr,

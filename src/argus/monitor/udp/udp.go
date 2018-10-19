@@ -34,6 +34,7 @@ type UDP struct {
 	S       *service.Service
 	Cf      Conf
 	Ip      *resolv.IP
+	Addr    string // for debugging
 	ToSend  string
 	FSend   Packeter
 	dstaddr *net.UDPAddr
@@ -141,6 +142,7 @@ func (t *UDP) Start(s *service.Service) {
 	t.ToSend = t.Cf.Send
 	res, fail := t.MakeRequest()
 	if fail {
+		t.Ip.TryAnother()
 		return
 	}
 
@@ -226,7 +228,9 @@ func (t *UDP) Connect() (*net.UDPConn, bool) {
 		return nil, true
 	}
 
+	t.Ip.WillNeedIn(t.S.Cf.Frequency)
 	addrport := fmt.Sprintf("%s:%d", addr, t.Cf.Port)
+	t.Addr = addrport
 
 	t.S.Debug("connecting to udp %s", addrport)
 	uaddr, err := net.ResolveUDPAddr("udp", addrport)
@@ -286,8 +290,10 @@ func protoName(name string) string {
 
 func (u *UDP) DumpInfo() map[string]interface{} {
 	return map[string]interface{}{
-		"service/ip/CF":  &u.Ip.Cf,
-		"service/udp/CF": &u.Cf,
+		"service/ip/CF":    &u.Ip.Cf,
+		"service/ip/FQDN":  &u.Ip.Fqdn,
+		"service/udp/CF":   &u.Cf,
+		"service/udp/addr": u.Addr,
 	}
 }
 func (u *UDP) WebJson(md map[string]interface{}) {
