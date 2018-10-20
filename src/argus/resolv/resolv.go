@@ -32,7 +32,7 @@ const (
 	TTL_ERR      = 120
 	SOONER       = 2 // seconds
 	TRIES        = 3
-	XDK          = 20
+	XDK          = 40
 )
 
 type queryReq struct {
@@ -41,7 +41,7 @@ type queryReq struct {
 }
 
 var lock sync.RWMutex
-var todo = make(chan queryReq, 10000)
+var todo = make(chan queryReq, 1000)
 var stop = make(chan struct{})
 var done sync.WaitGroup
 var dl = diag.Logger("resolv")
@@ -86,14 +86,15 @@ func Stop() {
 
 // ################################################################
 
-func query(name string, prefm int) {
+func query(name string, prefm int) bool {
 
 	select {
 	case todo <- queryReq{name, prefm}:
-		break
+		return true
 	default:
 		ResolvDrops.Add(1)
 	}
+	return false
 }
 
 func janitor() {
