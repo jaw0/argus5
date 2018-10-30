@@ -24,14 +24,14 @@ type OP struct {
 
 var ops = map[string]OP{
 	"time":  {6, fop_time},
+	"rand":  {6, fop_rand},
 	"SUM":   {5, fop_sum}, // group aggregate ops
 	"AVE":   {5, fop_ave},
 	"AVG":   {5, fop_ave},
 	"MIN":   {5, fop_min},
 	"MAX":   {5, fop_max},
 	"COUNT": {5, fop_count},
-	"rand":  {5, fop_rand}, // standard math functions
-	"ceil":  {5, fop_ceil},
+	"ceil":  {5, fop_ceil}, // standard math functions
 	"floor": {5, fop_floor},
 	"abs":   {5, fop_abs},
 	"sin":   {5, fop_sin},
