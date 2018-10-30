@@ -121,9 +121,10 @@ func (s *Service) Dump(dx argus.Dumper) {
 
 	dx.Dump("service/Lasttest", fmt.Sprintf("%d", s.Lasttest))
 	dx.Dump("service/Started", fmt.Sprintf("%d", s.Started))
+	dx.Dump("service/Elapsed", fmt.Sprintf("%.4f", float32(s.Elapsed)/1e9))
 	dx.Dump("service/Tries", fmt.Sprintf("%d", s.Tries))
-	argus.Dump(dx, "service/CF", &s.Cf)
 	argus.Dump(dx, "service", &s.p)
+	argus.Dump(dx, "service/CF", &s.Cf)
 
 	cm := s.check.DumpInfo()
 	for pre, d := range cm {

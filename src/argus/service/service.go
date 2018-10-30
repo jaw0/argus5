@@ -103,10 +103,12 @@ type Service struct {
 	Cf       Conf
 	p        Persist
 	running  bool
+	ready    bool
 	sched    *sched.D
 	Lasttest int64
 	Tries    int
 	Started  int64
+	Elapsed  int64
 	alsoRun  []*Service
 	calcmask uint32
 	expr     []string
@@ -158,7 +160,7 @@ func (s *Service) IsReady() bool {
 
 	s.mon.Lock.RLock()
 	defer s.mon.Lock.RUnlock()
-	return s.p.Result != ""
+	return s.ready
 }
 
 func (s *Service) Unique() string {
@@ -199,7 +201,7 @@ func (s *Service) Done() {
 
 	now := clock.Nano()
 	s.mon.Lock.Lock()
-	s.reschedule(int(now - s.Started))
+	s.reschedule(int(s.Elapsed))
 	s.running = false
 	s.Lasttest = now
 
@@ -213,12 +215,19 @@ func (s *Service) Done() {
 }
 
 func (s *Service) Pass() {
+	s.ready = true
 	s.SetResult(argus.CLEAR, "", "")
 }
+func (s *Service) FailReady(reason string) {
+	s.ready = true
+	s.SetResult(s.Cf.Severity, "", reason)
+}
 func (s *Service) Fail(reason string) {
+	s.ready = false
 	s.SetResult(s.Cf.Severity, "", reason)
 }
 func (s *Service) FailNow(reason string) {
+	s.ready = false
 	s.Tries = s.Cf.Retries + 1
 	s.Fail(reason)
 }

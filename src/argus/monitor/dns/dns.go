@@ -297,7 +297,7 @@ func (d *DNS) testResponse(s *service.Service, resp *dns.Msg) {
 	ec := resp.Rcode
 	if ec != 0 {
 		s.Debug("DNS Error %s (RCODE=%d)", dns.RcodeToString[ec], ec)
-		s.Fail("DNS Error")
+		s.FailReady("DNS Error")
 		return
 	}
 
@@ -314,7 +314,7 @@ func (d *DNS) testResponse(s *service.Service, resp *dns.Msg) {
 		if resp.Authoritative {
 			s.Pass()
 		} else {
-			s.Fail("DNS Error - Non-Authoratative Response")
+			s.FailReady("DNS Error - Non-Authoratative Response")
 		}
 		return
 	}
@@ -345,11 +345,11 @@ func (d *DNS) testResponse(s *service.Service, resp *dns.Msg) {
 			case *dns.SOA:
 				checkIntValue(s, int(soa.Serial))
 			default:
-				s.Fail("Invalid SOA")
+				s.FailReady("Invalid SOA")
 			}
 			return
 		}
-		s.Fail("No SOA")
+		s.FailReady("No SOA")
 		return
 	}
 

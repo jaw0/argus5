@@ -58,7 +58,7 @@ func (s *Service) recordMyGraphData(val float64) {
 	}
 
 	if s.Cf.Gr_what == "elapsed" {
-		val = float64(clock.Nano()-s.Started) / 1e9
+		val = float64(s.Elapsed) / 1e9
 	}
 
 	if s.mon.Cf.Graph {
