@@ -11,18 +11,28 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 
+	"argus/clock"
 	"argus/configure"
 	"argus/diag"
 	"argus/monitor/tcp"
 	"argus/service"
 )
 
+type cacheEntry struct {
+	content string
+	ctype   string
+	creator *Url
+	expire  int64
+}
+
 type Conf struct {
 	URL         string
 	Browser     string
 	Referer     string
 	HTTP_Accept string
+	HTTP_Cache  int `cfconv:"timespec"`
 }
 
 type Url struct {
@@ -36,6 +46,9 @@ const MAXREDIRECT = 16
 
 var dl = diag.Logger("tcp")
 
+var cacheLock sync.Mutex
+var webCache = make(map[string]*cacheEntry)
+
 func init() {
 	// register with service factory
 	service.Register("TCP/URL", New)
@@ -46,6 +59,7 @@ func New(conf *configure.CF, s *service.Service) service.Monitor {
 	u := &Url{}
 	// set defaults
 	u.UCf.Browser = "Argus"
+	u.UCf.HTTP_Cache = 60
 	u.TCP.InitNew(conf, s)
 	u.TCP.Cf.Port = 80
 	u.TCP.Cf.ReadHow = "toeof"
@@ -107,6 +121,12 @@ func (d *Url) Start(s *service.Service) {
 	s.Debug("url start")
 	defer s.Done()
 
+	if content, ctype, isCached := d.checkCached(s); isCached {
+		d.S.Debug("using cached content")
+		d.S.CheckValue(content, ctype)
+		return
+	}
+
 	file := d.File
 	nredir := 0
 	res := ""
@@ -145,11 +165,42 @@ func (d *Url) Start(s *service.Service) {
 
 	if len(sects) > 1 {
 		body := sects[1]
+		d.addCached(body, ctype)
 		d.S.CheckValue(body, ctype)
 	} else {
 		d.S.CheckValue("", "")
 	}
 
+}
+
+func (d *Url) checkCached(s *service.Service) (string, string, bool) {
+
+	now := clock.Unix()
+
+	cacheLock.Lock()
+	defer cacheLock.Unlock()
+
+	ce, ok := webCache[d.UCf.URL]
+	if !ok || ce.creator == d || ce.expire < now {
+		return "", "", false
+	}
+
+	return ce.content, ce.ctype, true
+}
+
+func (d *Url) addCached(content string, ctype string) {
+
+	ce := &cacheEntry{
+		content: content,
+		ctype:   ctype,
+		expire:  clock.Unix() + int64(d.UCf.HTTP_Cache),
+		creator: d,
+	}
+
+	cacheLock.Lock()
+	defer cacheLock.Unlock()
+
+	webCache[d.UCf.URL] = ce
 }
 
 func (d *Url) makeRequest(file string) (string, bool) {
