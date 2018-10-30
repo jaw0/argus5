@@ -16,7 +16,7 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
-	"github.com/uknth/jsonpath"
+	"github.com/oliveagle/jsonpath"
 
 	"argus/argus"
 	"argus/clock"
@@ -48,6 +48,9 @@ func (s *Service) CheckValue(val string, valtype string) {
 	var fval float64
 
 	s.p.Calc.rawvalue = val
+	s.Elapsed = clock.Nano() - s.Started
+	s.ready = true
+
 	s.mon.Debug("rawvalue: %s", limitString(val, 40))
 	val, fval, valtype = s.getValue(val, valtype)
 
@@ -145,33 +148,38 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 	if s.Cf.Pluck != "" {
 		val = Pluck(s.Cf.Pluck, val)
 		valtype = "string"
+		s.Debug("pluck => value %v", val)
 	}
 
 	if s.Cf.JPath != "" && valtype != "" {
 		var err error
+		s.Debug("type %s; jpath %s; val %s", valtype, s.Cf.JPath, val)
 		val, err = JsonPath(s.Cf.JPath, val)
 		if err != nil {
-			diag.Problem("invalid json/jsonpath '%s': %v", s.Cf.JPath, err)
+			diag.Verbose("invalid json/jsonpath '%s': %v", s.Cf.JPath, err)
 		}
 		valtype = "string"
+		s.Debug("json => value %#v", val)
 	}
 
 	if s.Cf.XPath != "" && valtype != "" {
 		var err error
 		val, err = XPath(s.Cf.XPath, val)
 		if err != nil {
-			diag.Problem("invalid xml/xpath '%s': %v", s.Cf.XPath, err)
+			diag.Verbose("invalid xml/xpath '%s': %v", s.Cf.XPath, err)
 		}
 		valtype = "string"
+		s.Debug("xml => value %v", val)
 	}
 
 	if s.Cf.Unpack != "" {
 		ival, ok := argus.Unpack(s.Cf.Unpack, []byte(val))
 		if !ok {
-			diag.Problem("invalid unpack '%s'")
+			diag.Verbose("invalid unpack '%s'")
 		}
 		fval = float64(ival)
 		valtype = ""
+		s.Debug("unpack => value %f", fval)
 	}
 
 	if s.Cf.Scale != 0 || s.calcmask != 0 || s.Cf.Expr != "" || s.p.Hwab != nil {
@@ -190,7 +198,7 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 		fval = 1
 	}
 	if s.calcmask&CALC_ELAPSED != 0 {
-		fval = float64(now-s.Started) / 1e9
+		fval = float64(s.Elapsed) / 1e9
 	}
 	if s.calcmask&(CALC_RATE|CALC_DELTA) != 0 {
 		var ok bool
@@ -330,16 +338,19 @@ func Pluck(regex string, val string) string {
 	return matches[1]
 }
 
-func JsonPath(path string, val string) (string, error) {
+func JsonPath(path string, val string) (ret string, rer error) {
 
-	// RSN - save jdat for multi-service tests?
+	defer func() {
+		if x := recover(); x != nil {
+			rer = errors.New("invalid jpath")
+		}
+	}()
 
 	var jdat interface{}
 	err := json.Unmarshal([]byte(val), &jdat)
 	if err != nil {
 		return "", err
 	}
-
 	res, err := jsonpath.JsonPathLookup(jdat, path)
 
 	if err != nil {
@@ -349,7 +360,13 @@ func JsonPath(path string, val string) (string, error) {
 	return fmt.Sprintf("%v", res), nil
 }
 
-func XPath(path string, val string) (string, error) {
+func XPath(path string, val string) (ret string, rer error) {
+
+	defer func() {
+		if x := recover(); x != nil {
+			rer = errors.New("invalid xpath")
+		}
+	}()
 
 	xTree, err := xmltree.ParseXML(bytes.NewBufferString(val))
 	if err != nil {
