@@ -390,15 +390,16 @@ func apiStatus(ctx *api.Context) {
 	ctx.SendOK()
 	ctx.SendKVP("status", status)
 	ctx.SendKVP("version", argus.Version)
-	ctx.SendKVP("OS", runtime.GOOS)
+	ctx.SendKVP("system", runtime.Version()+"/"+runtime.GOOS+"/"+runtime.GOARCH)
+	if darp.MyDarp != nil {
+		ctx.SendKVP("darp", darp.MyDarp.Name+" "+darp.MyDarp.Type)
+	}
 	ctx.SendKVP("objects", monel.NMonel.String())
 	ctx.SendKVP("services", service.NService.String())
 	ctx.SendKVP("alerts", notify.NActive.String())
 	ctx.SendKVP("uptime", argus.Elapsed(clock.Unix()-starttime))
 	ctx.SendKVP("monrate", fmt.Sprintf("%.2f %.2f %.2f per second", monrate[0].Value(), monrate[1].Value(), monrate[2].Value()))
 	ctx.SendKVP("idle", fmt.Sprintf("%.2f%% %.2f%% %.2f%%", 100*cpurate[0].Value(), 100*cpurate[1].Value(), 100*cpurate[2].Value()))
-
-	// RSN - darp info
 
 	ctx.SendFinal()
 }
