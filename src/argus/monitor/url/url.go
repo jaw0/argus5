@@ -24,7 +24,7 @@ type cacheEntry struct {
 	content string
 	ctype   string
 	creator *Url
-	expire  int64
+	created int64
 }
 
 type Conf struct {
@@ -48,6 +48,7 @@ var dl = diag.Logger("tcp")
 
 var cacheLock sync.Mutex
 var webCache = make(map[string]*cacheEntry)
+var urlCount = make(map[string]int)
 
 func init() {
 	// register with service factory
@@ -63,6 +64,7 @@ func New(conf *configure.CF, s *service.Service) service.Monitor {
 	u.TCP.InitNew(conf, s)
 	u.TCP.Cf.Port = 80
 	u.TCP.Cf.ReadHow = "toeof"
+
 	return u
 }
 
@@ -108,6 +110,8 @@ func (d *Url) Config(conf *configure.CF, s *service.Service) error {
 	if err != nil {
 		return err
 	}
+
+	urlCount[d.UCf.URL]++
 
 	// determine names
 	uname := fmt.Sprintf("URL_%s:%d%s", d.Host, d.Cf.Port, d.File)
@@ -175,13 +179,17 @@ func (d *Url) Start(s *service.Service) {
 
 func (d *Url) checkCached(s *service.Service) (string, string, bool) {
 
+	if d.UCf.HTTP_Cache <= 0 {
+		return "", "", false
+	}
+
 	now := clock.Unix()
 
 	cacheLock.Lock()
 	defer cacheLock.Unlock()
 
 	ce, ok := webCache[d.UCf.URL]
-	if !ok || ce.creator == d || ce.expire < now {
+	if !ok || ce.creator == d || ce.created+int64(d.UCf.HTTP_Cache) <= now || ce.created+int64(s.Cf.Frequency) <= now {
 		return "", "", false
 	}
 
@@ -190,15 +198,24 @@ func (d *Url) checkCached(s *service.Service) (string, string, bool) {
 
 func (d *Url) addCached(content string, ctype string) {
 
+	if d.UCf.HTTP_Cache <= 0 {
+		return
+	}
+
 	ce := &cacheEntry{
 		content: content,
 		ctype:   ctype,
-		expire:  clock.Unix() + int64(d.UCf.HTTP_Cache),
+		created: clock.Unix(),
 		creator: d,
 	}
 
 	cacheLock.Lock()
 	defer cacheLock.Unlock()
+
+	if urlCount[d.UCf.URL] < 2 {
+		// content not needed elsewhere, don't cache
+		return
+	}
 
 	webCache[d.UCf.URL] = ce
 }
