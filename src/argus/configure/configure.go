@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"argus/argus"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 )
 
 type CFV struct {

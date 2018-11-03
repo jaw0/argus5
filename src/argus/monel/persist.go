@@ -13,7 +13,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"argus/config"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 	"argus/notify"
 )
 

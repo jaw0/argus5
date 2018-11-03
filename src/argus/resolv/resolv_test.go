@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 )
 
 func xTestResolv(t *testing.T) {

@@ -17,6 +17,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jaw0/acgo/daemon"
+	"github.com/jaw0/acgo/diag"
+
 	_ "argus/agent"
 	"argus/api"
 	"argus/argus"
@@ -24,7 +27,6 @@ import (
 	"argus/config"
 	"argus/construct"
 	"argus/darp"
-	"argus/diag"
 	"argus/graph/graphd"
 	"argus/monel"
 	_ "argus/monitor"
@@ -70,7 +72,7 @@ func main() {
 	flag.Parse()
 
 	if !foreground {
-		daemonize()
+		daemon.Ize(sigchan)
 	}
 
 	diag.Init("argusd")

@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"argus/argus"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 )
 
 type Conf struct {

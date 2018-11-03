@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	"argus/configure"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 	"argus/expr"
 	"argus/monel"
 	"argus/service"

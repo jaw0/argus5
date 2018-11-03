@@ -13,7 +13,7 @@ import (
 	"argus/api"
 	"argus/argus"
 	"argus/config"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 )
 
 type User struct {

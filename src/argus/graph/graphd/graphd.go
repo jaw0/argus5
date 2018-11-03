@@ -15,7 +15,7 @@ import (
 	"argus/argus"
 	"argus/clock"
 	"argus/config"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 )
 
 type graphData struct {

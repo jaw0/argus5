@@ -20,7 +20,7 @@ import (
 
 	"argus/argus"
 	"argus/clock"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 	"argus/expr"
 )
 

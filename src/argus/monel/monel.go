@@ -16,7 +16,7 @@ import (
 	"argus/argus"
 	"argus/clock"
 	"argus/configure"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 	"argus/notify"
 )
 

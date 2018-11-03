@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 )
 
 func TestGraphd(t *testing.T) {

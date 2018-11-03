@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"argus/api"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 	"argus/service"
 )
 

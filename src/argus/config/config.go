@@ -8,9 +8,10 @@ package config
 import (
 	"fmt"
 
-	"argus/accfg"
+	"github.com/jaw0/acgo/accfg"
+	"github.com/jaw0/acgo/diag"
+
 	"argus/argus"
-	"argus/diag"
 )
 
 type Config struct {
@@ -63,9 +64,6 @@ func Cf() *Config {
 func read_config(file string) error {
 
 	newcf := &Config{
-		DNS_server:     []string{},
-		DNS_search:     []string{},
-		Debug:          make(map[string]bool),
 		Htdir:          argus.Htdir,
 		Control_Socket: argus.ControlSocket,
 	}

@@ -16,7 +16,7 @@ import (
 
 	"argus/api/client"
 	"argus/configure"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 	"argus/resolv"
 	"argus/sec"
 	"argus/service"

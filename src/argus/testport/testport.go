@@ -10,7 +10,7 @@ import (
 	"net"
 	"time"
 
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 )
 
 func Start(port int) {

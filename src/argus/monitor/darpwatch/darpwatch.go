@@ -11,7 +11,7 @@ import (
 
 	"argus/configure"
 	"argus/darp"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 	"argus/service"
 )
 

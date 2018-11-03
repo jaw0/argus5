@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"argus/config"
-	"argus/diag"
+	"github.com/jaw0/acgo/diag"
 )
 
 const RESOLVCONF = "/etc/resolv.conf"
