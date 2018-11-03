@@ -218,11 +218,17 @@ func sigHandle() {
 	for {
 		select {
 		case n := <-sigchan:
-			if n == syscall.SIGUSR2 {
+			switch n {
+			case syscall.SIGUSR2:
 				diag.Bug("usr2")
 				continue
+			case syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
+				exitvalue = daemon.ExitFinished
+			case syscall.SIGHUP:
+				exitvalue = daemon.ExitRestart
+			default:
+				exitvalue = daemon.ExitRestart
 			}
-			exitvalue = 1
 			sched.Stop()
 		}
 	}
