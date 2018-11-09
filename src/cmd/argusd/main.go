@@ -72,7 +72,7 @@ func main() {
 	flag.Parse()
 
 	if !foreground {
-		daemon.Ize(sigchan)
+		daemon.Ize()
 	}
 
 	diag.Init("argusd")
@@ -101,6 +101,9 @@ func main() {
 	go sigHandle()
 	// set up env, etal
 	raiseFileLimit()
+	if runtime.GOMAXPROCS(0) < 128 {
+		runtime.GOMAXPROCS(128)
+	}
 	os.Setenv("ARGUS_PID", fmt.Sprintf("%d", os.Getpid()))
 	os.Setenv("ARGUS_VER", argus.Version)
 
