@@ -1,4 +1,5 @@
 golang.org/x/crypto/bcrypt
+golang.org/x/net/html
 github.com/miekg/dns
 github.com/mitchellh/mapstructure
 github.com/soniah/gosnmp
@@ -9,4 +10,3 @@ github.com/SAP/go-hdb/driver
 github.com/denisenkom/go-mssqldb
 github.com/ChrisTrenkamp/goxpath
 github.com/jaw0/acgo
-

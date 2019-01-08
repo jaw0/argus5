@@ -22,6 +22,7 @@ all: src/.deps
 
 src/.deps: deps
 	for d in `cat deps`; do \
+		echo + $$d; \
 		$(GO) get -insecure $$d; \
 	done
 	touch src/.deps
