@@ -12,11 +12,15 @@ INSTALL_HTDIR = /usr/local/share/argus/htdir
 ################################################################
 
 ROOT!=pwd
+DATE!=date +'%Y%m%d'
+
 BIN=src/cmd/argusd src/cmd/argusctl
 GO=env GOPATH=$(ROOT) go
-VERSION=5.0
+
+VERSION=dev-$(DATE)
 
 all: src/.deps
+	(echo package \"argus\"; echo const Version = \"$(VERSION)\") > src/argus/version.go
 	@for x in $(BIN); do \
 		echo building $$x; \
 		(cd $$x; $(GO) install); \

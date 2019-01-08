@@ -6,7 +6,6 @@
 package argus
 
 // about argus
-const Version = "5.0"
 const URL = "http://www.argus-monitoring.com"
 
 // defaults
