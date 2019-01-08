@@ -20,7 +20,7 @@ GO=env GOPATH=$(ROOT) go
 VERSION=dev-$(DATE)
 
 all: src/.deps
-	(echo package \"argus\"; echo const Version = \"$(VERSION)\") > src/argus/version.go
+	(echo package argus; echo const Version = \"$(VERSION)\") > src/argus/argus/version.go
 	@for x in $(BIN); do \
 		echo building $$x; \
 		(cd $$x; $(GO) install); \
@@ -65,3 +65,5 @@ testbuild:
 dist:
 	git archive --format=tar.gz --prefix=argus-$(VERSION)/ HEAD > argus-$(VERSION).tgz
 
+www-code:
+	scp ../argus-$(VERSION).tgz laertes:~www/htdocs/code/argus-archive/
