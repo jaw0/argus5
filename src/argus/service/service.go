@@ -17,6 +17,7 @@ import (
 
 	"argus/argus"
 	"argus/clock"
+	"argus/config"
 	"argus/configure"
 	"argus/darp"
 	"argus/monel"
@@ -44,7 +45,7 @@ type Conf struct {
 	Timeout       int `cfconv:"timespec"`
 	Showreason    bool
 	Showresult    bool
-	Demo_is_force int // for website demo
+	Demo_is_force float64 // for website demo
 	Severity      argus.Status
 	DARP_Gravity  argus.Gravity
 	DARP_Tags     string
@@ -187,7 +188,7 @@ func (s *Service) Start() {
 
 	s.mon.Debug("service starting")
 
-	if s.Cf.Demo_is_force != 0 {
+	if s.Cf.Demo_is_force != 0 && config.Cf().DemoMode {
 		s.demoMode()
 		return
 	}
@@ -195,11 +196,14 @@ func (s *Service) Start() {
 	s.check.Start(s)
 }
 
+// simulatation for website demo
 func (s *Service) demoMode() {
 
 	s.ready = true
-	v := float32(s.Cf.Demo_is_force) + rand.Float32() - rand.Float32()
+	v := s.Cf.Demo_is_force + rand.Float64() - rand.Float64()
 	r := fmt.Sprintf("%f", v)
+
+	s.recordMyGraphData(v)
 
 	if v > 0 {
 		s.SetResult(argus.CLEAR, r, "OK")

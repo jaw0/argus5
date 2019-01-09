@@ -49,7 +49,6 @@ func (s *Service) CheckValue(val string, valtype string) {
 
 	s.p.Calc.rawvalue = val
 	s.Elapsed = clock.Nano() - s.Started
-	s.ready = true
 
 	s.mon.Debug("rawvalue: %s", limitString(val, 40))
 	val, fval, valtype = s.getValue(val, valtype)
@@ -58,6 +57,7 @@ func (s *Service) CheckValue(val string, valtype string) {
 		return
 	}
 
+	s.ready = true
 	status, reason := s.testAndCompare(val, fval, valtype)
 
 	if valtype == "" {
@@ -230,10 +230,19 @@ func (s *Service) getValue(val string, valtype string) (string, float64, string)
 
 	if len(s.expr) != 0 {
 		var err error
-		fval, err = doExpr(s.expr, fval)
+		var nrdy string
+
+		fval, nrdy, err = s.doExpr(s.expr, fval)
+
 		if err != nil {
 			s.Debug("invalid expr '%s': %v", s.Cf.Expr, err)
 			s.FailNow("invalid expr")
+			return "", 0, "skip"
+		}
+
+		if nrdy != "" {
+			// service is not yet ready
+			s.Debug("not ready: %s", nrdy)
 			return "", 0, "skip"
 		}
 	}
@@ -386,7 +395,7 @@ func XPath(path string, val string) (ret string, rer error) {
 	return fmt.Sprintf("%v", res), nil
 }
 
-func doExpr(exp []string, fval float64) (ret float64, rer error) {
+func (s *Service) doExpr(exp []string, fval float64) (ret float64, nrdy string, rer error) {
 
 	defer func() {
 		if x := recover(); x != nil {
@@ -397,13 +406,17 @@ func doExpr(exp []string, fval float64) (ret float64, rer error) {
 	sv := fmt.Sprintf("%f", fval)
 
 	dat := map[string]string{
-		"x":  sv,
-		"$x": sv, // backwards compat(ish)
+		"elapsed": fmt.Sprintf("%f", float32(s.Elapsed)/1e9),
+		"lastt":   fmt.Sprintf("%d", s.Lasttest/1e9),
+		"freq":    fmt.Sprintf("%d", s.Cf.Frequency),
+		"result":  sv,
+		"x":       sv,
+		"$x":      sv, // backwards compat(ish)
 	}
 
-	res, err := expr.RunExprF(exp, dat)
+	res, nrdy, err := expr.RunExprF(exp, dat)
 
-	return res, err
+	return res, nrdy, err
 }
 
 func calcMask(calc string) uint32 {

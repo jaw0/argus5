@@ -66,4 +66,4 @@ dist:
 	git archive --format=tar.gz --prefix=argus-$(VERSION)/ HEAD > argus-$(VERSION).tgz
 
 www-code:
-	scp ../argus-$(VERSION).tgz laertes:~www/htdocs/code/argus-archive/
+	scp argus-$(VERSION).tgz laertes:~www/htdocs/code/argus-archive/

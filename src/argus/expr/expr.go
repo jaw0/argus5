@@ -13,60 +13,78 @@ import (
 	"strconv"
 	"strings"
 
+	"argus/argus"
 	"argus/clock"
 	"argus/monel"
 )
 
 type OP struct {
 	prec int
-	f    func(*exprStack) (float64, bool)
+	rry  bool // true => all services must be ready
+	fop  func(*exprStack) (float64, bool)
+	fagg func(*exprStack, bool) (float64, string, bool)
 }
 
 var ops = map[string]OP{
-	"time":  {6, fop_time}, // unix time, seconds
-	"rand":  {6, fop_rand}, // [0..1)
-	"SUM":   {5, fop_sum},  // group aggregate ops
-	"AVE":   {5, fop_ave},  //   SUM(Top:Foo:Bar)
-	"AVG":   {5, fop_ave},
-	"MIN":   {5, fop_min},
-	"MAX":   {5, fop_max},
-	"COUNT": {5, fop_count},
-	"ceil":  {5, fop_ceil}, // standard math functions
-	"floor": {5, fop_floor},
-	"abs":   {5, fop_abs},
-	"sin":   {5, fop_sin},
-	"tan":   {5, fop_sin},
-	"cos":   {5, fop_cos},
-	"log":   {5, fop_log}, // natural log
-	"exp":   {5, fop_exp}, // e ^ x
-	"sqrt":  {5, fop_sqrt},
-	"^":     {4, fop_pow}, // basic arithmetic
-	"*":     {3, fop_mul},
-	"/":     {3, fop_div},
-	"%":     {3, fop_mod},
-	"+":     {2, fop_add},
-	"-":     {2, fop_sub},
+	"time":      {50, true, fop_time, nil}, // unix time, seconds
+	"rand":      {50, true, fop_rand, nil}, // [0..1)
+	"SUM":       {20, true, nil, fop_sum},  // group aggregate ops
+	"AVE":       {20, true, nil, fop_ave},  //   SUM(Top:Foo:Bar)
+	"AVG":       {20, true, nil, fop_ave},  // test will wait until all services are ready
+	"MIN":       {20, true, nil, fop_min},
+	"MAX":       {20, true, nil, fop_max},
+	"COUNT":     {20, true, nil, fop_count},
+	"NSUM":      {20, false, nil, fop_sum}, // group aggregate ops
+	"NAVE":      {20, false, nil, fop_ave}, // tests will run ignoring any services not ready
+	"NAVG":      {20, false, nil, fop_ave},
+	"NMIN":      {20, false, nil, fop_min},
+	"NMAX":      {20, false, nil, fop_max},
+	"NCOUNT":    {20, false, nil, fop_count},
+	"NUP":       {20, false, nil, fop_up},   // count of services that are up
+	"NDOWN":     {20, false, nil, fop_down}, // ... or down
+	"NOVERRIDE": {20, false, nil, fop_over}, // ... or overridden
+	"ceil":      {20, true, fop_ceil, nil},  // standard math functions
+	"floor":     {20, true, fop_floor, nil},
+	"abs":       {20, true, fop_abs, nil},
+	"sin":       {20, true, fop_sin, nil},
+	"tan":       {20, true, fop_sin, nil},
+	"cos":       {20, true, fop_cos, nil},
+	"log":       {20, true, fop_log, nil}, // natural log
+	"exp":       {20, true, fop_exp, nil}, // e ^ x
+	"sqrt":      {20, true, fop_sqrt, nil},
+	"^":         {16, true, fop_pow, nil}, // basic arithmetic
+	"*":         {15, true, fop_mul, nil},
+	"/":         {14, true, fop_div, nil},
+	"%":         {13, true, fop_mod, nil},
+	"+":         {12, true, fop_add, nil},
+	"-":         {12, true, fop_sub, nil},
 }
 
 // calculate value of expression
-func Calc(expr string, vars map[string]string) (float64, error) {
+func Calc(expr string, vars map[string]string) (float64, string, error) {
 
 	pt, _, err := Parse(expr)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
-	res := RunExpr(pt, vars)
+	res, nrdy := RunExpr(pt, vars)
+	if nrdy != "" {
+		return 0, nrdy, nil
+	}
 	v, err := strconv.ParseFloat(res, 64)
-	return v, err
+	return v, "", err
 }
 
 // run pre-compiled expr - return float
-func RunExprF(pt []string, vars map[string]string) (float64, error) {
+func RunExprF(pt []string, vars map[string]string) (float64, string, error) {
 
-	res := RunExpr(pt, vars)
+	res, nrdy := RunExpr(pt, vars)
+	if nrdy != "" {
+		return 0, nrdy, nil
+	}
 	v, err := strconv.ParseFloat(res, 64)
-	return v, err
+	return v, "", err
 }
 
 func Parse(expr string) ([]string, map[string]bool, error) {
@@ -226,7 +244,7 @@ type exprStack struct {
 }
 
 // run compiled expr
-func RunExpr(pt []string, vars map[string]string) string {
+func RunExpr(pt []string, vars map[string]string) (string, string) {
 
 	es := &exprStack{prog: pt, vars: vars}
 
@@ -242,16 +260,27 @@ func RunExpr(pt []string, vars map[string]string) string {
 			continue
 		}
 
-		res, ok := opp.f(es)
+		var res float64
+		var nrdy string
+
+		if opp.fagg != nil {
+			res, nrdy, ok = opp.fagg(es, opp.rry)
+		} else {
+			res, ok = opp.fop(es)
+		}
+
+		if nrdy != "" {
+			return "", nrdy
+		}
 
 		if !ok {
-			return ""
+			return "", ""
 		}
 
 		es.pushf(res)
 	}
 
-	return es.pop()
+	return es.pop(), ""
 }
 
 func (es *exprStack) push(x string) {
@@ -300,15 +329,16 @@ func (es *exprStack) popf() (float64, bool) {
 
 // ****************************************************************
 
-func resultList(obj string) []float64 {
+func resultList(obj string) ([]float64, string) {
 
 	m := monel.Find(obj)
 	if m == nil {
-		return nil
+		return nil, ""
 	}
 
 	do := []*monel.M{m}
 	res := []float64{}
+	nrdy := ""
 
 	for len(do) != 0 {
 		x := do[0]
@@ -326,53 +356,97 @@ func resultList(obj string) []float64 {
 		}
 	}
 
+	return res, nrdy
+}
+
+func statusList(obj string) []argus.Status {
+
+	m := monel.Find(obj)
+	if m == nil {
+		return nil
+	}
+
+	do := []*monel.M{m}
+	res := []argus.Status{}
+
+	for len(do) != 0 {
+		x := do[0]
+		do = do[1:]
+
+		children := x.Me.Children()
+
+		if len(children) == 0 {
+			_, v := x.Status() // => status, ovstatus
+			res = append(res, v)
+		} else {
+			do = append(do, children...)
+		}
+	}
+
 	return res
 }
 
-func fop_sum(es *exprStack) (float64, bool) {
+func fop_sum(es *exprStack, rry bool) (float64, string, bool) {
 
 	obj := es.pop()
-	rl := resultList(obj)
+	rl, nrdy := resultList(obj)
+
+	if rry && nrdy != "" {
+		return 0, nrdy, true
+	}
 
 	if len(rl) == 0 {
-		return 0, false
+		return 0, "", false
 	}
 	sum := 0.0
 	for _, v := range rl {
 		sum += v
 	}
-	return sum, true
+	return sum, "", true
 }
 
-func fop_count(es *exprStack) (float64, bool) {
+func fop_count(es *exprStack, rry bool) (float64, string, bool) {
 
 	obj := es.pop()
-	rl := resultList(obj)
-	return float64(len(rl)), true
+	rl, nrdy := resultList(obj)
+
+	if rry && nrdy != "" {
+		return 0, nrdy, true
+	}
+
+	return float64(len(rl)), "", true
 }
 
-func fop_ave(es *exprStack) (float64, bool) {
+func fop_ave(es *exprStack, rry bool) (float64, string, bool) {
 
 	obj := es.pop()
-	rl := resultList(obj)
+	rl, nrdy := resultList(obj)
+
+	if rry && nrdy != "" {
+		return 0, nrdy, true
+	}
 
 	if len(rl) == 0 {
-		return 0, false
+		return 0, "", false
 	}
 	sum := 0.0
 	for _, v := range rl {
 		sum += v
 	}
-	return sum / float64(len(rl)), true
+	return sum / float64(len(rl)), "", true
 }
 
-func fop_min(es *exprStack) (float64, bool) {
+func fop_min(es *exprStack, rry bool) (float64, string, bool) {
 
 	obj := es.pop()
-	rl := resultList(obj)
+	rl, nrdy := resultList(obj)
+
+	if rry && nrdy != "" {
+		return 0, nrdy, true
+	}
 
 	if len(rl) == 0 {
-		return 0, false
+		return 0, "", false
 	}
 
 	min := rl[0]
@@ -382,16 +456,20 @@ func fop_min(es *exprStack) (float64, bool) {
 		}
 
 	}
-	return min, true
+	return min, "", true
 }
 
-func fop_max(es *exprStack) (float64, bool) {
+func fop_max(es *exprStack, rry bool) (float64, string, bool) {
 
 	obj := es.pop()
-	rl := resultList(obj)
+	rl, nrdy := resultList(obj)
+
+	if rry && nrdy != "" {
+		return 0, nrdy, true
+	}
 
 	if len(rl) == 0 {
-		return 0, false
+		return 0, "", false
 	}
 
 	max := rl[0]
@@ -401,7 +479,57 @@ func fop_max(es *exprStack) (float64, bool) {
 		}
 
 	}
-	return max, true
+	return max, "", true
+}
+
+func fop_up(es *exprStack, rry bool) (float64, string, bool) {
+
+	obj := es.pop()
+	sl := statusList(obj)
+	var n float64
+
+	for _, v := range sl {
+		switch v {
+		case argus.CLEAR, argus.OVERRIDE:
+			n++
+		}
+	}
+
+	return n, "", true
+}
+
+func fop_down(es *exprStack, rry bool) (float64, string, bool) {
+
+	obj := es.pop()
+	sl := statusList(obj)
+	var n float64
+
+	for _, v := range sl {
+		switch v {
+		case argus.CLEAR, argus.OVERRIDE, argus.UNKNOWN:
+			break
+		default:
+			n++
+		}
+	}
+
+	return n, "", true
+}
+
+func fop_over(es *exprStack, rry bool) (float64, string, bool) {
+
+	obj := es.pop()
+	sl := statusList(obj)
+	var n float64
+
+	for _, v := range sl {
+		switch v {
+		case argus.OVERRIDE:
+			n++
+		}
+	}
+
+	return n, "", true
 }
 
 // ****************************************************************

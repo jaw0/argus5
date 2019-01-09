@@ -12,8 +12,9 @@ import (
 
 func TestCompute(t *testing.T) {
 
-	x, _, _ := Parse("10 * sin (time / 13751) + (time - 1510089826) / 200 + 2 * rand - 2 * rand")
-	fmt.Printf("%v -> %s\n", x, RunExpr(x, nil))
+	x, _, _ := Parse("10 * sin (time / 13751) + ('time' - 1510089826) / 200 + 2 * rand - 2 * rand")
+	v, _ := RunExpr(x, nil)
+	fmt.Printf("%v -> %s\n", x, v)
 
 	//fmt.Printf("%v\n", Tokenize(" SUM(Top:X:Y) + Top:Bar:Baz * Top:Foo"))
 	//fmt.Printf("%v\n", Tokenize(" SUM(Top:X:Y) + Top:Bar:Baz * AVG(Top:Foo)"))
@@ -25,7 +26,7 @@ func TestCompute(t *testing.T) {
 	//p, _, err := Parse(t)
 	//fmt.Printf("p %v; err %v\n", p, err)
 
-	res, _ := Calc("4 * x + sqrt(6 * y / 2)", map[string]string{"x": "5", "y": "3"})
+	res, _, _ := Calc("4 * x + sqrt(6 * y / 2)", map[string]string{"x": "5", "y": "3"})
 	fmt.Printf("res: %v\n", res)
 
 	if res != 23 {
