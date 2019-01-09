@@ -409,7 +409,7 @@ func (s *Service) doExpr(exp []string, fval float64) (ret float64, nrdy string, 
 		"elapsed": fmt.Sprintf("%f", float32(s.Elapsed)/1e9),
 		"lastt":   fmt.Sprintf("%d", s.Lasttest/1e9),
 		"freq":    fmt.Sprintf("%d", s.Cf.Frequency),
-		"result":  sv,
+		"value":   sv,
 		"x":       sv,
 		"$x":      sv, // backwards compat(ish)
 	}

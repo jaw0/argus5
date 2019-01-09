@@ -384,6 +384,7 @@ func apiHup(ctx *api.Context) {
 	ctx.SendOKFinal()
 }
 
+// send a stack trace
 func apiTrace(ctx *api.Context) {
 	dl.Bug("trace request")
 	ctx.SendOKFinal()

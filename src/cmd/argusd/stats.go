@@ -22,8 +22,10 @@ const DELAY = 10
 
 var LAMBDA = []float64{60 / DELAY, 300 / DELAY, 900 / DELAY}
 
+// NB - idle = 1 - cpu
 var monrate = []*expvar.Float{expvar.NewFloat("monrate"), expvar.NewFloat("monrate5"), expvar.NewFloat("monrate15")}
 var cpurate = []*expvar.Float{expvar.NewFloat("cpurate"), expvar.NewFloat("cpurate5"), expvar.NewFloat("cpurate15")}
+var idlerate = []*expvar.Float{expvar.NewFloat("idlerate"), expvar.NewFloat("idlerate5"), expvar.NewFloat("idlerate15")}
 var uptime = expvar.NewInt("uptime")
 
 func statsCollector() {
@@ -51,25 +53,30 @@ func statsCollector() {
 		dutime := curr.utime - pusage.utime
 		dstime := curr.stime - pusage.stime
 
-		cidle := float64(int64(DELAY*time.Second)-dutime-dstime) / float64(DELAY*time.Second)
-		dl.Debug("usage: u %d, s %d; %v", dutime, dstime, cidle)
+		ccpu := float64(dutime+dstime) / float64(DELAY*time.Second)
 
 		pusage = curr
 
-		if cidle < 0 {
-			cidle = 0
+		if ccpu < 0 {
+			ccpu = 0
 		}
-		if cidle > 1 {
-			cidle = 1
+		if ccpu > 1 {
+			ccpu = 1
 		}
+
+		cidle := 1 - ccpu
+		dl.Debug("usage: u %d, s %d; %v", dutime, dstime, cidle)
 
 		for i, l := range lambda {
 
 			mr := (l*monrate[i].Value() + cmr) / (l + 1)
 			monrate[i].Set(mr)
 
-			idle := (l*cpurate[i].Value() + cidle) / (l + 1)
-			cpurate[i].Set(idle)
+			idle := (l*idlerate[i].Value() + cidle) / (l + 1)
+			idlerate[i].Set(idle)
+
+			cpu := (l*cpurate[i].Value() + ccpu) / (l + 1)
+			cpurate[i].Set(cpu)
 
 			dl.Debug("L %v, mon %v -> %v idle %v -> %v", l, cmr, mr, cidle, idle)
 		}
