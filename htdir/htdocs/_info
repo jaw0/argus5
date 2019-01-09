@@ -21,7 +21,7 @@
 
     <tr v-if="deco.note"><th>note</th><td>{{ deco.note }}</td></tr>
     <tr v-if="deco.info"><th>info</th><td>{{ deco.info }}</td></tr>
-    <tr v-if="deco.details"><th>details</th><td>{{ deco.details }}</td></tr>
+    <tr v-if="deco.details"><th>details</th><td><span v-html="deco.details"></span></td></tr>
     <tr v-if="deco.comment"><th>comment</th><td>{{ deco.comment }}</td></tr>
 
   </table>
