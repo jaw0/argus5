@@ -39,6 +39,7 @@ type Config struct {
 	DNS_server      []string
 	DNS_search      []string
 	DevMode         bool
+	DemoMode        bool
 	Agent_Mode      bool
 	Auto_Reload     bool
 	Agent_Port      int
