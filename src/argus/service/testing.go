@@ -16,11 +16,11 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
+	"github.com/jaw0/acgo/diag"
 	"github.com/oliveagle/jsonpath"
 
 	"argus/argus"
 	"argus/clock"
-	"github.com/jaw0/acgo/diag"
 	"argus/expr"
 )
 
@@ -390,7 +390,7 @@ func doExpr(exp []string, fval float64) (ret float64, rer error) {
 
 	defer func() {
 		if x := recover(); x != nil {
-			rer = errors.New("invalid expr")
+			rer = fmt.Errorf("invalid expr: %v", x)
 		}
 	}()
 

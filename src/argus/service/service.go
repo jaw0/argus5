@@ -7,15 +7,18 @@ package service
 
 import (
 	"expvar"
+	"fmt"
 	"math"
+	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/jaw0/acgo/diag"
 
 	"argus/argus"
 	"argus/clock"
 	"argus/configure"
 	"argus/darp"
-	"github.com/jaw0/acgo/diag"
 	"argus/monel"
 	"argus/sched"
 )
@@ -35,33 +38,34 @@ type Monitor interface {
 }
 
 type Conf struct {
-	Frequency    int
-	Retries      int
-	Retrydelay   int `cfconv:"timespec"`
-	Timeout      int `cfconv:"timespec"`
-	Showreason   bool
-	Showresult   bool
-	Severity     argus.Status
-	DARP_Gravity argus.Gravity
-	DARP_Tags    string
-	Calc         string
-	Alpha        float64
-	Scale        float64
-	Pluck        string
-	Unpack       string
-	Expr         string
-	JPath        string
-	XPath        string
-	Gr_what      string // only 'elapsed' is supported
-	Testing      *argus.Schedule
-	Checking     *argus.Schedule
-	Expect       [argus.CRITICAL + 1]string  `cfconv:"dotsev"`
-	Nexpect      [argus.CRITICAL + 1]string  `cfconv:"dotsev"`
-	Minvalue     [argus.CRITICAL + 1]float64 `cfconv:"dotsev"` // NaN if not set
-	Maxvalue     [argus.CRITICAL + 1]float64 `cfconv:"dotsev"`
-	Eqvalue      [argus.CRITICAL + 1]float64 `cfconv:"dotsev"`
-	Nevalue      [argus.CRITICAL + 1]float64 `cfconv:"dotsev"`
-	Maxdeviation [argus.CRITICAL + 1]float64 `cfconv:"dotsev"`
+	Frequency     int
+	Retries       int
+	Retrydelay    int `cfconv:"timespec"`
+	Timeout       int `cfconv:"timespec"`
+	Showreason    bool
+	Showresult    bool
+	Demo_is_force int // for website demo
+	Severity      argus.Status
+	DARP_Gravity  argus.Gravity
+	DARP_Tags     string
+	Calc          string
+	Alpha         float64
+	Scale         float64
+	Pluck         string
+	Unpack        string
+	Expr          string
+	JPath         string
+	XPath         string
+	Gr_what       string // only 'elapsed' is supported
+	Testing       *argus.Schedule
+	Checking      *argus.Schedule
+	Expect        [argus.CRITICAL + 1]string  `cfconv:"dotsev"`
+	Nexpect       [argus.CRITICAL + 1]string  `cfconv:"dotsev"`
+	Minvalue      [argus.CRITICAL + 1]float64 `cfconv:"dotsev"` // NaN if not set
+	Maxvalue      [argus.CRITICAL + 1]float64 `cfconv:"dotsev"`
+	Eqvalue       [argus.CRITICAL + 1]float64 `cfconv:"dotsev"`
+	Nevalue       [argus.CRITICAL + 1]float64 `cfconv:"dotsev"`
+	Maxdeviation  [argus.CRITICAL + 1]float64 `cfconv:"dotsev"`
 	// graph,
 
 }
@@ -182,7 +186,27 @@ func (s *Service) Start() {
 	}
 
 	s.mon.Debug("service starting")
+
+	if s.Cf.Demo_is_force != 0 {
+		s.demoMode()
+		return
+	}
+
 	s.check.Start(s)
+}
+
+func (s *Service) demoMode() {
+
+	s.ready = true
+	v := float32(s.Cf.Demo_is_force) + rand.Float32() - rand.Float32()
+	r := fmt.Sprintf("%f", v)
+
+	if v > 0 {
+		s.SetResult(argus.CLEAR, r, "OK")
+	} else {
+		s.SetResult(argus.CRITICAL, r, "OHNOS")
+	}
+	s.Done()
 }
 
 func (s *Service) JoinMulti() bool {
@@ -277,8 +301,12 @@ func (s *Service) SetResult(status argus.Status, result string, reason string) {
 	// handle retries
 	if status == argus.CLEAR {
 		s.Tries = 0
+		s.ready = true
 		reason = ""
 	} else {
+		if result != "" {
+			s.ready = true
+		}
 		if s.Tries <= s.Cf.Retries {
 			s.mon.Debug("retrying (%d)", s.Tries)
 			s.Tries++

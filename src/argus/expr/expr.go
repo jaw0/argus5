@@ -23,10 +23,10 @@ type OP struct {
 }
 
 var ops = map[string]OP{
-	"time":  {6, fop_time},
-	"rand":  {6, fop_rand},
-	"SUM":   {5, fop_sum}, // group aggregate ops
-	"AVE":   {5, fop_ave},
+	"time":  {6, fop_time}, // unix time, seconds
+	"rand":  {6, fop_rand}, // [0..1)
+	"SUM":   {5, fop_sum},  // group aggregate ops
+	"AVE":   {5, fop_ave},  //   SUM(Top:Foo:Bar)
 	"AVG":   {5, fop_ave},
 	"MIN":   {5, fop_min},
 	"MAX":   {5, fop_max},
@@ -37,8 +37,8 @@ var ops = map[string]OP{
 	"sin":   {5, fop_sin},
 	"tan":   {5, fop_sin},
 	"cos":   {5, fop_cos},
-	"log":   {5, fop_log},
-	"exp":   {5, fop_exp},
+	"log":   {5, fop_log}, // natural log
+	"exp":   {5, fop_exp}, // e ^ x
 	"sqrt":  {5, fop_sqrt},
 	"^":     {4, fop_pow}, // basic arithmetic
 	"*":     {3, fop_mul},
@@ -96,30 +96,33 @@ func tokenize(expr string) ([]string, error) {
 			expr = strings.TrimSpace(expr[e+1:])
 			continue
 		}
-		if expr[0] == '"' {
+		if expr[0] == '"' || expr[0] == '\'' {
 			// "Top:Foo+Bar"
-			e := strings.IndexByte(expr, '"')
+			e := strings.IndexByte(expr[1:], expr[0])
 			if e == -1 {
-				return nil, errors.New("syntax error: unbalanced \"\"")
+				return nil, errors.New("syntax error: unbalanced quotes")
 			}
-			tok = append(tok, strings.TrimSpace(expr[1:e]))
-			expr = strings.TrimSpace(expr[e+1:])
+			tok = append(tok, strings.TrimSpace(expr[1:e+1]))
+			expr = strings.TrimSpace(expr[e+2:])
 			continue
 		}
-		e := strings.IndexAny(expr, "()+-*/%^")
+		e := strings.IndexAny(expr, "()+-*/%^ \t")
 		if e == -1 {
 			// slurp up remaining
 			tok = append(tok, strings.TrimSpace(expr))
 			break
 		}
 		if e == 0 {
+			// single char op
 			tok = append(tok, expr[0:1])
 			expr = strings.TrimSpace(expr[e+1:])
 			continue
 		}
 
 		tok = append(tok, strings.TrimSpace(expr[:e])) // word
-		tok = append(tok, expr[e:e+1])                 // op
+		if expr[e] != ' ' && expr[e] != '\t' {
+			tok = append(tok, expr[e:e+1]) // op
+		}
 		expr = strings.TrimSpace(expr[e+1:])
 	}
 
@@ -315,7 +318,7 @@ func resultList(obj string) []float64 {
 
 		if len(children) == 0 {
 			v, err := strconv.ParseFloat(x.GetResult(), 64)
-			if err != nil {
+			if err == nil {
 				res = append(res, v)
 			}
 		} else {
