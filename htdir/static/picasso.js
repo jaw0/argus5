@@ -460,7 +460,7 @@ function Graph(el, obj, which, darp, ctls, width){
                 $.ajax({
                     dataType: "json",
                     url: '/api/graphd',
-                    data: {obj: set.obj, darp: set.darp, which: set.which, since: maxt, width: this.width},
+                    data: {obj: set.obj, darp: set.darp, which: set.which, since: maxt, width: g.width},
                     success: function(r){ g.gotUpdate(id, r)},
                     error:   function(r){ argus.log("update graph failed") }
                 });
@@ -469,7 +469,10 @@ function Graph(el, obj, which, darp, ctls, width){
     }
 
     p.gotUpdate = function(id, r){
-        if( !r.data ) return
+        if( !r.data ){
+            argus.log("graph update: no data")
+            return
+        }
         argus.log("got update " + id + " len: " + r.data.length)
         var set = this.datasets[id]
         var data = set.data

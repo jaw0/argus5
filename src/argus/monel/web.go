@@ -340,7 +340,7 @@ func webGraphDJson(ctx *web.Context) {
 	d := m.newWebMetaResponse(ctx)
 
 	since, _ := strconv.ParseInt(ctx.Get("since"), 10, 64)
-	tag := ctx.Get("tag")
+	tag := ctx.Get("darp")
 	which := ctx.Get("which")
 	width, _ := strconv.ParseInt(ctx.Get("width"), 10, 64)
 

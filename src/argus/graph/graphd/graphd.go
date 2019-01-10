@@ -319,8 +319,19 @@ func (g *graphData) getSamples(since int64, width int) []*Export {
 	// estimate start pos from since
 	if since > 0 {
 		minago := int((clock.Unix() - since + 59) / 60)
-		startRec += int(g.h.Samp.NMax) - minago
-		startRec %= int(g.h.Samp.NMax)
+		startRec = int(g.h.Samp.Idx) - minago
+
+		if g.h.Samp.Count < g.h.Samp.NMax {
+			if startRec < 0 {
+				startRec = 0
+			}
+		} else {
+			if startRec < 0 {
+				startRec += int(g.h.Samp.NMax)
+				startRec %= int(g.h.Samp.NMax)
+			}
+		}
+
 		numRec = minago
 		dl.Debug("since: idx %d, minago %d, start %d, num %d", g.h.Samp.Idx, minago, startRec, numRec)
 	}
