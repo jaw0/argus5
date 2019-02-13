@@ -8,11 +8,13 @@ package self
 import (
 	"errors"
 	"expvar"
+	"os"
+	"runtime"
 	"strings"
 
 	"argus/configure"
-	"github.com/jaw0/acgo/diag"
 	"argus/service"
+	"github.com/jaw0/acgo/diag"
 )
 
 type Conf struct {
@@ -28,6 +30,9 @@ type Conf struct {
     monrate
     idlerate
 
+  for a complete list, run
+    argusctl self
+
 */
 type Self struct {
 	S  *service.Service
@@ -40,6 +45,12 @@ var dl = diag.Logger("self")
 func init() {
 	// register with service factory
 	service.Register("Self", New)
+
+	expvar.Publish("mem.alloc", expvar.Func(func() interface{} { return memstats().Alloc }))
+	expvar.Publish("mem.sys", expvar.Func(func() interface{} { return memstats().Sys }))
+	expvar.Publish("mem.stack", expvar.Func(func() interface{} { return memstats().StackInuse }))
+	expvar.Publish("goroutines", expvar.Func(func() interface{} { return runtime.NumGoroutine() }))
+	expvar.Publish("currfd", expvar.Func(currfd))
 }
 
 func New(conf *configure.CF, s *service.Service) service.Monitor {
@@ -108,4 +119,21 @@ func (c *Self) WebJson(md map[string]interface{}) {
 
 func (c *Self) Hostname() string {
 	return ""
+}
+
+func memstats() *runtime.MemStats {
+	stats := new(runtime.MemStats)
+	runtime.ReadMemStats(stats)
+	return stats
+}
+
+// a proxy for insight into the number of currently open file descriptors
+func currfd() interface{} {
+
+	f, err := os.Open("/")
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+	return f.Fd()
 }
