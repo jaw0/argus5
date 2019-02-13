@@ -10,4 +10,3 @@ const URL = "http://www.argus-monitoring.com"
 
 // defaults
 const Htdir = "/usr/local/share/argus/htdir" // see also: Makefile
-const ControlSocket = "/var/tmp/argus.ctl"

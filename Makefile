@@ -18,9 +18,12 @@ BIN=src/cmd/argusd src/cmd/argusctl
 GO=env GOPATH=$(ROOT) go
 
 VERSION=dev-$(DATE)
+NAME=argus
+CTLSOCK=/var/tmp/$(NAME).ctl
 
 all: src/.deps
 	(echo package argus; echo const Version = \"$(VERSION)\") > src/argus/argus/version.go
+	(echo package argus; echo const ControlSocket = \"$(CTLSOCK)\") > src/argus/argus/ctlsock.go
 	@for x in $(BIN); do \
 		echo building $$x; \
 		(cd $$x; $(GO) install); \
@@ -39,8 +42,8 @@ src/.deps: deps
 
 install: all
 	-mkdir -p $(INSTALL_BIN) $(INSTALL_SBIN) $(INSTALL_HTDIR)
-	cp bin/argusd $(INSTALL_SBIN)
-	cp bin/argusctl $(INSTALL_BIN)
+	cp bin/argusd $(INSTALL_SBIN)/$(NAME)d
+	cp bin/argusctl $(INSTALL_BIN)/$(NAME)ctl
 	cp -R htdir/* $(INSTALL_HTDIR)
 	@echo
 	@echo install of argus version $(VERSION) complete
