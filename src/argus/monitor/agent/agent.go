@@ -16,10 +16,11 @@ import (
 
 	"argus/api/client"
 	"argus/configure"
-	"github.com/jaw0/acgo/diag"
 	"argus/resolv"
 	"argus/sec"
 	"argus/service"
+
+	"github.com/jaw0/acgo/diag"
 )
 
 type TConf struct {
@@ -141,6 +142,8 @@ func (a *Agent) Start(s *service.Service) {
 		return
 	}
 
+	s.Debug("doing: %+v", args)
+
 	res, fail := a.docmd(conn, "agent", args, timeout)
 	if fail {
 		return
@@ -197,8 +200,8 @@ func (a *Agent) buildCommand() (map[string]string, error) {
 			return a.Cf.Arg
 		case "1", "2", "3", "4", "5", "6", "7", "8", "9":
 			n, _ := strconv.Atoi(x)
-			if n < len(args) {
-				return args[n]
+			if n <= len(args) {
+				return args[n-1]
 			}
 		}
 		return ""
