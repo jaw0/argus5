@@ -47,7 +47,8 @@ type Config struct {
 }
 
 var cf *Config = &Config{
-	Htdir: argus.Htdir,
+	Htdir:          argus.Htdir,
+	Control_Socket: argus.ControlSocket,
 }
 
 func Load(file string) {
