@@ -6,13 +6,14 @@
 package service
 
 import (
+	"fmt"
 	"math"
 	"sync"
 
 	"argus/clock"
 	"argus/configure"
-	"github.com/jaw0/acgo/diag"
 	"argus/monel"
+	"github.com/jaw0/acgo/diag"
 )
 
 type HwabConf struct {
@@ -40,6 +41,7 @@ type HWAB struct {
 	gamma    float32
 	yn       float32
 	dn       float32
+	cn       float32
 	A        float32
 	B        float32
 	C        []float32
@@ -105,6 +107,10 @@ func (h *HWAB) Init(s *Service) error {
 
 	if h.Pbuckets != 0 && h.Pbuckets != h.buckets {
 		// period was changed
+		h.Reset()
+	}
+	if h.Lap == 0 && h.gap() > 5 {
+		// large gap during startup
 		h.Reset()
 	}
 
@@ -184,53 +190,56 @@ func (h *HWAB) Reset() {
 	}
 }
 
+func (h *HWAB) Format(f fmt.State, c rune) {
+	fmt.Fprintf(f, "{size: %d, prediction: %v +/- %v, count: %d, lap: %d, a %f, b %f, c: %f}",
+		h.buckets, h.yn, h.dn, h.Count, h.Lap, h.A, h.B, h.cn)
+}
+
 // ################################################################
 
 func (h *HWAB) predict() {
 
-	age := clock.Unix() - h.Created
-	si := h.idx(int(age / TWIN))
+	si := h.idxOfT(clock.Unix())
 
-	c := h.C[si]
-	d := h.D[si]
-	h.yn = h.A + h.B + c
-	h.dn = d
+	h.cn = h.C[si]
+	h.dn = h.D[si]
+	h.yn = h.A + h.B + h.cn
 }
 
 func (h *HWAB) add(ave float32, sdv float32, now int64) {
 
-	defer func() {
-		h.Count++
-	}()
-	age := now - h.Created
-	si := h.idx(int(age / TWIN))
+	si := h.idxOfT(now)
 
 	if si == 0 && h.Count > 0 {
 		h.Lap++
 	}
 
-	if h.Lap == 1 && si == 0 && h.checkEnough() {
-		h.interpolate()
-		h.estimateAB()
-		h.smooth()
-
+	if h.Lap == 1 && si == 0 {
+		if h.checkEnough() {
+			h.interpolate()
+		} else {
+			h.Lap = 0
+			h.Count = 0
+		}
 	}
-	if si == 0 && h.Lap > 0 {
+
+	if si == 0 && h.Lap > 1 {
+		h.smooth()
 		h.normalize()
 	}
 
 	//dh.Debug("now %d, ave %f, sdv %f, si %d, age %d", now, ave, sdv, si, age)
 
-	if h.Lap == 0 {
+	switch h.Lap {
+	case 0:
 		h.bootstrap1(ave, sdv, si)
-		return
-	}
-	if h.Lap == 1 {
+	case 1:
 		h.bootstrap2(ave, sdv, si)
-		return
+	default:
+		h.hw(ave, sdv, si)
 	}
 
-	h.hw(ave, sdv, si)
+	h.Count++
 }
 
 // very first period - initialize C + D
@@ -258,6 +267,7 @@ func (h *HWAB) bootstrap1(ave float32, sdv float32, si int) {
 	h.C[si] = at
 	h.D[si] = dt
 	h.yn = 2*at - c
+	h.cn = at
 	h.dn = dt
 
 	dh.Debug("hwab/b1 %d: a %f std %f; at %f, dx %f, dt %f => %f # %f", si, ave, sdv, at, dx, dt, h.yn, h.dn)
@@ -266,7 +276,7 @@ func (h *HWAB) bootstrap1(ave float32, sdv float32, si int) {
 	}
 }
 
-// 2nd period - start estimating A
+// 2nd period - start estimating A+B
 func (h *HWAB) bootstrap2(ave float32, sdv float32, si int) {
 
 	sp := h.idx(si - 1)
@@ -275,35 +285,32 @@ func (h *HWAB) bootstrap2(ave float32, sdv float32, si int) {
 	c := h.C[si]
 	d := h.D[si]
 
-	cp := h.C[sp]
 	dp := h.D[sp]
 
 	if d == 0 {
 		// missing data - something stopped during boot phase, patch hole
-		c = ave - h.A
-		d = sdv
-
-		if dp != 0 {
-			d = sdv + fabs(ave-cp)
+		dh.Debug("missing")
+		d = dp
+		if dp == 0 {
+			d = sdv
 		}
-
-		h.C[si] = c
-		h.D[si] = d
+		c = ave - h.A
 	}
 
-	y := h.A + h.B + c
+	y := h.B*float32(h.buckets) + c
 	dx := fabs(ave-y) + sdv
 	if dx == 0 {
 		dx = float32(math.Sqrt(float64(ave)))
 	}
 
+	dh.Debug("sdv %f, dx %f, d %f", sdv, dx, d)
 	alpha := h.alpha
-	beta := float32(math.Sqrt(float64(h.beta)))
+	beta := 1 / float32(si+1)
 	gamma := float32(0.5)
 
 	at := alpha*(ave-c) + (1-alpha)*(h.A+h.B)
-	bt := beta*(at-h.A) + (1-beta)*h.B
-	ct := gamma*(ave-at) + (1-gamma)*c
+	bt := beta*(ave-c)/float32(h.buckets) + (1-beta)*h.B
+	ct := ave - at - bt
 	dt := gamma*dx + (1-gamma)*d
 
 	h.A = at
@@ -311,10 +318,12 @@ func (h *HWAB) bootstrap2(ave float32, sdv float32, si int) {
 	h.C[si] = ct
 	h.D[si] = dt
 
-	h.yn = ave + c - cp + bt
+	h.cn = ct
+	h.yn = ave + bt
 	h.dn = h.D[sn]
 
-	dh.Debug("hwab/b2 %d: a %f std %f; at %f, dt %f => %f # %f", si, ave, sdv, at, dt, h.yn, h.dn)
+	dh.Debug("si %d, ave %f, c %f, dt %f, bt %f; val %f", si, ave, c, dt, bt, (ave-c)/float32(h.buckets))
+	//dh.Debug("hwab/b2 %d: a %f std %f; at %f, dt %f => %f # %f", si, ave, sdv, at, dt, h.yn, h.dn)
 	if h.mon != nil {
 		h.mon.Debug("hwab/b2 a %f, c %f, d %f => %f", at, ct, dt, h.yn)
 	}
@@ -333,6 +342,7 @@ func (h *HWAB) hw(ave float32, sdv float32, si int) {
 		dx = EPSILOND
 	}
 
+	dh.Debug("d %f, sdv %f, dx %f", d, sdv, dx)
 	at := h.alpha*(ave-c) + (1-h.alpha)*(h.A+h.B)
 	bt := h.beta*(at-h.A) + (1-h.beta)*h.B
 	ct := h.gamma*(ave-at) + (1-h.gamma)*c
@@ -343,11 +353,11 @@ func (h *HWAB) hw(ave float32, sdv float32, si int) {
 	h.C[si] = ct
 	h.D[si] = dt
 
-	cn := h.C[sn]
-	h.yn = at + bt + cn
+	h.cn = h.C[sn]
+	h.yn = h.A + h.B + h.cn
 	h.dn = h.D[sn]
 
-	dh.Debug("hwab %d: a %f std %f; at %f, bt %f, dt %f => %f # %f", si, ave, sdv, at, bt, dt, h.yn, h.dn)
+	dh.Debug("hwab %d: a %f std %f; at %f, bt %f, ct %f, dt %f => %f # %f", si, ave, sdv, at, bt, ct, dt, h.yn, h.dn)
 	if h.mon != nil {
 		h.mon.Debug("hwab a %f, b %f, c %f, d %f => %f", at, bt, ct, dt, h.yn)
 	}
@@ -355,8 +365,11 @@ func (h *HWAB) hw(ave float32, sdv float32, si int) {
 
 func (h *HWAB) interpolate() {
 
+	li := 0
+
 	for si := 0; si < h.buckets; si++ {
 		if h.D[si] != 0 {
+			li = si
 			continue
 		}
 		l := 0
@@ -373,41 +386,48 @@ func (h *HWAB) interpolate() {
 		}
 
 		h.C[si] = (h.C[h.idx(si-l)]*float32(r) + h.C[h.idx(si+r)]*float32(l)) / float32(l+r)
-		h.D[si] = (h.D[h.idx(si-l)]*float32(r) + h.D[h.idx(si+r)]*float32(l)) / float32(l+r)
+		h.D[si] = h.D[h.idx(li)] + h.D[h.idx(si+r)]
 
-		dh.Debug("[%d][%d-%d]: %f,%f -> %f", si, l, r, h.C[h.idx(si-l)], h.C[h.idx(si+r)], h.C[si])
+		dh.Debug("interp [%d][%d-%d]: %f,%f -> %f", si, l, r, h.C[h.idx(si-l)], h.C[h.idx(si+r)], h.C[si])
 	}
 }
 
 func (h *HWAB) smooth() {
 
+	dh.Debug("smooth")
 	c := make([]float32, h.buckets)
 	d := make([]float32, h.buckets)
 
+	wsize := h.buckets / 20
+	if wsize < 2 {
+		wsize = 2
+	}
+	sdev := float64(h.buckets) / 100 // std dev = 1%
+	sdvk := -sdev * sdev * 2
+
 	for si := 0; si < h.buckets; si++ {
 
-		var ctot float32
-		var dtot float32
-		var wtot float32
+		var ctot float64
+		var dtot float64
+		var wtot float64
 
-		for i := -2; i <= 2; i++ {
+		for i := -wsize; i <= wsize; i++ {
+			// gaussian
+			w := math.Exp(float64(i*i) / sdvk)
+
 			sj := h.idx(si + i)
-			w := float32(1)
-			if i == 0 {
-				w = 2
-			}
 			if h.D[sj] == 0 {
 				continue
 			}
-			ctot += w * h.C[sj]
-			dtot += w * h.D[sj]
+			ctot += w * float64(h.C[sj])
+			dtot += w * float64(h.D[sj])
 			wtot += w
 		}
 		if wtot == 0 {
 			continue
 		}
-		c[si] = ctot / wtot
-		d[si] = dtot / wtot
+		c[si] = float32(ctot / wtot)
+		d[si] = float32(dtot / wtot)
 	}
 
 	h.C = c
@@ -435,37 +455,24 @@ func (h *HWAB) checkEnough() bool {
 
 	dh.Debug("check %f %f", h.D[0], h.D[h.buckets-1])
 	if h.D[0] == 0 || h.D[h.buckets-1] == 0 {
-		h.Count = 0
-		h.Lap = 0
 		return false
 	}
 	return true
-}
-
-// estimate A+B from 1st period of C
-func (h *HWAB) estimateAB() {
-
-	a := h.C[0]
-	z := h.C[h.buckets-1]
-	d := z - a
-	b := d / float32(h.buckets)
-
-	h.A += d
-	h.B += b
-
-	for i := 0; i < h.buckets; i++ {
-		h.C[i] -= b * float32(i)
-	}
-
-	dh.Debug("adjust: %f %f -> d %f, %f", a, z, d, b)
-
 }
 
 func fabs(x float32) float32 {
 	return float32(math.Abs(float64(x)))
 }
 
-func (h *HWAB) idx(i int) int {
+func (h *HWAB) idxOfT(now int64) int {
+	age := now - h.Created
+	return h.idx(int(age / TWIN))
+}
 
+func (h *HWAB) idx(i int) int {
 	return (i + h.buckets) % h.buckets
+}
+
+func (h *HWAB) gap() int {
+	return h.idxOfT(clock.Unix()) - h.Count
 }
