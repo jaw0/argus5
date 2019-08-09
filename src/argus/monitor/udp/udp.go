@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"argus/configure"
-	"github.com/jaw0/acgo/diag"
 	"argus/resolv"
 	"argus/service"
+	"github.com/jaw0/acgo/diag"
 )
 
 type Packeter interface {
@@ -206,7 +206,13 @@ func (t *UDP) Read(conn *net.UDPConn) ([]byte, bool) {
 	t.S.Debug("reading...")
 	buf := make([]byte, 8192)
 	n, addr, err := conn.ReadFromUDP(buf)
-	t.S.Debug("read: %d %v [%X]", n, err, buf[:n])
+	t.S.Debug("read: %d from %v: %v [%X]", n, addr, err, buf[:n])
+
+	if err != nil || addr == nil {
+		t.S.Debug("read failed: %v", err)
+		t.S.Fail("read failed")
+		return nil, true
+	}
 
 	// check response
 	fail := t.checkResponse(addr)
@@ -240,6 +246,7 @@ func (t *UDP) Connect() (*net.UDPConn, bool) {
 	if err != nil {
 		dl.Problem("error? %v", err)
 		t.S.Fail("error")
+		return nil, true
 	}
 	t.dstaddr = uaddr
 	conn, err := net.DialUDP("udp", nil, uaddr)
@@ -259,10 +266,6 @@ func (t *UDP) Connect() (*net.UDPConn, bool) {
 
 func (t *UDP) checkResponse(addr *net.UDPAddr) bool {
 
-	if addr == nil {
-		return true
-	}
-
 	ok := true
 
 	if t.Cf.Verify_Response_IP && !t.dstaddr.IP.Equal(addr.IP) {
@@ -279,7 +282,6 @@ func (t *UDP) checkResponse(addr *net.UDPAddr) bool {
 	}
 
 	return false
-
 }
 
 func protoName(name string) string {
