@@ -307,7 +307,7 @@ func (s *Service) rateCalc(calcmask uint32, fval float64) (float64, bool) {
 
 	if c.Lastdv != 0 && dv > 100*c.Lastdv {
 		// unusually large spike, probably a reset/reboot - supress
-		s.mon.Debug("TEST supressing transient spike (%s)", dv)
+		s.mon.Debug("TEST supressing transient spike (%f)", dv)
 		return 0, false
 	}
 
