@@ -15,9 +15,10 @@ import (
 
 	"argus/clock"
 	"argus/configure"
-	"github.com/jaw0/acgo/diag"
 	"argus/monitor/tcp"
 	"argus/service"
+
+	"github.com/jaw0/acgo/diag"
 )
 
 type cacheEntry struct {
@@ -103,6 +104,10 @@ func (d *Url) Config(conf *configure.CF, s *service.Service) error {
 
 	} else {
 		d.Cf.Port, _ = strconv.Atoi(purl.Port())
+	}
+
+	if d.Cf.SSL_ServerName == "" {
+		d.Cf.SSL_ServerName = d.Host
 	}
 
 	// set tcp config

@@ -15,9 +15,10 @@ import (
 
 	"argus/argus"
 	"argus/configure"
-	"github.com/jaw0/acgo/diag"
 	"argus/resolv"
 	"argus/service"
+
+	"github.com/jaw0/acgo/diag"
 )
 
 type Packeter interface {
@@ -25,10 +26,11 @@ type Packeter interface {
 }
 
 type Conf struct {
-	Port    int
-	Send    string
-	ReadHow string
-	SSL     bool
+	Port           int
+	Send           string
+	ReadHow        string
+	SSL            bool
+	SSL_ServerName string
 }
 
 type TCP struct {
@@ -92,6 +94,9 @@ func (t *TCP) Config(conf *configure.CF, s *service.Service) error {
 
 	if conf.Name == "TCP/HTTP" || conf.Name == "TCP/HTTPS" {
 		t.Cf.Send = t.httpSend()
+	}
+	if t.Cf.SSL_ServerName == "" {
+		t.Cf.SSL_ServerName = t.Ip.Hostname()
 	}
 
 	// set names + labels
@@ -165,7 +170,7 @@ func (t *TCP) MakeRequest() (string, bool) {
 	var tconn *tls.Conn
 	if t.Cf.SSL {
 		t.S.Debug("enabling SSL")
-		tconn = tls.Client(rconn, &tls.Config{InsecureSkipVerify: true})
+		tconn = tls.Client(rconn, &tls.Config{InsecureSkipVerify: true, ServerName: t.Cf.SSL_ServerName})
 		conn = tconn
 	}
 
