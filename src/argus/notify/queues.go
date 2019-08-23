@@ -33,8 +33,9 @@ func (n *N) maybeQueue() {
 
 	// initial send/escalate
 	if len(n.p.SendTo) > n.p.StepNo {
-		s := n.p.SendTo[n.p.StepNo]
+		s := &n.p.SendTo[n.p.StepNo]
 		if s.When+n.p.Created <= now {
+			s.Last = now
 			addToQueue(n, s.Dst)
 			if n.p.StepNo > 0 {
 				n.p.Escalated = true
@@ -48,12 +49,17 @@ func (n *N) maybeQueue() {
 		return
 	}
 
-	for i, s := range n.p.SendTo {
+	for i := range n.p.SendTo {
+		s := &n.p.SendTo[i]
 		if i >= n.p.StepNo {
 			break
 		}
+		if s.Last == 0 {
+			continue
+		}
 
-		if s.When+n.p.Created+n.cf.Renotify <= now {
+		if s.Last+n.cf.Renotify <= now {
+			s.Last = now
 			addToQueue(n, s.Dst)
 		}
 	}

@@ -16,8 +16,8 @@ import (
 	"argus/clock"
 	"argus/config"
 	"argus/configure"
-	"github.com/jaw0/acgo/diag"
 	"argus/sched"
+	"github.com/jaw0/acgo/diag"
 )
 
 type Remover interface {
@@ -91,6 +91,7 @@ type ExportInfo struct {
 
 type SendDat struct {
 	When int64
+	Last int64
 	Dst  []string
 }
 type LogDat struct {
@@ -234,7 +235,7 @@ func Configure(cf *configure.CF) {
 
 func worker() {
 
-	tock := time.NewTicker(60 * time.Second)
+	tock := time.NewTicker(15 * time.Second)
 	defer tock.Stop()
 
 	for {
