@@ -28,6 +28,7 @@ type TConf struct {
 	Pluck   string
 	JPath   string
 	Column  string
+	Timeout int `cfconv:"timespec"`
 }
 
 type Command struct {
@@ -212,6 +213,7 @@ func (a *Agent) buildCommand() (map[string]string, error) {
 		"pluck":   m.Pluck,
 		"jpath":   m.JPath,
 		"column":  m.Column,
+		"timeout": fmt.Sprintf("%d", m.Timeout),
 		"os":      a.os,
 	}, nil
 }

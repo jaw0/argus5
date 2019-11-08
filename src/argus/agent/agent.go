@@ -17,8 +17,8 @@ import (
 	"time"
 
 	"argus/api"
-	"github.com/jaw0/acgo/diag"
 	"argus/service"
+	"github.com/jaw0/acgo/diag"
 )
 
 var dl = diag.Logger("agent")
@@ -125,7 +125,7 @@ func runProg(command string, timeout int) (string, bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
-	dl.Debug("running '%s'", command)
+	dl.Debug("running '%s' [to=%d]", command, timeout)
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
 
 	// if we are running as root, attempt to switch to a nonpriveleged uid
