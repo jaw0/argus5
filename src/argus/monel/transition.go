@@ -109,9 +109,19 @@ func (m *M) updateIsDown(ovstatus argus.Status) {
 
 func (m *M) andUpwards() {
 
+	notfirst := false
 	// propagate upwards!
 	for _, parent := range m.Parent {
+		if notfirst && len(parent.Children) == 1 {
+			// update alias
+			dl.Debug("and upwards %s -> %s -> %s", m.Cf.Unique, parent.Cf.Unique, parent.Children[0].Cf.Unique)
+			go parent.Children[0].UpUpdate(m)
+			continue
+		}
+
+		dl.Debug("and upwards %s -> %s", m.Cf.Unique, parent.Cf.Unique)
 		go parent.UpUpdate(m)
+		notfirst = true
 	}
 
 	// and anything depending on me?
@@ -219,7 +229,7 @@ func (m *M) determineStatus() bool {
 	m.checkDepends()
 	m.checkOverride()
 
-	dl.Debug("-> %s", m.P.OvStatus)
+	dl.Debug("%s : %s -> %s", m.Cf.Unique, prevo, m.P.OvStatus)
 	return m.P.OvStatus != prevo
 }
 
@@ -242,6 +252,7 @@ func (m *M) checkOverride() {
 func (m *M) determineAggrStatus() {
 
 	children := m.Me.Children()
+	dl.Debug("%s nchild %d", m.Cf.Unique, len(children))
 	if len(children) == 0 {
 		m.P.OvStatus = m.P.Status
 		return
@@ -253,6 +264,7 @@ func (m *M) determineAggrStatus() {
 
 	for _, child := range children {
 		rs, os := child.Status()
+		dl.Debug("%s %s : rs %v, os %v", m.Cf.Unique, child.Cf.Unique, rs, os)
 		rsum[rs]++
 		osum[os]++
 		nchild++
@@ -261,6 +273,7 @@ func (m *M) determineAggrStatus() {
 	rs := calcAggrStatus(m.Cf.Gravity, nchild, argus.CRITICAL, rsum[:])
 	os := calcAggrStatus(m.Cf.Gravity, nchild, argus.MAXSTATUS, osum[:])
 
+	dl.Debug("%s rs %v %v, os %v %v", m.Cf.Unique, rsum, rs, osum, os)
 	m.P.Status = rs
 	m.P.OvStatus = os
 }
@@ -331,5 +344,5 @@ func (m *M) determineSummary() {
 		child.Lock.RUnlock()
 	}
 
-	dl.Debug("summy: %v", m.P.OvStatusSummary)
+	dl.Debug("summy: %s %v", m.Cf.Unique, m.P.OvStatusSummary)
 }
