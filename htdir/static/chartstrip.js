@@ -399,19 +399,22 @@ function ChartStrip(el, opts){
         var dfunc = set.opts.data_func
         var cfunc = set.opts.color_func
         var limit = this.opts.limit_factor * (this.xd_max - this.xd_min) / data.length
-        var smooth = set.opts.smooth ? this.opts.smooth_factor : 0
+        var smooth = set.opts.smooth ? set.opts.smooth_factor || this.opts.smooth_factor : 0
         var prevcolor
         var i, c, p, pp, gap
         var dxt, cx0, cx1, xy0, cy1
 
         C.save()
-        C.lineWidth = this.opts.plot_line_thick
+        C.lineWidth = set.opts.thick || this.opts.plot_line_thick
         C.lineJoin  = 'round'
         if( set.opts.shadow ){
             C.shadowColor = '#ccc'
             C.shadowOffsetX = 3
             C.shadowOffsetY = 3
             C.shadowBlur = 5
+        }
+        if( set.opts.dashed ){
+            C.setLineDash(set.opts.dashed)
         }
 
         C.beginPath()
@@ -660,7 +663,6 @@ function ChartStrip(el, opts){
             }
 
         }else if( step >= 3600*24 ){
-            argus.log("t: " + t)
 	    while(1){
                 // search for midnight
                 lt = new Date(t * 1000)
@@ -709,7 +711,7 @@ function ChartStrip(el, opts){
 	    }
 	}
 	if( labtyp == 'DM' ){
-	    if( !rlt.day && !rlt.mon ){
+	    if( (rlt.day == 1) && (rlt.mon == 0) ){
                 return rlt.year					// year
 	    }else{
                 return '' + rlt.day + '/' + MONTH[rlt.mon]	// date DD/Mon
