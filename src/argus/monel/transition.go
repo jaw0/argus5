@@ -109,20 +109,26 @@ func (m *M) updateIsDown(ovstatus argus.Status) {
 
 func (m *M) andUpwards() {
 
+	var upup []*M
 	notfirst := false
 	// propagate upwards!
 	for _, parent := range m.Parent {
 		if notfirst && len(parent.Children) == 1 {
 			// update alias
-			dl.Debug("and upwards %s -> %s -> %s", m.Cf.Unique, parent.Cf.Unique, parent.Children[0].Cf.Unique)
-			go parent.Children[0].UpUpdate(m)
+			upup = append(upup, parent.Children[0])
 			continue
 		}
-
-		dl.Debug("and upwards %s -> %s", m.Cf.Unique, parent.Cf.Unique)
-		go parent.UpUpdate(m)
+		upup = append(upup, parent)
 		notfirst = true
 	}
+
+	go func(){
+		for _, u := range upup {
+			dl.Debug("and upwards %s -> %s", m.Cf.Unique, u.Cf.Unique)
+			u.UpUpdate(m)
+		}
+	}()
+
 
 	// and anything depending on me?
 }
