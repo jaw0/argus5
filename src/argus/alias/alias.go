@@ -10,8 +10,8 @@ import (
 
 	"argus/argus"
 	"argus/configure"
-	"github.com/jaw0/acgo/diag"
 	"argus/monel"
+	"github.com/jaw0/acgo/diag"
 )
 
 type Alias struct {
@@ -88,8 +88,7 @@ func (a *Alias) aliasLookup() *monel.M {
 		return nil
 	}
 
-	// short ckt straight to my parents
-	t.AddParent(a.mon.Parent[0])
+	t.AddParent(a.mon)
 
 	a.Object = t
 	return t
