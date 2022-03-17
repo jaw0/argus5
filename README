@@ -4,10 +4,10 @@ SUMMARY:
     * Argus is a system and network monitoring application
 
 INSTALLATION:
-    * see the file INSTALL (or HTML/install.html)
+    * see the file INSTALL
 
 DOCUMENTATION:
-    * see the files in HTML/
+    * https://jaw0.github.io/argus5docs/docs/
     * and the files in examples/
 
 LICENSE INFORMATION:
