@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"testing"
 
-	"argus/argus"
+	"argus.domain/argus/argus"
 	"github.com/jaw0/acgo/diag"
 )
 

@@ -6,7 +6,7 @@
 package notify
 
 import (
-	"argus/clock"
+	"argus.domain/argus/clock"
 )
 
 type queuedat struct {

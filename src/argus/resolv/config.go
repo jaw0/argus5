@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	"argus/config"
+	"argus.domain/argus/config"
 	"github.com/jaw0/acgo/diag"
 )
 

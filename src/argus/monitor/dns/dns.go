@@ -13,11 +13,11 @@ import (
 
 	"github.com/miekg/dns"
 
-	"argus/configure"
+	"argus.domain/argus/configure"
 	"github.com/jaw0/acgo/diag"
-	"argus/lfsr"
-	"argus/resolv"
-	"argus/service"
+	"argus.domain/argus/lfsr"
+	"argus.domain/argus/resolv"
+	"argus.domain/argus/service"
 )
 
 type Conf struct {

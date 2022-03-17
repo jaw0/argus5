@@ -12,12 +12,12 @@ import (
 	"strconv"
 	"strings"
 
-	"argus/argus"
-	"argus/clock"
-	"argus/darp"
-	"argus/graph"
-	"argus/notify"
-	"argus/web"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/darp"
+	"argus.domain/argus/graph"
+	"argus.domain/argus/notify"
+	"argus.domain/argus/web"
 )
 
 type objectDescr struct {

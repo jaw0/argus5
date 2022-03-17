@@ -10,12 +10,12 @@ import (
 	"math"
 	"strings"
 
-	"argus/argus"
-	"argus/configure"
-	"argus/darp"
-	"argus/expr"
-	"argus/monel"
-	"argus/sched"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/darp"
+	"argus.domain/argus/expr"
+	"argus.domain/argus/monel"
+	"argus.domain/argus/sched"
 )
 
 // construction starts here:

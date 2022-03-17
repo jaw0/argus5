@@ -8,7 +8,7 @@ package monel
 import (
 	"strings"
 
-	"argus/argus"
+	"argus.domain/argus/argus"
 )
 
 func (m *M) resolveDepends() {

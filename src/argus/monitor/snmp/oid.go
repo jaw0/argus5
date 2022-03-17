@@ -8,7 +8,7 @@ package snmp
 import (
 	"strings"
 
-	"argus/configure"
+	"argus.domain/argus/configure"
 )
 
 type OidConf struct {

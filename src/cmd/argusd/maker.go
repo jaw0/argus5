@@ -8,10 +8,10 @@ package main
 import (
 	"encoding/json"
 
-	"argus/argus"
-	"argus/configure"
-	"argus/construct"
-	"argus/monel"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/construct"
+	"argus.domain/argus/monel"
 )
 
 type MakeIt struct{}

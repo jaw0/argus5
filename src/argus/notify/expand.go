@@ -11,7 +11,7 @@ import (
 	"text/template"
 	"time"
 
-	"argus/argus"
+	"argus.domain/argus/argus"
 )
 
 func (n *N) expand(templ string, content string, param map[string]interface{}) string {

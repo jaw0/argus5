@@ -10,9 +10,9 @@ import (
 	"math"
 	"sync"
 
-	"argus/clock"
-	"argus/configure"
-	"argus/monel"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/monel"
 	"github.com/jaw0/acgo/diag"
 )
 

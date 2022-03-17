@@ -8,9 +8,9 @@ package alias
 import (
 	"errors"
 
-	"argus/argus"
-	"argus/configure"
-	"argus/monel"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/monel"
 	"github.com/jaw0/acgo/diag"
 )
 

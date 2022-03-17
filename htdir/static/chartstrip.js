@@ -53,6 +53,7 @@ function ChartStrip(el, opts){
         var opts = {}
         var i
         // merge user supplied opts with defaults, above
+        opts.scale_func = this.Linear
         var k = Object.keys(this.defaults)
         for(i=0; i<k.length; i++){
             opts[ k[i] ] = this.defaults[ k[i] ]
@@ -131,16 +132,18 @@ function ChartStrip(el, opts){
     //   -- Thoreau, Inspiration
 
     p.analyze = function(dataset){
-        var xmin, xmax, ymin, ymax
-        var i, p, left, right, dxl, dxr, dyl, dyr, dl, dr
+        var xmin, xmax, ymin, ymax, ylmin, ylmax
+        var i, p, v, left, right, dxl, dxr, dyl, dyr, dl, dr
         var dydx = []
 
         var data = dataset.data
+        var dfunc = dataset.opts.data_func
+        var sfunc = this.opts.scale_func
 
         if( !data ) return
 
         for(i=0;  i<data.length; i++){
-            p = dataset.opts.data_func( data[i] )
+            p = dfunc( data[i] )
             if( !p ) continue
 
             if( typeof(xmin) == 'undefined' ) xmin = p.Time
@@ -149,26 +152,39 @@ function ChartStrip(el, opts){
             //console.log("analyze: " + i + ": " + p.Time + " " + p.Value )
 
             if( dataset.opts.type == 'range' ){
+                var vi = sfunc(p.Min)
+                var va = sfunc(p.Max)
+
                 if( i == 0 ){
-                    ymin = p.Min
-                    ymax = p.Max
+                    ylmin = p.Min
+                    ylmax = p.Max
+                    ymin  = vi
+                    ymax  = va
                 }
-                if( p.Min < ymin ) ymin = p.Min
-                if( p.Max > ymax ) ymax = p.Max
+                if( p.Min < ylmin ) ylmin = p.Min
+                if( p.Max > ylmax ) ylmax = p.Max
+                if( vi < ymin )  ymin  = vi
+                if( va > ymax )  ymax  = va
             }
             if( dataset.opts.type == 'line' ){
-                if( i == 0 ) ymin = ymax = p.Value
-                if( p.Value < ymin ) ymin = p.Value
-                if( p.Value > ymax ) ymax = p.Value
+                v = sfunc(p.Value)
+                if( i == 0 ){
+                    ylmin = ylmax = p.Value
+                    ymin  = ymax  = v
+                }
+                if( p.Value < ylmin ) ylmin = p.Value
+                if( p.Value > ylmax ) ylmax = p.Value
+                if( v < ymin ) ymin = v
+                if( v > ymax ) ymax = v
 
                 // calc derivative
-                left  = (i==0) ? p : dataset.opts.data_func( data[i-1] )
-                right = (i==data.length-1) ? p : dataset.opts.data_func( data[i+1] )
+                left  = (i==0) ? p : dfunc( data[i-1] )
+                right = (i==data.length-1) ? p : dfunc( data[i+1] )
 
                 dxl = p.Time - left.Time
                 dxr = right.Time - p.Time
-                dyl = p.Value - left.Value
-                dyr = right.Value - p.Value
+                dyl = v - sfunc(left.Value)
+                dyr = sfunc(right.Value) - v
 
                 if( dxl && dxr ){
                     dl = dyl / dxl
@@ -197,13 +213,15 @@ function ChartStrip(el, opts){
         }
         dataset.yd_min = ymin
         dataset.yd_max = ymax
+        dataset.yl_min = ylmin
+        dataset.yl_max = ylmax
         dataset.xd_min = xmin
         dataset.xd_max = xmax
         dataset.dydx   = dydx
     }
 
     p.adjust = function(sets){
-        var xmin, xmax, ymin, ymax
+        var xmin, xmax, ymin, ymax, ylmin, ylmax
         var i,s
 
         // determine min/max from selected datasets
@@ -215,18 +233,24 @@ function ChartStrip(el, opts){
                 xmax = s.xd_max
                 ymin = s.yd_min
                 ymax = s.yd_max
+                ylmin = s.yl_min
+                ylmax = s.yl_max
             }
 
             if( s.xd_min < xmin ) xmin = s.xd_min
             if( s.xd_max > xmax ) xmax = s.xd_max
             if( s.yd_min < ymin ) ymin = s.yd_min
             if( s.yd_max > ymax ) ymax = s.yd_max
+            if( s.yl_min < ylmin ) ylmin = s.yl_min
+            if( s.yl_max > ylmax ) ylmax = s.yl_max
         }
 
         this.xd_min = xmin
         this.xd_max = xmax
         this.yd_min = ymin
         this.yd_max = ymax
+        this.yl_min = ylmin
+        this.yl_max = ylmax
     }
 
     p.setScale = function(){
@@ -383,6 +407,9 @@ function ChartStrip(el, opts){
         }
     }
 
+    p.Linear = function(v){
+        return v
+    }
     p.AsIs = function(p){
         return p
     }
@@ -398,10 +425,11 @@ function ChartStrip(el, opts){
         var color = set.opts.color
         var dfunc = set.opts.data_func
         var cfunc = set.opts.color_func
+        var sfunc = this.opts.scale_func
         var limit = this.opts.limit_factor * (this.xd_max - this.xd_min) / data.length
         var smooth = set.opts.smooth ? set.opts.smooth_factor || this.opts.smooth_factor : 0
         var prevcolor
-        var i, c, p, pp, gap
+        var i, c, p, pp, gap, v
         var dxt, cx0, cx1, xy0, cy1
 
         C.save()
@@ -423,6 +451,7 @@ function ChartStrip(el, opts){
             p = dfunc( data[i] )
             if( !p ) continue
             c = cfunc( data[i], color )
+            v = sfunc(p.Value)
 
             gap = ( pp && limit && (p.Time - pp.Time) > limit )
             if( gap )  pp = undefined
@@ -436,19 +465,19 @@ function ChartStrip(el, opts){
                     dxt = (p.Time - pp.Time) / (smooth * 3)
                     cx0 = pp.Time + dxt
                     cx1 = p.Time  - dxt
-                    cy0 = pp.Value + dydx[i-1] * dxt
-                    cy1 = p.Value  - dydx[i] * dxt
+                    cy0 = sfunc(pp.Value) + dydx[i-1] * dxt
+                    cy1 = v  - dydx[i] * dxt
 
-                    C.bezierCurveTo(this.dx(cx0), this.dy(cy0), this.dx(cx1), this.dy(cy1), this.dx(p.Time), this.dy(p.Value))
+                    C.bezierCurveTo(this.dx(cx0), this.dy(cy0), this.dx(cx1), this.dy(cy1), this.dx(p.Time), this.dy(v))
                 }else{
-                    C.lineTo( this.dx(p.Time), this.dy(p.Value) )
+                    C.lineTo( this.dx(p.Time), this.dy(v) )
                 }
             }
             if( (c != prevcolor) || !pp ){
                 C.stroke()
                 C.beginPath()
                 C.strokeStyle = c
-                C.moveTo( this.dx(p.Time), this.dy(p.Value) )
+                C.moveTo( this.dx(p.Time), this.dy(v) )
             }
 
             prevcolor = c
@@ -458,7 +487,7 @@ function ChartStrip(el, opts){
         C.restore()
     }
 
-
+// RSN - scale_func
     p.plot_range = function(set){
         var C = this.C
         var data = set.data
@@ -550,8 +579,8 @@ function ChartStrip(el, opts){
     }
 
     p.determineYtics = function(){
-        var min = this.yd_min
-        var max = this.yd_max
+        var min = this.yl_min
+        var max = this.yl_max
         var maxw = 0
         var lb, w, tp, is, st, low, i, y
         var tics = []
@@ -563,7 +592,7 @@ function ChartStrip(el, opts){
             // not a very interesting graph...
             lb = this.pretty(min, 1)
             w = this.C.measureText(lb).width
-            tics.push( { y: min, label: lb, width: w, height: ht } )
+            tics.push( { y: this.opts.scale_func(min), label: lb, width: w, height: ht } )
             maxw = w
         }else{
             tp = (max - min) / this.opts.n_y_tics // approx spacing of tics
@@ -584,7 +613,7 @@ function ChartStrip(el, opts){
                 lb = this.pretty(y, st)
                 w = this.C.measureText(lb).width
                 if( w > maxw ) maxw = w
-                tics.push( {y: y, label: lb, width: w, height: ht} )
+                tics.push( {y: this.opts.scale_func(y), label: lb, width: w, height: ht} )
             }
         }
 

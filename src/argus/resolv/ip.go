@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"argus/clock"
-	"argus/configure"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/configure"
 )
 
 const TOOLONG = int64(300 * time.Second)

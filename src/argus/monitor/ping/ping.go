@@ -16,11 +16,11 @@ import (
 	"sync"
 	"time"
 
-	"argus/config"
-	"argus/configure"
+	"argus.domain/argus/config"
+	"argus.domain/argus/configure"
 	"github.com/jaw0/acgo/diag"
-	"argus/resolv"
-	"argus/service"
+	"argus.domain/argus/resolv"
+	"argus.domain/argus/service"
 )
 
 type Conf struct {

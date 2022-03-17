@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"argus/argus"
-	"argus/config"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/config"
 	"github.com/jaw0/acgo/diag"
-	"argus/sec"
-	"argus/users"
+	"argus.domain/argus/sec"
+	"argus.domain/argus/users"
 )
 
 const (

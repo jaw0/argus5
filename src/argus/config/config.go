@@ -11,7 +11,7 @@ import (
 	"github.com/jaw0/acgo/accfg"
 	"github.com/jaw0/acgo/diag"
 
-	"argus/argus"
+	"argus.domain/argus/argus"
 )
 
 type Config struct {

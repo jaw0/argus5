@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"time"
 
-	"argus/api/client"
-	"argus/clock"
-	"argus/resolv"
-	"argus/sec"
+	"argus.domain/argus/api/client"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/resolv"
+	"argus.domain/argus/sec"
 )
 
 const (

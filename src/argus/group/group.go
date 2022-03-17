@@ -6,10 +6,10 @@
 package group
 
 import (
-	"argus/argus"
-	"argus/configure"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/configure"
 	"github.com/jaw0/acgo/diag"
-	"argus/monel"
+	"argus.domain/argus/monel"
 )
 
 type Group struct {

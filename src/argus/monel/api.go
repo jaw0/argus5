@@ -8,8 +8,8 @@ package monel
 import (
 	"encoding/json"
 
-	"argus/api"
-	"argus/argus"
+	"argus.domain/argus/api"
+	"argus.domain/argus/argus"
 )
 
 func init() {

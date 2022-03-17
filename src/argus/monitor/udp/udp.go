@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"argus/configure"
-	"argus/resolv"
-	"argus/service"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/resolv"
+	"argus.domain/argus/service"
 	"github.com/jaw0/acgo/diag"
 )
 

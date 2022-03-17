@@ -14,11 +14,11 @@ import (
 	"strings"
 	"time"
 
-	"argus/api/client"
-	"argus/configure"
-	"argus/resolv"
-	"argus/sec"
-	"argus/service"
+	"argus.domain/argus/api/client"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/resolv"
+	"argus.domain/argus/sec"
+	"argus.domain/argus/service"
 
 	"github.com/jaw0/acgo/diag"
 )

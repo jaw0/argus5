@@ -13,11 +13,11 @@ import (
 	"strconv"
 	"sync"
 
-	"argus/argus"
-	"argus/clock"
-	"argus/configure"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/configure"
 	"github.com/jaw0/acgo/diag"
-	"argus/notify"
+	"argus.domain/argus/notify"
 )
 
 const STOPWORKERS = 5

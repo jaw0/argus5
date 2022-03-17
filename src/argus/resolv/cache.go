@@ -8,7 +8,7 @@ package resolv
 import (
 	"sync"
 
-	"argus/clock"
+	"argus.domain/argus/clock"
 )
 
 const (

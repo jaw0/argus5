@@ -3,3 +3,7 @@ bin/argusd
 src/github.com/
 src/golang.org/
 src/.deps
+src/argus/argus/version.go
+src/argus/argus/ctlsock.go
+pkg/mod
+pkg/sumdb

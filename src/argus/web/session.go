@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"argus/argus"
-	"argus/clock"
-	"argus/config"
-	"argus/users"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/config"
+	"argus.domain/argus/users"
 )
 
 type Session struct {

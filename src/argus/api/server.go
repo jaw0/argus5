@@ -14,8 +14,8 @@ import (
 	"os"
 	"strings"
 
-	"argus/argus"
-	"argus/config"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/config"
 )
 
 const (

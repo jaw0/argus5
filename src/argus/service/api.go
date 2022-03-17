@@ -10,10 +10,10 @@ import (
 	"sort"
 	"strconv"
 
-	"argus/api"
-	"argus/argus"
-	"argus/darp"
-	"argus/monel"
+	"argus.domain/argus/api"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/darp"
+	"argus.domain/argus/monel"
 )
 
 func init() {

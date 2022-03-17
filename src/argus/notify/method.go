@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"strings"
 
-	"argus/argus"
-	"argus/configure"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/configure"
 )
 
 type Method struct {

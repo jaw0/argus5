@@ -9,10 +9,10 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"argus/argus"
-	"argus/clock"
-	"argus/sched"
-	"argus/web"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/sched"
+	"argus.domain/argus/web"
 )
 
 func init() {

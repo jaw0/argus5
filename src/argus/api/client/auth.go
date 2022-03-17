@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"time"
 
-	"argus/argus"
+	"argus.domain/argus/argus"
 )
 
 type Creds struct {

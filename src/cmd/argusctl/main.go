@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"argus/api/client"
-	"argus/argus"
+	"argus.domain/argus/api/client"
+	"argus.domain/argus/argus"
 )
 
 const TIMEOUT = 15 * time.Second

@@ -6,7 +6,7 @@
 package service
 
 import (
-	"argus/argus"
+	"argus.domain/argus/argus"
 )
 
 type darpStatusResult struct {

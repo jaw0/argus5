@@ -6,7 +6,7 @@
 package darp
 
 import (
-	"argus/argus"
+	"argus.domain/argus/argus"
 )
 
 func AggrStatus(gravity argus.Gravity, mystatus argus.Status, statuses map[string]argus.Status) argus.Status {

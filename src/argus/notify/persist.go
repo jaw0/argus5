@@ -8,8 +8,8 @@ package notify
 import (
 	"fmt"
 
-	"argus/argus"
-	"argus/config"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/config"
 )
 
 func loadIdNo() {

@@ -8,8 +8,8 @@ package notify
 import (
 	"strings"
 
-	"argus/argus"
-	"argus/clock"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/clock"
 )
 
 func New(ncf *NewConf, mon Remover) *N {

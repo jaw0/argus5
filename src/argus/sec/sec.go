@@ -17,10 +17,10 @@ import (
 	"math/big"
 	"time"
 
-	"argus/argus"
-	"argus/config"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/config"
 	"github.com/jaw0/acgo/diag"
-	"argus/sched"
+	"argus.domain/argus/sched"
 )
 
 // if we generate a self-signed cert:

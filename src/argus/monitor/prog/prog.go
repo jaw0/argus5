@@ -13,9 +13,9 @@ import (
 	"syscall"
 	"time"
 
-	"argus/configure"
+	"argus.domain/argus/configure"
 	"github.com/jaw0/acgo/diag"
-	"argus/service"
+	"argus.domain/argus/service"
 )
 
 type Conf struct {

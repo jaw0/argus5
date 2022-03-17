@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"argus/argus"
+	"argus.domain/argus/argus"
 )
 
 type openfile struct {

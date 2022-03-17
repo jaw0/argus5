@@ -9,12 +9,12 @@ import (
 	"expvar"
 	"fmt"
 
-	"argus/api"
-	"argus/argus"
-	"argus/clock"
-	"argus/configure"
-	"argus/darp"
-	"argus/graph"
+	"argus.domain/argus/api"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/darp"
+	"argus.domain/argus/graph"
 )
 
 const (

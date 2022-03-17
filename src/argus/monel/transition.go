@@ -6,9 +6,9 @@
 package monel
 
 import (
-	"argus/argus"
-	"argus/clock"
-	"argus/notify"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/notify"
 )
 
 // m is a service updating status

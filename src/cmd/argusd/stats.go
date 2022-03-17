@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"argus/clock"
+	"argus.domain/argus/clock"
 )
 
 type taUsage struct {

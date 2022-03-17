@@ -8,13 +8,13 @@ package construct
 import (
 	"strings"
 
-	"argus/argus"
-	"argus/configure"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/configure"
 	"github.com/jaw0/acgo/diag"
-	"argus/monel"
-	"argus/notify"
-	"argus/service"
-	"argus/web"
+	"argus.domain/argus/monel"
+	"argus.domain/argus/notify"
+	"argus.domain/argus/service"
+	"argus.domain/argus/web"
 )
 
 type readConf struct {

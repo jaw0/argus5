@@ -33,11 +33,7 @@ all: src/.deps
 	@echo now run \'make install\'
 
 src/.deps: deps
-	@echo fetching dependencies...
-	@for d in `cat deps`; do \
-		echo + $$d; \
-		$(GO) get -insecure $$d; \
-	done
+	cd src ; go mod download
 	@touch src/.deps
 
 install: all

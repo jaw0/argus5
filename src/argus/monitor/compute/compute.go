@@ -9,11 +9,11 @@ import (
 	"errors"
 	"fmt"
 
-	"argus/configure"
+	"argus.domain/argus/configure"
 	"github.com/jaw0/acgo/diag"
-	"argus/expr"
-	"argus/monel"
-	"argus/service"
+	"argus.domain/argus/expr"
+	"argus.domain/argus/monel"
+	"argus.domain/argus/service"
 )
 
 type Conf struct {

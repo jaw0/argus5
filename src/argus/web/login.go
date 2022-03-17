@@ -8,7 +8,7 @@ package web
 import (
 	"net/http"
 
-	"argus/users"
+	"argus.domain/argus/users"
 )
 
 func init() {

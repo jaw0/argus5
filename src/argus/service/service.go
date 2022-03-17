@@ -15,13 +15,13 @@ import (
 
 	"github.com/jaw0/acgo/diag"
 
-	"argus/argus"
-	"argus/clock"
-	"argus/config"
-	"argus/configure"
-	"argus/darp"
-	"argus/monel"
-	"argus/sched"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/config"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/darp"
+	"argus.domain/argus/monel"
+	"argus.domain/argus/sched"
 )
 
 type Monitor interface {

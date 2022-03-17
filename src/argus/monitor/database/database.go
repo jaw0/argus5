@@ -18,9 +18,9 @@ import (
 	_ "github.com/lib/pq"
 	// add more drivers here (and update config below)
 
-	"argus/configure"
+	"argus.domain/argus/configure"
 	"github.com/jaw0/acgo/diag"
-	"argus/service"
+	"argus.domain/argus/service"
 )
 
 type Conf struct {

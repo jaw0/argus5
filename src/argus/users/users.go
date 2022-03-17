@@ -10,9 +10,9 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"argus/api"
-	"argus/argus"
-	"argus/config"
+	"argus.domain/argus/api"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/config"
 	"github.com/jaw0/acgo/diag"
 )
 

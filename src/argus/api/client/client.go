@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"argus/argus"
+	"argus.domain/argus/argus"
 )
 
 type Conn struct {
@@ -91,7 +91,7 @@ func (c *Conn) Get(method string, args map[string]string, timeout time.Duration)
 	if err != nil {
 		return nil, err
 	}
-	// parse response "argus/5.0 200 ok"
+	// parse response "argus.domain/argus/5.0 200 ok"
 	flds := strings.SplitN(string(respline), " ", 3)
 	if len(flds) != 3 {
 		return nil, fmt.Errorf("protocol botched")

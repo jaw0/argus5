@@ -12,8 +12,8 @@ import (
 	"runtime"
 	"strings"
 
-	"argus/configure"
-	"argus/service"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/service"
 	"github.com/jaw0/acgo/diag"
 )
 

@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"argus/argus"
-	"argus/config"
-	"argus/configure"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/config"
+	"argus.domain/argus/configure"
 )
 
 const (

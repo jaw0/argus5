@@ -12,12 +12,12 @@ import (
 	"net"
 	"strings"
 
-	"argus/argus"
-	"argus/configure"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/configure"
 	"github.com/jaw0/acgo/diag"
-	"argus/monitor/tcp"
-	"argus/monitor/udp"
-	"argus/service"
+	"argus.domain/argus/monitor/tcp"
+	"argus.domain/argus/monitor/udp"
+	"argus.domain/argus/service"
 )
 
 type Conf struct {

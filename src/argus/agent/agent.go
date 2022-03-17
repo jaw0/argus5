@@ -16,8 +16,8 @@ import (
 	"syscall"
 	"time"
 
-	"argus/api"
-	"argus/service"
+	"argus.domain/argus/api"
+	"argus.domain/argus/service"
 	"github.com/jaw0/acgo/diag"
 )
 

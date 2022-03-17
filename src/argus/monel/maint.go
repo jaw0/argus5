@@ -6,7 +6,7 @@
 package monel
 
 import (
-	"argus/sched"
+	"argus.domain/argus/sched"
 )
 
 var monelCron = sched.NewFunc(&sched.Conf{

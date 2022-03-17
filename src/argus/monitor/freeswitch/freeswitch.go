@@ -6,9 +6,9 @@
 package freeswitch
 
 import (
-	"argus/configure"
-	"argus/monitor/tcp"
-	"argus/service"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/monitor/tcp"
+	"argus.domain/argus/service"
 )
 
 type Conf struct {

@@ -14,10 +14,10 @@ import (
 
 	"github.com/miekg/dns"
 
-	"argus/clock"
-	"argus/config"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/config"
 	"github.com/jaw0/acgo/diag"
-	"argus/lfsr"
+	"argus.domain/argus/lfsr"
 )
 
 const (

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"argus/argus"
+	"argus.domain/argus/argus"
 	"github.com/jaw0/acgo/diag"
 )
 

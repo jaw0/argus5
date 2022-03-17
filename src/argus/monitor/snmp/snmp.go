@@ -12,13 +12,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jaw0/acgo/diag"
 	"github.com/soniah/gosnmp"
 
-	"argus/argus"
-	"argus/configure"
-	"github.com/jaw0/acgo/diag"
-	"argus/resolv"
-	"argus/service"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/resolv"
+	"argus.domain/argus/service"
 )
 
 type Conf struct {

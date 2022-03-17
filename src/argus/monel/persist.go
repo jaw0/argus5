@@ -12,9 +12,9 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 
-	"argus/config"
+	"argus.domain/argus/config"
 	"github.com/jaw0/acgo/diag"
-	"argus/notify"
+	"argus.domain/argus/notify"
 )
 
 func (m *M) Persist() {

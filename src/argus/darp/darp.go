@@ -12,14 +12,14 @@ import (
 	"strings"
 	"sync"
 
-	"argus/api"
-	"argus/argus"
-	"argus/clock"
-	"argus/config"
-	"argus/configure"
+	"argus.domain/argus/api"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/config"
+	"argus.domain/argus/configure"
 	"github.com/jaw0/acgo/diag"
-	"argus/resolv"
-	"argus/sec"
+	"argus.domain/argus/resolv"
+	"argus.domain/argus/sec"
 )
 
 type Maker interface {

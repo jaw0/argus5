@@ -13,9 +13,9 @@ import (
 	"strconv"
 	"strings"
 
-	"argus/argus"
-	"argus/clock"
-	"argus/monel"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/clock"
+	"argus.domain/argus/monel"
 )
 
 type OP struct {

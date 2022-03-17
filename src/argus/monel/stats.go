@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"time"
 
-	"argus/argus"
-	"argus/clock"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/clock"
 )
 
 const SECSNANO = 1000000000

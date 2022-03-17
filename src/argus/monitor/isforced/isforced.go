@@ -6,9 +6,9 @@
 package isforced
 
 import (
-	"argus/argus"
-	"argus/configure"
-	"argus/service"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/configure"
+	"argus.domain/argus/service"
 )
 
 type D struct {

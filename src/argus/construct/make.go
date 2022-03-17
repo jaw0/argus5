@@ -6,16 +6,16 @@
 package construct
 
 import (
-	"argus/configure"
+	"argus.domain/argus/configure"
 	//"github.com/jaw0/acgo/diag"
-	"argus/alias"
-	"argus/darp"
-	"argus/group"
-	"argus/monel"
-	"argus/monitor/agent"
-	"argus/monitor/snmp"
-	"argus/notify"
-	"argus/service"
+	"argus.domain/argus/alias"
+	"argus.domain/argus/darp"
+	"argus.domain/argus/group"
+	"argus.domain/argus/monel"
+	"argus.domain/argus/monitor/agent"
+	"argus.domain/argus/monitor/snmp"
+	"argus.domain/argus/notify"
+	"argus.domain/argus/service"
 )
 
 func Make(cf *configure.CF, parent *monel.M) *monel.M {

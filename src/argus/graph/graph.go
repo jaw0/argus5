@@ -6,8 +6,8 @@
 package graph
 
 import (
-	"argus/argus"
-	"argus/graph/graphd"
+	"argus.domain/argus/argus"
+	"argus.domain/argus/graph/graphd"
 )
 
 // RSN - pluggable graphing subsystems: graphite, grafana, influxdb, ...

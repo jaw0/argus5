@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"testing"
 
-	"argus/argus"
+	"argus.domain/argus/argus"
 )
 
 func TestPersist(t *testing.T) {
