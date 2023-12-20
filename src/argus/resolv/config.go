@@ -103,7 +103,7 @@ func addSearch(dom string) {
 
 func addServer(ns string) {
 
-	ua, err := net.ResolveUDPAddr("udp", ["+ns+"]:53")
+        ua, err := net.ResolveUDPAddr("udp", "["+ns+"]:53")
 	if err != nil {
 		diag.Fatal("invalid namserver: %s (%v)", ns, err)
 	}
