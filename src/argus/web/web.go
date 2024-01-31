@@ -7,6 +7,7 @@ package web
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -108,6 +109,9 @@ func (s *Server) httpServer(port int) *http.Server {
 	www := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
 		Handler: Mux,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
 	}
 	s.services = append(s.services, www)
 	s.done.Add(1)
