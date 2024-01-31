@@ -6,6 +6,7 @@
 package resolv
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 
 func xTestResolv(t *testing.T) {
 
-	diag.SetConfig(&diag.Config{Debug: map[string]bool{"resolv": true}})
+	diag.SetConfig(diag.Config{Debug: map[string]bool{"resolv": true}})
 	Init()
 	defer Stop()
 
@@ -34,9 +35,18 @@ func xTestResolv(t *testing.T) {
 	t.Fail()
 }
 
+func xTestReadResolv(t *testing.T) {
+	txt := bytes.NewBufferString(`search example.com
+nameserver 192.168.200.2
+nameserver ::1
+`)
+	readFromResolvConf(txt)
+
+}
+
 func TestResolv(t *testing.T) {
 
-	diag.SetConfig(&diag.Config{Debug: map[string]bool{"resolv": true}})
+	diag.SetConfig(diag.Config{Debug: map[string]bool{"resolv": true}})
 	Init()
 	defer Stop()
 
@@ -45,8 +55,11 @@ func TestResolv(t *testing.T) {
 		New("nestor.tcp4me.com", []int{4, 6})
 		ip := New("nestor", []int{4, 6})
 		time.Sleep(1 * time.Second)
-		a, _, _ := ip.Addr()
-		dl.Debug("-> %v", a)
+		a, v, ok := ip.Addr()
+		dl.Debug("-> %v -> %v; %v;%v", ip, a, v, ok)
+		if a != "" {
+			break
+		}
 	}
 
 }

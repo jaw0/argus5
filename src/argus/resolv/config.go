@@ -7,6 +7,7 @@ package resolv
 
 import (
 	"bufio"
+	"io"
 	"net"
 	"os"
 	"strings"
@@ -51,6 +52,12 @@ func readResolvConf() {
 		return
 	}
 	defer fd.Close()
+
+	readFromResolvConf(fd)
+
+}
+
+func readFromResolvConf(fd io.Reader) {
 
 	bfd := bufio.NewReader(fd)
 
@@ -103,7 +110,7 @@ func addSearch(dom string) {
 
 func addServer(ns string) {
 
-	ua, err := net.ResolveUDPAddr("udp", ns+":53")
+	ua, err := net.ResolveUDPAddr("udp", net.JoinHostPort(ns, "53"))
 	if err != nil {
 		diag.Fatal("invalid namserver: %s (%v)", ns, err)
 	}
