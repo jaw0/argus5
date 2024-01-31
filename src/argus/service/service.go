@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 
 	"argus.domain/argus/argus"
 	"argus.domain/argus/clock"

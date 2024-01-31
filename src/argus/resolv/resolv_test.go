@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 func xTestResolv(t *testing.T) {

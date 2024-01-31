@@ -17,8 +17,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jaw0/acgo/daemon"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
+	"github.com/jaw0/go-daemon"
 
 	_ "argus.domain/argus/agent"
 	"argus.domain/argus/api"
@@ -75,8 +75,6 @@ func main() {
 		daemon.Ize()
 	}
 
-	diag.Init("argusd")
-
 	// load small base config
 	if configfile != "" {
 		config.Load(configfile)
@@ -89,7 +87,7 @@ func main() {
 	if rootcert != "" {
 		cf.Agent_Mode = true
 		if configfile == "" {
-			diag.SetConfig(&diag.Config{Facility: "daemon"})
+			diag.SetConfig(diag.Config{Facility: "daemon"})
 		}
 	}
 

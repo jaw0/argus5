@@ -8,7 +8,7 @@ package argus
 import (
 	"fmt"
 
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 const MAXLOGS = 100

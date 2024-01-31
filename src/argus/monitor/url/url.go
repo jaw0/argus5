@@ -18,7 +18,7 @@ import (
 	"argus.domain/argus/monitor/tcp"
 	"argus.domain/argus/service"
 
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 type cacheEntry struct {

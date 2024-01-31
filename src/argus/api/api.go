@@ -9,7 +9,7 @@ import (
 	"bufio"
 	"net"
 
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 type APIWriter interface {

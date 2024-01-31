@@ -11,7 +11,7 @@ import (
 
 	"argus.domain/argus/configure"
 	"argus.domain/argus/darp"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 	"argus.domain/argus/service"
 )
 

@@ -15,9 +15,9 @@ import (
 
 	"argus.domain/argus/argus"
 	"argus.domain/argus/config"
-	"github.com/jaw0/acgo/diag"
 	"argus.domain/argus/sec"
 	"argus.domain/argus/users"
+	"github.com/jaw0/acdiag"
 )
 
 const (

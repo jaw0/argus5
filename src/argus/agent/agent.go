@@ -18,7 +18,7 @@ import (
 
 	"argus.domain/argus/api"
 	"argus.domain/argus/service"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 var dl = diag.Logger("agent")

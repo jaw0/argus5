@@ -56,6 +56,7 @@ clean:
 TESTDIR=/tmp/argus5test
 
 testbuild:
+	[ -f $(TESTDIR) ] && chmod -R u+w $(TESTDIR)/pkg
 	rm -rf $(TESTDIR)
 	git clone $(ROOT) $(TESTDIR)
 	cd $(TESTDIR) ; make

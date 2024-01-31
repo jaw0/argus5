@@ -13,7 +13,7 @@ import (
 	"argus.domain/argus/clock"
 	"argus.domain/argus/configure"
 	"argus.domain/argus/monel"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 type HwabConf struct {

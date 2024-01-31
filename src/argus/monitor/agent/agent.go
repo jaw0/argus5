@@ -20,7 +20,7 @@ import (
 	"argus.domain/argus/sec"
 	"argus.domain/argus/service"
 
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 type TConf struct {

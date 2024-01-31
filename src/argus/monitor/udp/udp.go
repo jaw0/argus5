@@ -15,7 +15,7 @@ import (
 	"argus.domain/argus/configure"
 	"argus.domain/argus/resolv"
 	"argus.domain/argus/service"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 type Packeter interface {

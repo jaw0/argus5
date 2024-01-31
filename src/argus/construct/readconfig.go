@@ -10,7 +10,7 @@ import (
 
 	"argus.domain/argus/argus"
 	"argus.domain/argus/configure"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 	"argus.domain/argus/monel"
 	"argus.domain/argus/notify"
 	"argus.domain/argus/service"

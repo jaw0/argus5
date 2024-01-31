@@ -17,7 +17,7 @@ import (
 	"argus.domain/argus/config"
 	"argus.domain/argus/configure"
 	"argus.domain/argus/sched"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 type Remover interface {

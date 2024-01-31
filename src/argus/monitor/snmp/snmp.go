@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 	"github.com/soniah/gosnmp"
 
 	"argus.domain/argus/argus"

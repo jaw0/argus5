@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"argus.domain/argus/argus"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 type Conf struct {

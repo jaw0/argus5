@@ -13,7 +13,7 @@ import (
 	"argus.domain/argus/api"
 	"argus.domain/argus/argus"
 	"argus.domain/argus/config"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 type User struct {

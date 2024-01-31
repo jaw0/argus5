@@ -16,7 +16,7 @@ import (
 
 	"argus.domain/argus/clock"
 	"argus.domain/argus/config"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 	"argus.domain/argus/lfsr"
 )
 

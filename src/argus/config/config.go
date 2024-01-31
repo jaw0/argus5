@@ -8,8 +8,8 @@ package config
 import (
 	"fmt"
 
-	"github.com/jaw0/acgo/accfg"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acconfig"
+	"github.com/jaw0/acdiag"
 
 	"argus.domain/argus/argus"
 )
@@ -70,17 +70,17 @@ func read_config(file string) error {
 		Control_Socket: argus.ControlSocket,
 	}
 
-	err := accfg.Read(file, newcf)
+	err := acconfig.Read(file, newcf)
 
 	if err != nil {
 		return fmt.Errorf("cannot read config '%s': %v", file, err)
 	}
 
-	diag.SetConfig(&diag.Config{
+	diag.SetConfig(diag.Config{
 		Debug:    newcf.Debug,
 		Facility: newcf.Syslog,
-		Mailto:   newcf.Errors_MailTo,
-		Mailfrom: newcf.Errors_MailFrom,
+		MailTo:   newcf.Errors_MailTo,
+		MailFrom: newcf.Errors_MailFrom,
 	})
 
 	cf = newcf

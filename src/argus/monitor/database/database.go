@@ -19,7 +19,7 @@ import (
 	// add more drivers here (and update config below)
 
 	"argus.domain/argus/configure"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 	"argus.domain/argus/service"
 )
 

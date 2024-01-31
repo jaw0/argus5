@@ -11,7 +11,7 @@ import (
 	"argus.domain/argus/argus"
 	"argus.domain/argus/configure"
 	"argus.domain/argus/monel"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 )
 
 type Alias struct {

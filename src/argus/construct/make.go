@@ -7,7 +7,7 @@ package construct
 
 import (
 	"argus.domain/argus/configure"
-	//"github.com/jaw0/acgo/diag"
+	//"github.com/jaw0/acdiag"
 	"argus.domain/argus/alias"
 	"argus.domain/argus/darp"
 	"argus.domain/argus/group"

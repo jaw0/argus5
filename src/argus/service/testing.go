@@ -16,7 +16,7 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 	"github.com/oliveagle/jsonpath"
 
 	"argus.domain/argus/argus"

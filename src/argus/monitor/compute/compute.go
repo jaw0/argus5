@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	"argus.domain/argus/configure"
-	"github.com/jaw0/acgo/diag"
+	"github.com/jaw0/acdiag"
 	"argus.domain/argus/expr"
 	"argus.domain/argus/monel"
 	"argus.domain/argus/service"
